@@ -21,12 +21,20 @@ services:
       GF_DATABASE_SSL_MODE: disable
     depends_on:
       - db
+      - influxdb
     ports:
       - 3000:3000
     volumes:
       - grafana:/var/lib/grafana
 
+  influxdb:
+    image: influxdb:latest
+    ports:
+      - 8086:8086
+    volumes:
+      - influxdb:/var/lib/influxdb2
 
 volumes:
   postgres:
   grafana:
+  influxdb:
