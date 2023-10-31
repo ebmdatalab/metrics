@@ -2,8 +2,13 @@ from datetime import timedelta
 
 import structlog
 
+from .. import influxdb, timescaledb  # noqa: F401
 from . import api
 from .prs import process_prs
+
+
+writer = influxdb.write
+# writer = timescaledb.write
 
 
 log = structlog.get_logger()
@@ -24,7 +29,7 @@ def pr_queue(org, date, days_threshold=None):
     suffix = f"_older_than_{days_threshold}_days" if days_threshold else ""
 
     log.info("%s | %s | Processing %s PRs", date, org, len(prs))
-    process_prs(f"queue{suffix}", prs, date)
+    process_prs(writer, f"queue{suffix}", prs, date)
 
 
 def pr_throughput(org, date, days):
@@ -35,4 +40,4 @@ def pr_throughput(org, date, days):
     prs = api.prs_opened_in_the_last_N_days(org, start, end)
 
     log.info("%s | %s | Processing %s PRs", date, org, len(prs))
-    process_prs("throughput", prs, date)
+    process_prs(writer, "throughput", prs, date)

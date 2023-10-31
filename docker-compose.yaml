@@ -34,7 +34,17 @@ services:
     volumes:
       - influxdb:/var/lib/influxdb2
 
+  timescaledb:
+    image: timescale/timescaledb-ha:pg14-latest
+    environment:
+      POSTGRES_PASSWORD: password
+    ports:
+      - 5433:5432
+    volumes:
+      - timescaledb:/home/postgres/pgdata/data
+
 volumes:
   postgres:
   grafana:
   influxdb:
+  timescaledb:

@@ -35,14 +35,13 @@ def delete(key):
     delete_api.delete(start, stop, measurement, bucket=BUCKET, org=ORG)
 
 
-def write(key, date, value, tags=None):
+def write(measurement, date, value, tags=None):
     # convert date to a timestamp
     # TODO: do we need to do any checking to make sure this is tz-aware and in
     # UTC?
     dt = datetime.combine(date, time())
 
-    measurement, _, field = key.rpartition(".")
-    point = Point(measurement).field(field, value).time(dt)
+    point = Point(measurement).field("number", value).time(dt)
 
     if tags is not None:
         for k, v in tags.items():
@@ -53,7 +52,7 @@ def write(key, date, value, tags=None):
     log.debug(
         measurement,
         date=dt.isoformat(),
-        **{field: value},
+        number=value,
         **tags,
     )
 

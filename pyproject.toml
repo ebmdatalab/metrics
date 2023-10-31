@@ -17,6 +17,7 @@ dependencies = [
   "github-to-sqlite",
   "influxdb-client",
   "requests",
+  "psycopg[binary]",
   "structlog",
 ]
 dynamic = ["version"]

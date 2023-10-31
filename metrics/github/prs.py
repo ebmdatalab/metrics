@@ -1,7 +1,4 @@
-from .. import influxdb
-
-
-def process_prs(key, prs, date):
+def process_prs(writer, key, prs, date):
     """
     Given a list of PRs, break them down in series for writing
 
@@ -23,10 +20,8 @@ def process_prs(key, prs, date):
 
             org = list(orgs)[0]
 
-            # Note: date for this series is the start of the week in which
-            # the PRs were created
-            influxdb.write(
-                f"github_pull_requests_{key}.number",
+            writer(
+                f"github_pull_requests_{key}",
                 date,
                 len(prs_by_author_and_repo),
                 tags={
