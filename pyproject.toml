@@ -1,3 +1,33 @@
+[build-system]
+build-backend = "setuptools.build_meta"
+requires = ["setuptools>=45", "wheel"]
+
+[project]
+name = "metrics"
+description = "Internal metrics tooling for the Bennett Institute of Applied Data Science at Oxford"
+readme = "README.md"
+authors = [{name = "Bennett Institute", email = "tech@ebmdatalab.org"}]
+license = {file = "LICENSE"}
+classifiers = [
+  "License :: OSI Approved :: GNU General Public License v3 (GPLv3)"
+]
+requires-python = ">=3.11"
+dependencies = [
+  "click",
+  "github-to-sqlite",
+  "influxdb-client",
+  "requests",
+  "structlog",
+]
+dynamic = ["version"]
+
+[project.scripts]
+add_job = "metrics.cli:cli"
+
+[project.urls]
+Home = "https://bennett.ox.ac.uk"
+Source = "https://github.com/opensafely-core/metrics/"
+
 [tool.coverage.run]
 branch = true
 dynamic_context = "test_function"

@@ -45,9 +45,9 @@ requirements-prod *args:
     "{{ just_executable() }}" _compile requirements.prod.in requirements.prod.txt {{ args }}
 
 
-# update requirements.dev.txt if requirements.dev.in has changed
+# update requirements.dev.txt if pyproject.toml has changed
 requirements-dev *args: requirements-prod
-    "{{ just_executable() }}" _compile requirements.dev.in requirements.dev.txt {{ args }}
+    "{{ just_executable() }}" _compile pyproject.toml requirements.dev.txt {{ args }}
 
 
 # ensure prod requirements installed and up to date
@@ -122,3 +122,7 @@ fix: devenv
 # Run the dev project
 run: devenv
     docker-compose up
+
+
+metrics *args: devenv
+    python -m metrics {{ args }}
