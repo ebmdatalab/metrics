@@ -6,6 +6,7 @@ from pathlib import Path
 
 import structlog
 
+from metrics import influxdb
 from metrics.github.prs import process_prs
 from metrics.logs import setup_logging
 from metrics.tools.dates import date_from_iso, datetime_from_iso, iter_days
@@ -14,6 +15,9 @@ from metrics.tools.dates import date_from_iso, datetime_from_iso, iter_days
 setup_logging()
 
 log = structlog.get_logger()
+
+
+writer = influxdb.write
 
 
 def get_data(db, orgs):
@@ -79,7 +83,7 @@ def pr_queue(prs, org, start, days_threshold=None):
         key = f"queue{suffix}"
 
         log.info("%s | %s | %s | Processing %s PRs", key, day, org, len(prs_on_day))
-        process_prs(key, prs_on_day, day)
+        process_prs(writer, key, prs_on_day, day)
 
 
 def pr_throughput(prs, org, start):
@@ -115,7 +119,7 @@ def pr_throughput(prs, org, start):
 
         key = "throughput"
         log.info("%s | %s | %s | Processing %s PRs", key, day, org, len(prs_in_range))
-        process_prs(key, prs_in_range, day)
+        process_prs(writer, key, prs_in_range, day)
 
 
 if __name__ == "__main__":
