@@ -124,7 +124,7 @@ if __name__ == "__main__":
 
     # hacky switch for [re-]building the local SQLite
     args = sys.argv[1:]
-    if args[0] and args[0] == "--pull-data":
+    if args and args[0] == "--pull-data":
         # clean up existing db
         Path(db).unlink(missing_ok=True)
 
