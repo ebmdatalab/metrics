@@ -2,6 +2,7 @@ import click
 
 from .github.cli import github
 from .logs import setup_logging
+from .slack.cli import slack
 
 
 @click.group()
@@ -16,3 +17,4 @@ def cli(ctx, debug):
 
 
 cli.add_command(github)
+cli.add_command(slack)

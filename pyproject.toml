@@ -18,6 +18,7 @@ dependencies = [
   "influxdb-client",
   "requests",
   "psycopg[binary]",
+  "slack-bolt",
   "structlog",
 ]
 dynamic = ["version"]

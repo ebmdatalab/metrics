@@ -272,6 +272,14 @@ six==1.16.0 \
     --hash=sha256:1e61c37477a1626458e36f7b1d82aa5c9b094fa4802892072e49de9c60c4c926 \
     --hash=sha256:8abb2f1d86890a2dfb989f9a77cfcfd3e47c2a354b01111771326f8aa26e0254
     # via python-dateutil
+slack-bolt==1.18.0 \
+    --hash=sha256:43b121acf78440303ce5129e53be36bdfe5d926a193daef7daf2860688e65dd3 \
+    --hash=sha256:63089a401ae3900c37698890249acd008a4651d06e86194edc7b72a00819bbac
+    # via metrics (pyproject.toml)
+slack-sdk==3.23.0 \
+    --hash=sha256:2a8513505cced20ceee22b5b49c11d9545caa6234b56bf0ad47133ea5b357d10 \
+    --hash=sha256:9d6ebc4ff74e7983e1b27dbdb0f2bb6fc3c2a2451694686eaa2be23bbb085a73
+    # via slack-bolt
 sqlite-fts4==1.0.3 \
     --hash=sha256:0359edd8dea6fd73c848989e1e2b1f31a50fe5f9d7272299ff0e8dbaa62d035f \
     --hash=sha256:78b05eeaf6680e9dbed8986bde011e9c086a06cb0c931b3cf7da94c214e8930c
