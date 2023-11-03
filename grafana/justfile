@@ -1,0 +1,22 @@
+
+build:
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    test -z "${SKIP_BUILD:-}" || { echo "SKIP_BUILD set"; exit 0; }
+
+    # set build args for prod builds
+    export BUILD_DATE=$(date -u +'%y-%m-%dT%H:%M:%SZ')
+    export GITREF=$(git rev-parse --short HEAD)
+
+    docker compose build grafana
+
+serve:
+    docker compose up grafana -d
+
+# run a basic functional smoke test against a running server
+smoke-test host="http://127.0.0.1:3000/login":
+    #!/bin/bash
+    set -eu
+    curl -I {{ host }} -s --compressed --fail --retry 20 --retry-delay 1 --retry-all-errors
+

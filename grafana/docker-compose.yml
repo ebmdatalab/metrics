@@ -1,0 +1,12 @@
+services:
+  grafana:
+    # use Dockerfile so that version matches production
+    build:
+        dockerfile: Dockerfile
+    ports:
+      - 3000:3000
+    volumes:
+      - grafana:/var/lib/grafana
+
+volumes:
+  grafana:
