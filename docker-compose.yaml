@@ -21,24 +21,11 @@ services:
       GF_DATABASE_SSL_MODE: disable
     depends_on:
       - db
-      - influxdb
+      - timescaledb
     ports:
       - 3000:3000
     volumes:
       - grafana:/var/lib/grafana
-
-  influxdb:
-    image: influxdb:latest
-    environment:
-      DOCKER_INFLUXDB_INIT_MODE: setup
-      DOCKER_INFLUXDB_INIT_USERNAME: admin
-      DOCKER_INFLUXDB_INIT_PASSWORD: admin
-      DOCKER_INFLUXDB_INIT_ORG: bennett
-      DOCKER_INFLUXDB_INIT_BUCKET: data
-    ports:
-      - 8086:8086
-    volumes:
-      - influxdb:/var/lib/influxdb2
 
   timescaledb:
     image: timescale/timescaledb-ha:pg14-latest
@@ -52,5 +39,4 @@ services:
 volumes:
   postgres:
   grafana:
-  influxdb:
   timescaledb:
