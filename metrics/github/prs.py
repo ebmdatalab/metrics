@@ -1,4 +1,4 @@
-def process_prs(writer, key, prs, date):
+def process_prs(writer, prs, date):
     """
     Given a list of PRs, break them down in series for writing
 
@@ -20,13 +20,10 @@ def process_prs(writer, key, prs, date):
 
             org = list(orgs)[0]
 
-            writer(
-                f"github_pull_requests_{key}",
+            writer.write(
                 date,
                 len(prs_by_author_and_repo),
-                tags={
-                    "author": author,
-                    "organisation": org,
-                    "repo": repo,
-                },
+                author=author,
+                organisation=org,
+                repo=repo,
             )

@@ -3,11 +3,8 @@ from datetime import datetime
 
 import click
 
-from .. import influxdb
+from ..timescaledb import TimescaleDBWriter
 from .api import get_app, iter_messages
-
-
-writer = influxdb.write
 
 
 @click.group()
@@ -38,11 +35,8 @@ def tech_support(ctx, date, tech_support_channel_id, backfill):
 
     messages = iter_messages(app, tech_support_channel_id, date=day)
 
-    for date, messages in itertools.groupby(
-        messages, lambda m: datetime.fromtimestamp(float(m["ts"])).date()
-    ):
-        writer(
-            "slack_tech_support_requests",
-            date,
-            len(list(messages)),
-        )
+    with TimescaleDBWriter("slack_tech_support", "requests") as writer:
+        for date, messages in itertools.groupby(
+            messages, lambda m: datetime.fromtimestamp(float(m["ts"])).date()
+        ):
+            writer.write(date, len(list(messages)))

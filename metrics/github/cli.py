@@ -3,13 +3,12 @@ from datetime import timedelta
 import click
 import structlog
 
-from .. import influxdb
+from ..timescaledb import TimescaleDBWriter
 from . import api
 from .prs import process_prs
 
 
 log = structlog.get_logger()
-writer = influxdb.write
 
 
 @click.group()
@@ -42,7 +41,8 @@ def pr_queue(ctx, org, date, days_threshold):
     suffix = f"_older_than_{days_threshold}_days" if days_threshold else ""
 
     log.info("%s | %s | Processing %s PRs", date, org, len(prs))
-    process_prs(writer, f"queue{suffix}", prs, date)
+    with TimescaleDBWriter("github_pull_requests", f"queue{suffix}") as writer:
+        process_prs(writer, prs, date)
 
 
 @github.command()
@@ -58,4 +58,5 @@ def pr_throughput(ctx, org, date, days):
     prs = api.prs_opened_in_the_last_N_days(org, start, end)
 
     log.info("%s | %s | Processing %s PRs", date, org, len(prs))
-    process_prs(writer, "throughput", prs, date)
+    with TimescaleDBWriter("github_pull_requests", "throughput") as writer:
+        process_prs(writer, prs, date)
