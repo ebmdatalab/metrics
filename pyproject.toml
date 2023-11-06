@@ -75,3 +75,7 @@ extend-ignore = [
 
 [tool.ruff.isort]
 lines-after-imports = 2
+
+
+[tool.setuptools.packages.find]
+include = ["metrics*"]
