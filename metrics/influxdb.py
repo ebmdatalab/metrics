@@ -36,6 +36,9 @@ def delete(key):
 
 
 def write(measurement, date, value, tags=None):
+    if tags is None:
+        tags = {}
+
     # convert date to a timestamp
     # TODO: do we need to do any checking to make sure this is tz-aware and in
     # UTC?
@@ -43,9 +46,8 @@ def write(measurement, date, value, tags=None):
 
     point = Point(measurement).field("number", value).time(dt)
 
-    if tags is not None:
-        for k, v in tags.items():
-            point = point.tag(k, v)
+    for k, v in tags.items():
+        point = point.tag(k, v)
 
     write_api.write(bucket=BUCKET, org=ORG, record=point)
 
