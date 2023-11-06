@@ -30,7 +30,9 @@ services:
   timescaledb:
     image: timescale/timescaledb-ha:pg14-latest
     environment:
-      POSTGRES_PASSWORD: password
+      POSTGRES_DB: metrics
+      POSTGRES_PASSWORD: pass
+      POSTGRES_USER: user
     ports:
       - 5433:5432
     volumes:
