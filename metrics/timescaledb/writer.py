@@ -9,7 +9,7 @@ from . import tables
 
 log = structlog.get_logger()
 
-DATABASE_URL = os.environ["DATABASE_URL"]
+TIMESCALEDB_URL = os.environ["TIMESCALEDB_URL"]
 
 
 def ensure_table(name):
@@ -25,7 +25,7 @@ def ensure_table(name):
 
 
 def run(sql, *args):
-    with psycopg.connect(DATABASE_URL) as conn:
+    with psycopg.connect(TIMESCALEDB_URL) as conn:
         cursor = conn.cursor()
 
         return cursor.execute(sql, *args)
