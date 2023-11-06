@@ -119,9 +119,9 @@ fix: devenv
     $BIN/ruff --fix .
 
 
-# Run the dev project
-run: devenv
-    docker-compose up
+# Run the grafana stack
+grafana:
+    docker-compose up grafana
 
 
 metrics *args: devenv
