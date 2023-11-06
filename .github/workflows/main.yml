@@ -1,6 +1,12 @@
 ---
 name: CI
 
+env:
+  IMAGE_NAME: metrics
+  PUBLIC_IMAGE_NAME: ghcr.io/ebmdatalab/metrics
+  REGISTRY: ghcr.io
+  SSH_AUTH_SOCK: /tmp/agent.sock
+
 on:
   push:
 
@@ -66,6 +72,55 @@ jobs:
         with:
             name: metrics-image
             path: /tmp/metrics.tar.gz
+
+  deploy:
+    needs:
+    - check
+    - test
+    - docker-test-and-build
+    - lint-dockerfile
+
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      packages: write
+
+    if: github.ref == 'refs/heads/main'
+
+    concurrency: deploy-production
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: "opensafely-core/setup-action@v1"
+        with:
+          install-just: true
+
+      - name: Download docker image
+        uses: actions/download-artifact@v3
+        with:
+            name: metrics-image
+            path: /tmp/image
+
+      - name: Import docker image
+        run: gunzip -c /tmp/image/metrics.tar.gz | docker load
+
+      - name: Test image we imported from previous job works
+        run: |
+            SKIP_BUILD=1 just docker-run prod python -m metrics
+
+      - name: Publish image
+        run: |
+            echo ${{ secrets.GITHUB_TOKEN }} | docker login "$REGISTRY" -u ${{ github.actor }} --password-stdin
+            docker tag "$IMAGE_NAME" "$PUBLIC_IMAGE_NAME":latest
+            docker push "$PUBLIC_IMAGE_NAME":latest
+
+      - name: Deploy image
+        run: |
+            ssh-agent -a "$SSH_AUTH_SOCK" > /dev/null
+            ssh-add - <<< "${{ secrets.DOKKU3_DEPLOY_SSH_KEY }}"
+            SHA=$(docker inspect --format='{{index .RepoDigests 0}}' "$PUBLIC_IMAGE_NAME":latest)
+            ssh -o "UserKnownHostsFile=/dev/null" -o "StrictHostKeyChecking=no" dokku@dokku3.ebmdatalab.net git:from-image metrics "$SHA"
 
   required-checks:
     if: always()
