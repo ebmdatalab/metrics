@@ -1,9 +1,15 @@
+# Load .env files by default
+set dotenv-load := true
+
 export VIRTUAL_ENV  := env_var_or_default("VIRTUAL_ENV", ".venv")
 
 export BIN := VIRTUAL_ENV + if os_family() == "unix" { "/bin" } else { "/Scripts" }
 export PIP := BIN + if os_family() == "unix" { "/python -m pip" } else { "/python.exe -m pip" }
 
 export DEFAULT_PYTHON := if os_family() == "unix" { "python3.11" } else { "python" }
+
+export DEV_USERID := `id -u`
+export DEV_GROUPID := `id -g`
 
 
 # list available commands
@@ -126,3 +132,26 @@ grafana:
 
 metrics *args: devenv
     python -m metrics {{ args }}
+
+
+docker-build env="dev":
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    test -z "${SKIP_BUILD:-}" || { echo "SKIP_BUILD set"; exit 0; }
+
+    # ensure env file exists
+    test -f .env || cp dotenv-sample .env
+
+    # set build args for prod builds
+    export BUILD_DATE=$(date -u +'%y-%m-%dT%H:%M:%SZ')
+    export GITREF=$(git rev-parse --short HEAD)
+
+    # build the thing
+    docker-compose build --pull metrics-{{ env }}
+
+
+# run command in dev|prod container
+docker-run env="dev" *args="bash":
+    {{ just_executable() }} docker-build {{ env }}
+    docker-compose run --rm metrics-{{ env }} {{ args }}

@@ -1,0 +1,17 @@
+# The DSN for access the timescaledb database
+TIMESCALEDB_URL=postgres://user:pass@localhost:5433/metrics
+
+# API token for pulling data from Github
+GITHUB_TOKEN=
+
+# Slack API access credentials.
+# The slack app used for this will need the following OAuth scopes:
+#  * channels:history
+#  * groups:history
+#  * im:history
+#  * npim:history
+SLACK_SIGNING_SECRET=
+SLACK_TOKEN=
+
+# Slack channel ID for tech-support-channel
+SLACK_TECH_SUPPORT_CHANNEL_ID=C0270Q313H7

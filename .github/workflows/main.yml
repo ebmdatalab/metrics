@@ -30,12 +30,51 @@ jobs:
         run: |
           just test
 
+  lint-dockerfile:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hadolint/hadolint-action@54c9adbab1582c2ef04b2016b760714a4bfde3cf  # v3.1.0
+        with:
+          dockerfile: docker/Dockerfile
+
+  docker-test-and-build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: "opensafely-core/setup-action@v1"
+        with:
+          install-just: true
+
+      - name: Build docker image for both prod and dev
+        run: |
+            just docker-build prod
+            just docker-build dev
+
+      - name: Run smoke test on prod
+        run: |
+          just docker-run prod python -m metrics
+
+      - name: Save docker image
+        run: |
+          docker save metrics | gzip > /tmp/metrics.tar.gz
+
+      - name: Upload docker image
+        uses: actions/upload-artifact@v3
+        with:
+            name: metrics-image
+            path: /tmp/metrics.tar.gz
+
   required-checks:
     if: always()
 
     needs:
     - check
     - test
+    - docker-test-and-build
+    - lint-dockerfile
 
     runs-on: Ubuntu-latest
 
