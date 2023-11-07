@@ -127,7 +127,7 @@ fix: devenv
 
 # Run the grafana stack
 grafana:
-    docker-compose up grafana
+    docker compose up grafana
 
 
 metrics *args: devenv
@@ -148,10 +148,10 @@ docker-build env="dev":
     export GITREF=$(git rev-parse --short HEAD)
 
     # build the thing
-    docker-compose build --pull metrics-{{ env }}
+    docker compose build --pull metrics-{{ env }}
 
 
 # run command in dev|prod container
 docker-run env="dev" *args="bash":
     {{ just_executable() }} docker-build {{ env }}
-    docker-compose run --rm metrics-{{ env }} {{ args }}
+    docker compose run --rm metrics-{{ env }} {{ args }}
