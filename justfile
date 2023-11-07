@@ -131,7 +131,7 @@ grafana:
 
 
 metrics *args: devenv
-    python -m metrics {{ args }}
+    $BIN/python -m metrics {{ args }}
 
 
 docker-build env="dev":
