@@ -1,9 +1,9 @@
 import sqlite3
 import subprocess
-import sys
 from datetime import date, timedelta
 from pathlib import Path
 
+import click
 import structlog
 
 from metrics.github.prs import process_prs
@@ -17,25 +17,24 @@ setup_logging()
 log = structlog.get_logger()
 
 
-def get_data(db, orgs):
-    subprocess.check_call(["github-to-sqlite", "repos", db, *orgs])
+def get_data(db, org):
+    subprocess.check_call(["github-to-sqlite", "repos", db, org])
 
     con = sqlite3.connect(db)
     cur = con.cursor()
 
-    for org in orgs:
-        result = cur.execute(
-            "SELECT name FROM repos WHERE full_name LIKE ?", (f"{org}%",)
-        ).fetchall()
-        repo_names = [r[0] for r in result]
+    result = cur.execute(
+        "SELECT name FROM repos WHERE full_name LIKE ?", (f"{org}%",)
+    ).fetchall()
+    repo_names = [r[0] for r in result]
 
-        for repo in repo_names:
-            subprocess.check_call(
-                ["github-to-sqlite", "pull-requests", db, f"{org}/{repo}"]
-            )
+    for repo in repo_names:
+        subprocess.check_call(
+            ["github-to-sqlite", "pull-requests", db, f"{org}/{repo}"]
+        )
 
 
-def get_prs():
+def get_prs(db):
     sql = """
     SELECT
       date(pull_requests.created_at) as created,
@@ -121,30 +120,31 @@ def pr_throughput(prs, org, start):
             process_prs(writer, prs_in_range, day)
 
 
-if __name__ == "__main__":
+@click.command()
+@click.argument("org")
+@click.option("--pull-data", is_flag=True, default=False)
+@click.pass_context
+def backfill(ctx, pull_data, org):
+    """Backfill GitHub data for the given GitHub ORG"""
     db = "github.db"
-    orgs = ["ebmdatalab", "opensafely-core"]
 
-    # hacky switch for [re-]building the local SQLite
-    args = sys.argv[1:]
-    if args and args[0] == "--pull-data":
+    if pull_data:
         # clean up existing db
         Path(db).unlink(missing_ok=True)
 
         # pull all data down to make backfilling quicker
-        get_data(db, orgs)
+        get_data(db, org)
 
-    prs = get_prs()
+    prs = get_prs(db)
 
-    for org in orgs:
-        org_prs = [pr for pr in prs if pr["org"] == org]
-        log.info("Backfilling with %s PRs for %s", len(org_prs), org)
-        start_date = min([pr["created"] for pr in org_prs])
-        start_date = datetime_from_iso(start_date).date()
+    org_prs = [pr for pr in prs if pr["org"] == org]
+    log.info("Backfilling with %s PRs for %s", len(org_prs), org)
+    start_date = min([pr["created"] for pr in org_prs])
+    start_date = datetime_from_iso(start_date).date()
 
-        pr_queue(org_prs, org, start_date)
+    pr_queue(org_prs, org, start_date)
 
-        for day in [2, 10, 30, 60]:
-            pr_queue(org_prs, org, start_date, days_threshold=day)
+    for day in [2, 10, 30, 60]:
+        pr_queue(org_prs, org, start_date, days_threshold=day)
 
-        pr_throughput(org_prs, org, start_date)
+    pr_throughput(org_prs, org, start_date)
