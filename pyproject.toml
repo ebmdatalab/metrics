@@ -22,9 +22,6 @@ dependencies = [
 ]
 dynamic = ["version"]
 
-[project.scripts]
-add_job = "metrics.cli:cli"
-
 [project.urls]
 Home = "https://bennett.ox.ac.uk"
 Source = "https://github.com/opensafely-core/metrics/"
@@ -75,3 +72,7 @@ extend-ignore = [
 
 [tool.ruff.isort]
 lines-after-imports = 2
+
+
+[tool.setuptools.packages.find]
+include = ["metrics*"]
