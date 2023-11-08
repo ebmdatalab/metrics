@@ -23,6 +23,9 @@ def ensure_table(name):
         [name],
     )
 
+    # ensure the RO grafana user can read the table
+    run(f"GRANT SELECT ON {name} TO grafanareader")
+
 
 def run(sql, *args):
     with psycopg.connect(TIMESCALEDB_URL) as conn:
