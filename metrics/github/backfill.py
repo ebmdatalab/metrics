@@ -123,19 +123,18 @@ def pr_throughput(prs, org, start):
 @click.command()
 @click.argument("org")
 @click.option("--pull-data", is_flag=True, default=False)
+@click.option("--db-path", type=str)
 @click.pass_context
-def backfill(ctx, pull_data, org):
+def backfill(ctx, org, pull_data, db_path="github.db"):
     """Backfill GitHub data for the given GitHub ORG"""
-    db = "github.db"
-
     if pull_data:
         # clean up existing db
-        Path(db).unlink(missing_ok=True)
+        Path(db_path).unlink(missing_ok=True)
 
         # pull all data down to make backfilling quicker
-        get_data(db, org)
+        get_data(db_path, org)
 
-    prs = get_prs(db)
+    prs = get_prs(db_path)
 
     org_prs = [pr for pr in prs if pr["org"] == org]
     log.info("Backfilling with %s PRs for %s", len(org_prs), org)
