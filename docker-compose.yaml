@@ -69,11 +69,6 @@ services:
     extends:
         service: metrics-prod
     image: metrics-dev
-    container_name: metrics-dev
-    # running as a specific uid/gid allows files written to mounted volumes by
-    # the docker container's default user to match the host user's uid/gid, for
-    # convienience.
-    user: ${DEV_USERID:-1000}:${DEV_GROUPID:-1000}
     build:
       # the dev stage in the Dockerfile
       target: metrics-dev
@@ -81,11 +76,20 @@ services:
       args:
         - DEV_USERID=${DEV_USERID:-1000}
         - DEV_GROUPID=${DEV_GROUPID:-1000}
+    container_name: metrics-dev
+    # running as a specific uid/gid allows files written to mounted volumes by
+    # the docker container's default user to match the host user's uid/gid, for
+    # convienience.
+    user: ${DEV_USERID:-1000}:${DEV_GROUPID:-1000}
     volumes:
       # mount our current code
       - .:/app
-    env_file:
-      - .env
+    environment:
+      - GITHUB_TOKEN=${GITHUB_TOKEN:-}
+      - SLACK_SIGNING_SECRET=${SLACK_SIGNING_SECRET:-}
+      - SLACK_TECH_SUPPORT_CHANNEL_ID=${SLACK_TECH_SUPPORT_CHANNEL_ID:-}
+      - SLACK_TOKEN=${SLACK_TOKEN:-}
+      - TIMESCALEDB_URL=${TIMESCALEDB_URL:-}
 
 volumes:
   postgres:
