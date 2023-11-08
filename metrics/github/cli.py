@@ -5,6 +5,7 @@ import structlog
 
 from ..timescaledb import TimescaleDBWriter
 from . import api
+from .backfill import backfill
 from .prs import process_prs
 
 
@@ -60,3 +61,6 @@ def pr_throughput(ctx, org, date, days):
     log.info("%s | %s | Processing %s PRs", date, org, len(prs))
     with TimescaleDBWriter("github_pull_requests", "throughput") as writer:
         process_prs(writer, prs, date)
+
+
+github.add_command(backfill)
