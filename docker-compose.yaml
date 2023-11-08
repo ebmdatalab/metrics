@@ -84,8 +84,12 @@ services:
     volumes:
       # mount our current code
       - .:/app
-    env_file:
-      - .env
+    environment:
+      - GITHUB_TOKEN=${GITHUB_TOKEN:-}
+      - SLACK_SIGNING_SECRET=${SLACK_SIGNING_SECRET:-}
+      - SLACK_TECH_SUPPORT_CHANNEL_ID=${SLACK_TECH_SUPPORT_CHANNEL_ID:-}
+      - SLACK_TOKEN=${SLACK_TOKEN:-}
+      - TIMESCALEDB_URL=${TIMESCALEDB_URL:-}
 
 volumes:
   postgres:
