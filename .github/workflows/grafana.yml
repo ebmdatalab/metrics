@@ -1,0 +1,112 @@
+---
+name: Grafana deployment
+
+env:
+  IMAGE_NAME: grafana
+  PUBLIC_IMAGE_NAME: ghcr.io/ebmdatalab/grafana
+  REGISTRY: ghcr.io
+  SSH_AUTH_SOCK: /tmp/agent.sock
+
+on:
+  push:
+
+jobs:
+  lint-dockerfile:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hadolint/hadolint-action@54c9adbab1582c2ef04b2016b760714a4bfde3cf  # v3.1.0
+        with:
+          dockerfile: grafana/Dockerfile
+
+  docker-test-and-build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: "opensafely-core/setup-action@v1"
+        with:
+          install-just: true
+
+      - name: Build docker image
+        run: |
+            just grafana/build 
+
+      - name: Run smoke test
+        run: |
+          just grafana/serve
+          sleep 5
+          just grafana/smoke-test || { docker logs grafana-grafana_1; exit 1; }
+
+      - name: Save docker image
+        run: |
+          docker save grafana | gzip > /tmp/grafana.tar.gz
+
+      - name: Upload docker image
+        uses: actions/upload-artifact@v3
+        with:
+            name: grafana-image
+            path: /tmp/grafana.tar.gz
+
+  required-checks:
+    if: always()
+
+    needs:
+    - docker-test-and-build
+    - lint-dockerfile
+
+    runs-on: Ubuntu-latest
+
+    steps:
+    - name: Decide whether the needed jobs succeeded or failed
+      uses: re-actors/alls-green@05ac9388f0aebcb5727afa17fcccfecd6f8ec5fe  # v1.2.2
+      with:
+        jobs: ${{ toJSON(needs) }}
+
+  deploy:
+    needs: [required-checks]
+
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      packages: write
+
+    if: github.ref == 'refs/heads/main'
+
+    concurrency: deploy-production
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: "opensafely-core/setup-action@v1"
+        with:
+          install-just: true
+
+      - name: Download docker image
+        uses: actions/download-artifact@v3
+        with:
+            name: grafana-image
+            path: /tmp/image
+
+      - name: Import docker image
+        run: gunzip -c /tmp/image/grafana.tar.gz | docker load
+
+      - name: Test image we imported from previous job works
+        run: |
+            SKIP_BUILD=1 just grafana/serve
+            sleep 5
+            just grafana/smoke-test || { docker logs grafana-grafana_1; exit 1; }
+
+      - name: Publish image
+        run: |
+            echo ${{ secrets.GITHUB_TOKEN }} | docker login "$REGISTRY" -u ${{ github.actor }} --password-stdin
+            docker tag "$IMAGE_NAME" "$PUBLIC_IMAGE_NAME":latest
+            docker push "$PUBLIC_IMAGE_NAME":latest
+
+      - name: Deploy image
+        run: |
+            ssh-agent -a "$SSH_AUTH_SOCK" > /dev/null
+            ssh-add - <<< "${{ secrets.DOKKU3_DEPLOY_SSH_KEY }}"
+            SHA=$(docker inspect --format='{{index .RepoDigests 0}}' "$PUBLIC_IMAGE_NAME":latest)
+            ssh -o "UserKnownHostsFile=/dev/null" -o "StrictHostKeyChecking=no" dokku@dokku3.ebmdatalab.net git:from-image grafana "$SHA"

@@ -1,6 +1,7 @@
 services:
   grafana:
     # use Dockerfile so that version matches production
+    # uses sqlite for a very simple smoke test 
     build:
         dockerfile: Dockerfile
     ports:
