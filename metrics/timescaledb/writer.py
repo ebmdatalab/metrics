@@ -9,7 +9,11 @@ from . import tables
 
 log = structlog.get_logger()
 
-TIMESCALEDB_URL = os.environ["TIMESCALEDB_URL"]
+# Note: psycopg2 is still the default postgres dialect for sqlalchemy so we
+# inject +psycopg to enable using v3
+TIMESCALEDB_URL = os.environ["TIMESCALEDB_URL"].replace(
+    "postgresql", "postgresql+psycopg"
+)
 
 
 def ensure_table(name):
