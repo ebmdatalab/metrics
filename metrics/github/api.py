@@ -104,6 +104,7 @@ def _iter_pull_requests(org, date_range):
     # we can't seem to interpolate graphql variables into a string, so doing it
     # here
     search_query = f"is:pr draft:false org:{org} {date_range}"
+    log.debug(f"GitHub search query: {search_query}")
 
     query = """
     query getPRs($cursor: String, $searchQuery: String!){
