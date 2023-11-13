@@ -55,7 +55,7 @@ def pr_queue(ctx, org, date, days_threshold):
 def pr_throughput(ctx, org, date, days):
     """PRs opened in the last number of days given"""
     end = date.date()
-    start = date - timedelta(days=days)
+    start = end - timedelta(days=days)
 
     prs = api.prs_opened_in_the_last_N_days(org, start, end)
 
