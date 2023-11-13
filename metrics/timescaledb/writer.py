@@ -13,10 +13,9 @@ log = structlog.get_logger()
 TIMESCALEDB_URL = os.environ["TIMESCALEDB_URL"].replace(
     "postgresql", "postgresql+psycopg"
 )
-engine = create_engine(TIMESCALEDB_URL)
 
 
-def ensure_table(table):
+def ensure_table(engine, table):
     """
     Ensure both the table and hypertable config exist in the database
     """
@@ -39,14 +38,15 @@ class TimescaleDBWriter:
 
     def __init__(self, table):
         self.table = table
+        self.engine = create_engine(TIMESCALEDB_URL)
 
     def __enter__(self):
-        ensure_table(self.table)
+        ensure_table(self.engine, self.table)
 
         return self
 
     def __exit__(self, *args):
-        with engine.begin() as connection:
+        with self.engine.begin() as connection:
             for stmt in self.inserts:
                 connection.execute(stmt)
 
@@ -57,7 +57,7 @@ class TimescaleDBWriter:
         dt = datetime.combine(date, time())
 
         # get the primary key name from the given table
-        constraint = inspect(engine).get_pk_constraint(self.table.name)["name"]
+        constraint = inspect(self.engine).get_pk_constraint(self.table.name)["name"]
 
         # TODO: could we put do all the rows at once in the values() call and
         # then use EXCLUDED to reference the value in the set_?
