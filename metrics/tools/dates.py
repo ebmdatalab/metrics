@@ -8,7 +8,7 @@ def date_from_iso(value):
     if value is None:
         return date.today()
 
-    return date.fromisoformat(value)
+    return datetime_from_iso(value).date()
 
 
 def datetime_from_iso(value):
