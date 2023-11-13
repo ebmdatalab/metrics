@@ -22,8 +22,15 @@ clean:
     rm -rf .venv
 
 
+_env:
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    test -f .env || cp dotenv-sample .env
+
+
 # ensure valid virtualenv
-virtualenv:
+virtualenv: _env
     #!/usr/bin/env bash
     set -euo pipefail
 
@@ -134,14 +141,11 @@ metrics *args: devenv
     $BIN/python -m metrics {{ args }}
 
 
-docker-build env="dev":
+docker-build env="dev": _env
     #!/usr/bin/env bash
     set -euo pipefail
 
     test -z "${SKIP_BUILD:-}" || { echo "SKIP_BUILD set"; exit 0; }
-
-    # ensure env file exists
-    test -f .env || cp dotenv-sample .env
 
     # set build args for prod builds
     export BUILD_DATE=$(date -u +'%y-%m-%dT%H:%M:%SZ')
@@ -152,6 +156,6 @@ docker-build env="dev":
 
 
 # run command in dev|prod container
-docker-run env="dev" *args="bash":
+docker-run env="dev" *args="bash": _env
     {{ just_executable() }} docker-build {{ env }}
     docker compose run --rm metrics-{{ env }} {{ args }}
