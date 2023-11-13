@@ -4,6 +4,7 @@ from datetime import datetime
 import click
 
 from ..timescaledb import TimescaleDBWriter
+from ..timescaledb.tables import SlackTechSupport
 from .api import get_app, iter_messages
 
 
@@ -35,8 +36,8 @@ def tech_support(ctx, date, tech_support_channel_id, backfill):
 
     messages = iter_messages(app, tech_support_channel_id, date=day)
 
-    with TimescaleDBWriter("slack_tech_support", "requests") as writer:
+    with TimescaleDBWriter(SlackTechSupport) as writer:
         for date, messages in itertools.groupby(
             messages, lambda m: datetime.fromtimestamp(float(m["ts"])).date()
         ):
-            writer.write(date, len(list(messages)))
+            writer.write(date, len(list(messages)), name="requests")

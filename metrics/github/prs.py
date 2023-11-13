@@ -1,4 +1,4 @@
-def process_prs(writer, prs, date):
+def process_prs(writer, prs, date, name=""):
     """
     Given a list of PRs, break them down in series for writing
 
@@ -23,6 +23,7 @@ def process_prs(writer, prs, date):
             writer.write(
                 date,
                 len(prs_by_author_and_repo),
+                name=name,
                 author=author,
                 organisation=org,
                 repo=repo,
