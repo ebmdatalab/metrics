@@ -44,6 +44,11 @@ def setup_logging(debug=False):
                     "level": "DEBUG" if debug else "INFO",
                     "propagate": True,
                 },
+                "sqlalchemy": {
+                    "handlers": ["console"],
+                    "level": "WARNING",
+                    "propagate": False,
+                },
             },
         }
     )
