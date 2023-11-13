@@ -15,6 +15,7 @@ requires-python = ">=3.11"
 dependencies = [
   "click",
   "github-to-sqlite",
+  "greenlet",
   "requests",
   "slack-bolt",
   "sqlalchemy[postgresql_psycopgbinary]",
