@@ -16,8 +16,8 @@ dependencies = [
   "click",
   "github-to-sqlite",
   "requests",
-  "psycopg[binary]",
   "slack-bolt",
+  "sqlalchemy[postgresql_psycopgbinary]",
   "structlog",
 ]
 dynamic = ["version"]
