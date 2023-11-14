@@ -9,7 +9,7 @@ import structlog
 from ..logs import setup_logging
 from ..timescaledb import TimescaleDBWriter
 from ..timescaledb.tables import GitHubPullRequests
-from ..tools.dates import date_from_iso, datetime_from_iso, iter_days
+from ..tools.dates import date_from_iso, iter_days
 from .prs import process_prs
 
 
@@ -57,17 +57,18 @@ def get_prs(db):
     return list(cur.execute(sql))
 
 
-def pr_queue(prs, org, start, days_threshold=None):
-    dates = iter_days(start, date.today(), step=timedelta(days=1))
-    for day in dates:
-        prs_on_day = [
-            pr
-            for pr in prs
-            if date_from_iso(pr["created"]) <= day
-            and date_from_iso(pr["closed"]) >= day
-        ]
+def open_prs(prs, org, start, days_threshold):
+    dates = list(iter_days(start, date.today()))
 
-        if days_threshold is not None:
+    with TimescaleDBWriter(GitHubPullRequests) as writer:
+        for day in dates:
+            prs_on_day = [
+                pr
+                for pr in prs
+                if date_from_iso(pr["created"]) <= day
+                and date_from_iso(pr["closed"]) >= day
+            ]
+
             # remove PRs which have been open <days_threshold days
             prs_on_day = [
                 pr
@@ -76,12 +77,12 @@ def pr_queue(prs, org, start, days_threshold=None):
                 >= timedelta(days=days_threshold)
             ]
 
-        suffix = f"_older_than_{days_threshold}_days" if days_threshold else ""
-        key = f"queue{suffix}"
+            name = f"queue_older_than_{days_threshold}_days"
 
-        log.info("%s | %s | %s | Processing %s PRs", key, day, org, len(prs_on_day))
-        with TimescaleDBWriter(GitHubPullRequests) as writer:
-            process_prs(writer, prs_on_day, day, f"queue{suffix}")
+            log.info(
+                "%s | %s | %s | Processing %s PRs", name, day, org, len(prs_on_day)
+            )
+            process_prs(writer, prs_on_day, day, name=name)
 
 
 def pr_throughput(prs, org, start):
@@ -118,12 +119,9 @@ def backfill(ctx, org, pull_data, db_path):
 
     org_prs = [pr for pr in prs if pr["org"] == org]
     log.info("Backfilling with %s PRs for %s", len(org_prs), org)
-    start_date = min([pr["created"] for pr in org_prs])
-    start_date = datetime_from_iso(start_date).date()
+    start_date = date_from_iso(min([pr["created"] for pr in org_prs]))
 
-    pr_queue(org_prs, org, start_date)
-
-    for day in [2, 10, 30, 60]:
-        pr_queue(org_prs, org, start_date, days_threshold=day)
+    for day in [2, 7, 10, 30, 60]:
+        open_prs(org_prs, org, start_date, days_threshold=day)
 
     pr_throughput(org_prs, org, start_date)

@@ -25,26 +25,25 @@ def github(ctx, token):
 @github.command()
 @click.argument("org")
 @click.argument("date", type=click.DateTime())
-@click.option("--days-threshold", type=int)
+@click.argument("days-threshold", type=int)
 @click.pass_context
-def pr_queue(ctx, org, date, days_threshold):
-    """The number of PRs open on the given date"""
+def open_prs(ctx, org, date, days_threshold):
+    """The number of PRs open for DAYS_THRESHOLD or longer on the given date"""
     date = date.date()
     prs = api.prs_open_on_date(org, date)
 
-    if days_threshold is not None:
-        # remove PRs which have been open <days_threshold days
-        prs = [
-            pr
-            for pr in prs
-            if (pr["closed"] - pr["created"]) >= timedelta(days=days_threshold)
-        ]
+    # remove PRs which have been open <days_threshold days
+    open_prs = [
+        pr
+        for pr in prs
+        if (pr["closed"] - pr["created"]) >= timedelta(days=days_threshold)
+    ]
 
-    suffix = f"_older_than_{days_threshold}_days" if days_threshold else ""
-
-    log.info("%s | %s | Processing %s PRs", date, org, len(prs))
-    with TimescaleDBWriter("github_pull_requests", f"queue{suffix}") as writer:
-        process_prs(writer, prs, date)
+    log.info("%s | %s | Processing %s PRs", date, org, len(open_prs))
+    with TimescaleDBWriter(GitHubPullRequests) as writer:
+        process_prs(
+            writer, open_prs, date, name=f"queue_older_than_{days_threshold}_days"
+        )
 
 
 @github.command()
