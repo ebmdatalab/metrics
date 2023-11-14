@@ -25,43 +25,43 @@ def github(ctx, token):
 @github.command()
 @click.argument("org")
 @click.argument("date", type=click.DateTime())
-@click.option("--days-threshold", type=int)
+@click.argument("days-threshold", type=int)
 @click.pass_context
-def pr_queue(ctx, org, date, days_threshold):
-    """The number of PRs open on the given date"""
+def open_prs(ctx, org, date, days_threshold):
+    """The number of PRs open for DAYS_THRESHOLD or longer on the given date"""
     date = date.date()
     prs = api.prs_open_on_date(org, date)
 
-    if days_threshold is not None:
-        # remove PRs which have been open <days_threshold days
-        prs = [
-            pr
-            for pr in prs
-            if (pr["closed"] - pr["created"]) >= timedelta(days=days_threshold)
-        ]
+    # remove PRs which have been open <days_threshold days
+    open_prs = [
+        pr
+        for pr in prs
+        if (pr["closed"] - pr["created"]) >= timedelta(days=days_threshold)
+    ]
 
-    suffix = f"_older_than_{days_threshold}_days" if days_threshold else ""
-
-    log.info("%s | %s | Processing %s PRs", date, org, len(prs))
-    with TimescaleDBWriter("github_pull_requests", f"queue{suffix}") as writer:
-        process_prs(writer, prs, date)
+    log.info("%s | %s | Processing %s PRs", date, org, len(open_prs))
+    with TimescaleDBWriter(GitHubPullRequests) as writer:
+        process_prs(
+            writer, open_prs, date, name=f"queue_older_than_{days_threshold}_days"
+        )
 
 
 @github.command()
 @click.argument("org")
 @click.argument("date", type=click.DateTime())
-@click.option("--days", default=7, type=int)
 @click.pass_context
-def pr_throughput(ctx, org, date, days):
-    """PRs opened in the last number of days given"""
-    end = date.date()
-    start = end - timedelta(days=days)
+def pr_throughput(ctx, org, date):
+    """PRs opened and PRs closed in the given day"""
+    date = date.date()
 
-    prs = api.prs_opened_in_the_last_N_days(org, start, end)
-
-    log.info("%s | %s | Processing %s PRs", date, org, len(prs))
     with TimescaleDBWriter(GitHubPullRequests) as writer:
-        process_prs(writer, prs, date, name="throughput")
+        opened_prs = api.prs_opened_on_date(org, date)
+        log.info("%s | %s | Processing %s opened PRs", date, org, len(opened_prs))
+        process_prs(writer, opened_prs, date, name="prs_opened")
+
+        closed_prs = api.prs_closed_on_date(org, date)
+        log.info("%s | %s | Processing %s closed PRs", date, org, len(closed_prs))
+        process_prs(writer, closed_prs, date, name="prs_closed")
 
 
 github.add_command(backfill)

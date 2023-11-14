@@ -9,7 +9,7 @@ import structlog
 from ..logs import setup_logging
 from ..timescaledb import TimescaleDBWriter
 from ..timescaledb.tables import GitHubPullRequests
-from ..tools.dates import date_from_iso, datetime_from_iso, iter_days
+from ..tools.dates import date_from_iso, iter_days
 from .prs import process_prs
 
 
@@ -57,68 +57,54 @@ def get_prs(db):
     return list(cur.execute(sql))
 
 
-def pr_queue(prs, org, start, days_threshold=None):
-    dates = iter_days(start, date.today(), step=timedelta(days=1))
-    for day in dates:
-        prs_on_day = [
-            pr
-            for pr in prs
-            if date_from_iso(pr["created"]) <= day
-            and date_from_iso(pr["closed"]) >= day
-        ]
+def open_prs(prs, org, start, days_threshold):
+    dates = list(iter_days(start, date.today()))
 
-        if days_threshold is not None:
-            # remove PRs which have been open <days_threshold days
-            prs_on_day = [
-                pr
-                for pr in prs_on_day
-                if (date_from_iso(pr["closed"]) - date_from_iso(pr["created"]))
-                >= timedelta(days=days_threshold)
-            ]
+    today = date.today()
+    threshold = timedelta(days=days_threshold)
 
-        suffix = f"_older_than_{days_threshold}_days" if days_threshold else ""
-        key = f"queue{suffix}"
+    def open_on_day(date, pr, today):
+        """
+        Filter function for PRs
 
-        log.info("%s | %s | %s | Processing %s PRs", key, day, org, len(prs_on_day))
-        with TimescaleDBWriter(GitHubPullRequests) as writer:
-            process_prs(writer, prs_on_day, day, f"queue{suffix}")
+        Checks whether a PR is open today and if it's been open for greater or
+        equal to the threshold of days.
+        """
+        closed = date_from_iso(pr["closed"]) or today
+        opened = date_from_iso(pr["created"])
+
+        open_today = (opened <= date) and (closed >= day)
+        if not open_today:
+            return False
+
+        return (closed - opened) >= threshold
+
+    with TimescaleDBWriter(GitHubPullRequests) as writer:
+        for day in dates:
+            prs_on_day = [pr for pr in prs if open_on_day(day, pr, today)]
+
+            name = f"queue_older_than_{days_threshold}_days"
+
+            log.info(
+                "%s | %s | %s | Processing %s PRs", name, day, org, len(prs_on_day)
+            )
+            process_prs(writer, prs_on_day, day, name=name)
 
 
 def pr_throughput(prs, org, start):
-    # get the previous DoW that we care about
-    # loop through dates invoking the CLI entrypoint for each date
-    def next_weekday(d, weekday):
-        # 0 = Monday, 1=Tuesday, 2=Wednesday...
-        days_ahead = weekday - d.weekday()
+    days = list(iter_days(start, date.today()))
 
-        if days_ahead <= 0:  # Target day already happened this week
-            days_ahead += 7
+    with TimescaleDBWriter(GitHubPullRequests) as writer:
+        for day in days:
+            opened_prs = [pr for pr in prs if date_from_iso(pr["created"]) == day]
+            log.info("%s | %s | Processing %s opened PRs", day, org, len(opened_prs))
+            process_prs(writer, opened_prs, day, name="prs_opened")
 
-        return d + timedelta(days=days_ahead)
-
-    first_sunday = next_weekday(start - timedelta(days=7), 7)
-    next_sunday = next_weekday(date.today(), 7)
-    dates = [
-        first_sunday,
-        *list(iter_days(start, date.today(), step=timedelta(days=7))),
-        next_sunday,
-    ]
-
-    for day in dates:
-        start = day - timedelta(days=7)
-        end = day
-
-        prs_in_range = [
-            pr
-            for pr in prs
-            if date_from_iso(pr["created"]) >= start
-            and date_from_iso(pr["created"]) <= end
-        ]
-
-        key = "throughput"
-        log.info("%s | %s | %s | Processing %s PRs", key, day, org, len(prs_in_range))
-        with TimescaleDBWriter(GitHubPullRequests) as writer:
-            process_prs(writer, prs_in_range, day, name="throughput")
+            closed_prs = [
+                pr for pr in prs if pr["closed"] and date_from_iso(pr["closed"]) == day
+            ]
+            log.info("%s | %s | Processing %s closed PRs", day, org, len(closed_prs))
+            process_prs(writer, closed_prs, day, name="prs_closed")
 
 
 @click.command()
@@ -139,12 +125,9 @@ def backfill(ctx, org, pull_data, db_path):
 
     org_prs = [pr for pr in prs if pr["org"] == org]
     log.info("Backfilling with %s PRs for %s", len(org_prs), org)
-    start_date = min([pr["created"] for pr in org_prs])
-    start_date = datetime_from_iso(start_date).date()
+    start_date = date_from_iso(min([pr["created"] for pr in org_prs]))
 
-    pr_queue(org_prs, org, start_date)
-
-    for day in [2, 10, 30, 60]:
-        pr_queue(org_prs, org, start_date, days_threshold=day)
+    for day in [2, 7, 10, 30, 60]:
+        open_prs(org_prs, org, start_date, days_threshold=day)
 
     pr_throughput(org_prs, org, start_date)

@@ -153,13 +153,16 @@ def prs_open_on_date(org, date):
     return list(_iter_pull_requests(org, date_range))
 
 
-def prs_opened_in_the_last_N_days(org, start, end):
-    # TODO: is index clear here?  it's the date given to the command, from
-    # which we'll work backwards.
+def prs_closed_on_date(org, date):
+    query = f"closed:{date}"
 
-    date_range = f"created:{start}..{end}"
+    return list(_iter_pull_requests(org, query))
 
-    return list(_iter_pull_requests(org, date_range))
+
+def prs_opened_on_date(org, date):
+    query = f"created:{date}"
+
+    return list(_iter_pull_requests(org, query))
 
 
 if __name__ == "__main__":
