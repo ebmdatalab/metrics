@@ -4,6 +4,7 @@ import click
 import structlog
 
 from ..timescaledb import TimescaleDBWriter
+from ..timescaledb.tables import GitHubPullRequests
 from . import api
 from .backfill import backfill
 from .prs import process_prs
@@ -54,13 +55,13 @@ def pr_queue(ctx, org, date, days_threshold):
 def pr_throughput(ctx, org, date, days):
     """PRs opened in the last number of days given"""
     end = date.date()
-    start = date - timedelta(days=days)
+    start = end - timedelta(days=days)
 
     prs = api.prs_opened_in_the_last_N_days(org, start, end)
 
     log.info("%s | %s | Processing %s PRs", date, org, len(prs))
-    with TimescaleDBWriter("github_pull_requests", "throughput") as writer:
-        process_prs(writer, prs, date)
+    with TimescaleDBWriter(GitHubPullRequests) as writer:
+        process_prs(writer, prs, date, name="throughput")
 
 
 github.add_command(backfill)

@@ -15,9 +15,10 @@ requires-python = ">=3.11"
 dependencies = [
   "click",
   "github-to-sqlite",
+  "greenlet",
   "requests",
-  "psycopg[binary]",
   "slack-bolt",
+  "sqlalchemy[postgresql_psycopgbinary]",
   "structlog",
 ]
 dynamic = ["version"]

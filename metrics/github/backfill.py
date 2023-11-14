@@ -6,10 +6,11 @@ from pathlib import Path
 import click
 import structlog
 
-from metrics.github.prs import process_prs
-from metrics.logs import setup_logging
-from metrics.timescaledb import TimescaleDBWriter
-from metrics.tools.dates import date_from_iso, datetime_from_iso, iter_days
+from ..logs import setup_logging
+from ..timescaledb import TimescaleDBWriter
+from ..timescaledb.tables import GitHubPullRequests
+from ..tools.dates import date_from_iso, datetime_from_iso, iter_days
+from .prs import process_prs
 
 
 setup_logging()
@@ -79,8 +80,8 @@ def pr_queue(prs, org, start, days_threshold=None):
         key = f"queue{suffix}"
 
         log.info("%s | %s | %s | Processing %s PRs", key, day, org, len(prs_on_day))
-        with TimescaleDBWriter("github_pull_requests", f"queue{suffix}") as writer:
-            process_prs(writer, prs_on_day, day)
+        with TimescaleDBWriter(GitHubPullRequests) as writer:
+            process_prs(writer, prs_on_day, day, f"queue{suffix}")
 
 
 def pr_throughput(prs, org, start):
@@ -116,16 +117,16 @@ def pr_throughput(prs, org, start):
 
         key = "throughput"
         log.info("%s | %s | %s | Processing %s PRs", key, day, org, len(prs_in_range))
-        with TimescaleDBWriter("github_pull_requests", "throughput") as writer:
-            process_prs(writer, prs_in_range, day)
+        with TimescaleDBWriter(GitHubPullRequests) as writer:
+            process_prs(writer, prs_in_range, day, name="throughput")
 
 
 @click.command()
 @click.argument("org")
 @click.option("--pull-data", is_flag=True, default=False)
-@click.option("--db-path", type=str)
+@click.option("--db-path", type=str, default="github.db")
 @click.pass_context
-def backfill(ctx, org, pull_data, db_path="github.db"):
+def backfill(ctx, org, pull_data, db_path):
     """Backfill GitHub data for the given GitHub ORG"""
     if pull_data:
         # clean up existing db
