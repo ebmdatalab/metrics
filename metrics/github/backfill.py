@@ -60,22 +60,28 @@ def get_prs(db):
 def open_prs(prs, org, start, days_threshold):
     dates = list(iter_days(start, date.today()))
 
+    today = date.today()
+    threshold = timedelta(days=days_threshold)
+
+    def open_on_day(date, pr, today):
+        """
+        Filter function for PRs
+
+        Checks whether a PR is open today and if it's been open for greater or
+        equal to the threshold of days.
+        """
+        closed = date_from_iso(pr["closed"]) or today
+        opened = date_from_iso(pr["created"])
+
+        open_today = (opened <= date) and (closed >= day)
+        if not open_today:
+            return False
+
+        return (closed - opened) >= threshold
+
     with TimescaleDBWriter(GitHubPullRequests) as writer:
         for day in dates:
-            prs_on_day = [
-                pr
-                for pr in prs
-                if date_from_iso(pr["created"]) <= day
-                and date_from_iso(pr["closed"]) >= day
-            ]
-
-            # remove PRs which have been open <days_threshold days
-            prs_on_day = [
-                pr
-                for pr in prs_on_day
-                if (date_from_iso(pr["closed"]) - date_from_iso(pr["created"]))
-                >= timedelta(days=days_threshold)
-            ]
+            prs_on_day = [pr for pr in prs if open_on_day(day, pr, today)]
 
             name = f"queue_older_than_{days_threshold}_days"
 
