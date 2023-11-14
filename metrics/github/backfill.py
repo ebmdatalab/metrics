@@ -85,40 +85,19 @@ def pr_queue(prs, org, start, days_threshold=None):
 
 
 def pr_throughput(prs, org, start):
-    # get the previous DoW that we care about
-    # loop through dates invoking the CLI entrypoint for each date
-    def next_weekday(d, weekday):
-        # 0 = Monday, 1=Tuesday, 2=Wednesday...
-        days_ahead = weekday - d.weekday()
+    days = list(iter_days(start, date.today()))
 
-        if days_ahead <= 0:  # Target day already happened this week
-            days_ahead += 7
+    with TimescaleDBWriter(GitHubPullRequests) as writer:
+        for day in days:
+            opened_prs = [pr for pr in prs if date_from_iso(pr["created"]) == day]
+            log.info("%s | %s | Processing %s opened PRs", day, org, len(opened_prs))
+            process_prs(writer, opened_prs, day, name="prs_opened")
 
-        return d + timedelta(days=days_ahead)
-
-    first_sunday = next_weekday(start - timedelta(days=7), 7)
-    next_sunday = next_weekday(date.today(), 7)
-    dates = [
-        first_sunday,
-        *list(iter_days(start, date.today(), step=timedelta(days=7))),
-        next_sunday,
-    ]
-
-    for day in dates:
-        start = day - timedelta(days=7)
-        end = day
-
-        prs_in_range = [
-            pr
-            for pr in prs
-            if date_from_iso(pr["created"]) >= start
-            and date_from_iso(pr["created"]) <= end
-        ]
-
-        key = "throughput"
-        log.info("%s | %s | %s | Processing %s PRs", key, day, org, len(prs_in_range))
-        with TimescaleDBWriter(GitHubPullRequests) as writer:
-            process_prs(writer, prs_in_range, day, name="throughput")
+            closed_prs = [
+                pr for pr in prs if pr["closed"] and date_from_iso(pr["closed"]) == day
+            ]
+            log.info("%s | %s | Processing %s closed PRs", day, org, len(closed_prs))
+            process_prs(writer, closed_prs, day, name="prs_closed")
 
 
 @click.command()

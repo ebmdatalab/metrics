@@ -50,18 +50,19 @@ def pr_queue(ctx, org, date, days_threshold):
 @github.command()
 @click.argument("org")
 @click.argument("date", type=click.DateTime())
-@click.option("--days", default=7, type=int)
 @click.pass_context
-def pr_throughput(ctx, org, date, days):
-    """PRs opened in the last number of days given"""
-    end = date.date()
-    start = end - timedelta(days=days)
+def pr_throughput(ctx, org, date):
+    """PRs opened and PRs closed in the given day"""
+    date = date.date()
 
-    prs = api.prs_opened_in_the_last_N_days(org, start, end)
-
-    log.info("%s | %s | Processing %s PRs", date, org, len(prs))
     with TimescaleDBWriter(GitHubPullRequests) as writer:
-        process_prs(writer, prs, date, name="throughput")
+        opened_prs = api.prs_opened_on_date(org, date)
+        log.info("%s | %s | Processing %s opened PRs", date, org, len(opened_prs))
+        process_prs(writer, opened_prs, date, name="prs_opened")
+
+        closed_prs = api.prs_closed_on_date(org, date)
+        log.info("%s | %s | Processing %s closed PRs", date, org, len(closed_prs))
+        process_prs(writer, closed_prs, date, name="prs_closed")
 
 
 github.add_command(backfill)
