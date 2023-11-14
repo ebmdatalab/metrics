@@ -1,4 +1,4 @@
-from datetime import date, datetime, timedelta
+from datetime import datetime, timedelta
 
 
 DELTA = timedelta(days=1)
@@ -6,14 +6,14 @@ DELTA = timedelta(days=1)
 
 def date_from_iso(value):
     if value is None:
-        return date.today()
+        return None
 
     return datetime_from_iso(value).date()
 
 
 def datetime_from_iso(value):
     if value is None:
-        return datetime.now()
+        return None
 
     return datetime.fromisoformat(value)
 
