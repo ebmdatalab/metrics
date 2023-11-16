@@ -1,12 +1,12 @@
 import json
 import os
 import textwrap
-from datetime import date, timedelta
+from datetime import date
 
 import requests
 import structlog
 
-from ..tools.dates import datetime_from_iso
+from ..tools.dates import date_from_iso
 
 
 log = structlog.get_logger()
@@ -136,18 +136,17 @@ def _iter_pull_requests(org, date_range):
     results = list(_iter_query_results(query, searchQuery=search_query))
     for pr in results:
         yield {
-            "created": datetime_from_iso(pr["createdAt"]).date(),
-            "closed": datetime_from_iso(pr["closedAt"]).date(),
+            "created": date_from_iso(pr["createdAt"]),
+            "closed": date_from_iso(pr["closedAt"]),
             "author": pr["author"]["login"],
             "repo": pr["repository"]["name"],
             "org": pr["repository"]["owner"]["login"],
         }
 
 
-def prs_open_on_date(org, date):
-    start = date.isoformat()
-    end = (date + timedelta(days=1)).isoformat()
-
+def prs_open_in_range(org, start, end):
+    start = start.isoformat()
+    end = end.isoformat()
     date_range = f"created:<={start} closed:>={end}"
 
     return list(_iter_pull_requests(org, date_range))

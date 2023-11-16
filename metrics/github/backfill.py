@@ -9,7 +9,7 @@ import structlog
 from ..logs import setup_logging
 from ..timescaledb import TimescaleDBWriter
 from ..timescaledb.tables import GitHubPullRequests
-from ..tools.dates import date_from_iso, iter_days
+from ..tools.dates import date_from_iso, iter_days, previous_weekday
 from .prs import process_prs
 
 
@@ -57,13 +57,15 @@ def get_prs(db):
     return list(cur.execute(sql))
 
 
-def open_prs(prs, org, start, days_threshold):
-    dates = list(iter_days(start, date.today()))
+def open_prs(prs, org, days_threshold):
+    earliest = date_from_iso(min([pr["created"] for pr in prs]))
+    start = previous_weekday(earliest, 0)  # Monday
+    mondays = list(iter_days(start, date.today(), step=timedelta(days=7)))
 
     today = date.today()
     threshold = timedelta(days=days_threshold)
 
-    def open_on_day(date, pr, today):
+    def open_on_day(pr, start, end):
         """
         Filter function for PRs
 
@@ -73,25 +75,31 @@ def open_prs(prs, org, start, days_threshold):
         closed = date_from_iso(pr["closed"]) or today
         opened = date_from_iso(pr["created"])
 
-        open_today = (opened <= date) and (closed >= day)
+        open_today = (opened <= start) and (closed >= end)
         if not open_today:
             return False
 
         return (closed - opened) >= threshold
 
     with TimescaleDBWriter(GitHubPullRequests) as writer:
-        for day in dates:
-            prs_on_day = [pr for pr in prs if open_on_day(day, pr, today)]
+        for start in mondays:
+            end = start + timedelta(days=6)
+            prs_on_day = [pr for pr in prs if open_on_day(pr, start, end)]
 
             name = f"queue_older_than_{days_threshold}_days"
 
             log.info(
-                "%s | %s | %s | Processing %s PRs", name, day, org, len(prs_on_day)
+                "%s | %s | Processing %s PRs from week starting %s",
+                name,
+                org,
+                len(prs_on_day),
+                start,
             )
-            process_prs(writer, prs_on_day, day, name=name)
+            process_prs(writer, prs_on_day, start, name=name)
 
 
-def pr_throughput(prs, org, start):
+def pr_throughput(prs, org):
+    start = date_from_iso(min([pr["created"] for pr in prs]))
     days = list(iter_days(start, date.today()))
 
     with TimescaleDBWriter(GitHubPullRequests) as writer:
@@ -125,9 +133,6 @@ def backfill(ctx, org, pull_data, db_path):
 
     org_prs = [pr for pr in prs if pr["org"] == org]
     log.info("Backfilling with %s PRs for %s", len(org_prs), org)
-    start_date = date_from_iso(min([pr["created"] for pr in org_prs]))
 
-    for day in [2, 7, 10, 30, 60]:
-        open_prs(org_prs, org, start_date, days_threshold=day)
-
-    pr_throughput(org_prs, org, start_date)
+    open_prs(org_prs, org, days_threshold=7)
+    pr_throughput(org_prs, org)
