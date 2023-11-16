@@ -37,6 +37,7 @@ dokku config:set grafana GF_DATABASE_PASSWORD="xxx"
 dokku config:set grafana GF_DATABASE_SSL_MODE="require"
 dokku config:set grafana GF_SERVER_ROOT_URL="https://dashboards.opensafely.org/"
 dokku config:set grafana GF_INSTALL_PLUGINS="grafana-github-datasource"
+dokku config:set grafana GF_FEATURE_TOGGLES_ENABLE="publicDashboards"
 ```
 
 ## Letsencrypt
