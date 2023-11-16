@@ -11,3 +11,8 @@ updates:
     directory: "/"
     schedule:
       interval: "monthly"
+
+  - package-ecosystem: "docker"
+    directory: "grafana/"
+    schedule:
+      interval: "weekly"

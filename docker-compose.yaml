@@ -11,7 +11,9 @@ services:
       - postgres:/var/lib/postgresql/data/
 
   grafana:
-    image: "grafana/grafana:latest"
+    # use Dockerfile so that version matches production
+    build:
+        dockerfile: grafana/Dockerfile
     environment:
       GF_DATABASE_TYPE: postgres
       GF_DATABASE_HOST: db:5432
