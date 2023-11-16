@@ -41,7 +41,7 @@ jobs:
 
       - name: Save docker image
         run: |
-          docker save grafana | gzip > /tmp/grafana.tar.gz
+          docker save grafana-grafana | gzip > /tmp/grafana.tar.gz
 
       - name: Upload docker image
         uses: actions/upload-artifact@v3
