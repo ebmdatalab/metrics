@@ -2,7 +2,7 @@
 name: Grafana deployment
 
 env:
-  IMAGE_NAME: grafana
+  IMAGE_NAME: grafana-grafana
   PUBLIC_IMAGE_NAME: ghcr.io/ebmdatalab/grafana
   REGISTRY: ghcr.io
   SSH_AUTH_SOCK: /tmp/agent.sock
