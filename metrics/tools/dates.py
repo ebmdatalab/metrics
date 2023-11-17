@@ -22,3 +22,21 @@ def iter_days(start, end, step=DELTA):
     while start <= end:
         yield start
         start += step
+
+
+def previous_weekday(d, weekday):
+    """
+    Get the date for a previous week day
+
+    Starting at the given date, walk backwards through days until the given
+    weekday is found, returning the date for that weekday.
+
+    For example, when giving the date 2023-11-16 and asking for the previous
+    Sunday, the returned date would be 2023-11-12.
+    """
+    output = d
+
+    while output.weekday() != weekday:
+        output -= timedelta(days=1)
+
+    return output

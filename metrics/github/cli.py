@@ -5,6 +5,7 @@ import structlog
 
 from ..timescaledb import TimescaleDBWriter
 from ..timescaledb.tables import GitHubPullRequests
+from ..tools.dates import previous_weekday
 from . import api
 from .backfill import backfill
 from .prs import process_prs
@@ -25,12 +26,24 @@ def github(ctx, token):
 @github.command()
 @click.argument("org")
 @click.argument("date", type=click.DateTime())
-@click.argument("days-threshold", type=int)
+@click.argument("--days-threshold", type=int, default=7)
 @click.pass_context
 def open_prs(ctx, org, date, days_threshold):
-    """The number of PRs open for DAYS_THRESHOLD or longer on the given date"""
+    """
+    How many open PRs were there this week?
+
+    The number of PRs open for DAYS_THRESHOLD (defaults to 7 days) in the
+    previous week to the given date.
+
+    Week here is defined as the dates covering the most recent Monday to Sunday
+    (inclusive) before the given date, eg if the given date is a Tuesday this
+    command will step back a week+1 day to collect a full weeks worth of data.
+    """
     date = date.date()
-    prs = api.prs_open_on_date(org, date)
+
+    end = previous_weekday(date, 6)  # Most recent Sunday
+    start = end - timedelta(days=6)  # Monday before that Sunday
+    prs = api.prs_open_in_range(org, start, end)
 
     # remove PRs which have been open <days_threshold days
     open_prs = [
