@@ -9,6 +9,8 @@ env:
 
 on:
   push:
+    paths:
+      - 'grafana/*'
 
 jobs:
   lint-dockerfile:
