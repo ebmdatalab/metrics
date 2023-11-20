@@ -1,9 +1,11 @@
 from datetime import date
 
+import pytest
+
 from metrics.github.prs import process_prs
 
 
-def test_process_prs():
+def test_process_prs_success():
     today = date.today()
 
     data = [
@@ -40,3 +42,14 @@ def test_process_prs():
 
     tom = [pr for pr in output if pr["author"] == "tom"][0]
     assert tom["count"] == 3
+
+
+def test_process_prs_with_different_orgs():
+    data = [
+        {"org": "ebmdatalab", "repo": "metrics", "author": "george"},
+        {"org": "bennett", "repo": "metrics", "author": "george"},
+    ]
+
+    msg = "^Expected 1 org, but found 2 orgs, unsure how to proceed$"
+    with pytest.raises(ValueError, match=msg):
+        process_prs(None, data, None)
