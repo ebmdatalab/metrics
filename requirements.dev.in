@@ -10,4 +10,5 @@ pip-tools
 pre-commit
 pytest
 pyyaml
+sqlalchemy-utils
 ruff
