@@ -1,4 +1,5 @@
 .coverage
 .pytest-cache/
 .venv/
+github.db
 htmlcov
