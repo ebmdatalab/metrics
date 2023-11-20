@@ -33,6 +33,10 @@ dynamic_context = "test_function"
 omit = [
   ".venv/*",
 ]
+source = [
+  "metrics",
+  "tests",
+]
 
 [tool.coverage.report]
 fail_under = 100
