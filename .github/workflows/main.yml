@@ -26,13 +26,37 @@ jobs:
   test:
     runs-on: ubuntu-latest
 
+    services:
+      timescaledb:
+        # mirror what's in timescaledb/Dockerfile
+        image: timescale/timescaledb:pg14-latest@sha256:c453fa2d290d578a5983b5823e9ffbf16f478735d8c121620436c4a9c6e55df5
+        env:
+          POSTGRES_USER: user
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: metrics
+          TIMESCALEDB_TELEMETRY: off
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     steps:
       - uses: actions/checkout@v4
       - uses: "opensafely-core/setup-action@v1"
         with:
           python-version: "3.11"
           install-just: true
+
       - name: Run tests
+        env:
+          GITHUB_TOKEN:
+          SLACK_SIGNING_SECRET:
+          SLACK_TECH_SUPPORT_CHANNEL_ID:
+          SLACK_TOKEN:
+          TIMESCALEDB_URL: postgresql://user:password@localhost/metrics
         run: |
           just test
 
