@@ -29,9 +29,6 @@ def ensure_table(engine, table):
             )
         )
 
-        # ensure the RO grafana user can read the table
-        connection.execute(text(f"GRANT SELECT ON {table.name} TO grafanareader"))
-
 
 class TimescaleDBWriter:
     inserts = []

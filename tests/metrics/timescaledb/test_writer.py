@@ -13,25 +13,6 @@ def get_rows(engine, table):
         return connection.execute(select(table)).all()
 
 
-def has_grant(engine, table):
-    sql = """
-    SELECT
-      privilege_type
-    FROM
-      information_schema.role_table_grants
-    WHERE
-      table_name = :table_name
-      AND grantee = 'grafanareader';
-    """
-
-    with engine.connect() as connection:
-        result = connection.execute(text(sql), {"table_name": table.name}).fetchmany()
-
-    assert len(result) == 1
-
-    assert result[0][0] == "SELECT"
-
-
 def is_hypertable(engine, table):
     sql = """
     SELECT
@@ -75,10 +56,6 @@ def test_timescaledbwriter(engine, table):
     # check there are timescaledb child tables
     # https://stackoverflow.com/questions/1461722/how-to-find-child-tables-that-inherit-from-another-table-in-psql
     is_hypertable(engine, table)
-
-    # check grant
-    # https://stackoverflow.com/questions/7336413/query-grants-for-a-table-in-postgres
-    has_grant(engine, table)
 
     # check rows are in table
     rows = get_rows(engine, table)
