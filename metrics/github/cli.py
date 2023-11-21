@@ -72,9 +72,9 @@ def pr_throughput(ctx, org, date):
         log.info("%s | %s | Processing %s opened PRs", date, org, len(opened_prs))
         process_prs(writer, opened_prs, date, name="prs_opened")
 
-        closed_prs = api.prs_closed_on_date(org, date)
-        log.info("%s | %s | Processing %s closed PRs", date, org, len(closed_prs))
-        process_prs(writer, closed_prs, date, name="prs_closed")
+        merged_prs = api.prs_merged_on_date(org, date)
+        log.info("%s | %s | Processing %s merged PRs", date, org, len(merged_prs))
+        process_prs(writer, merged_prs, date, name="prs_merged")
 
 
 github.add_command(backfill)

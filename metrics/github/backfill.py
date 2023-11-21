@@ -40,6 +40,7 @@ def get_prs(db):
     SELECT
       date(pull_requests.created_at) as created,
       date(pull_requests.closed_at) as closed,
+      date(pull_requests.merged_at) as merged,
       authors.login as author,
       repos.name as repo,
       owners.login as org
@@ -108,11 +109,11 @@ def pr_throughput(prs, org):
             log.info("%s | %s | Processing %s opened PRs", day, org, len(opened_prs))
             process_prs(writer, opened_prs, day, name="prs_opened")
 
-            closed_prs = [
-                pr for pr in prs if pr["closed"] and date_from_iso(pr["closed"]) == day
+            merged_prs = [
+                pr for pr in prs if pr["merged"] and date_from_iso(pr["merged"]) == day
             ]
-            log.info("%s | %s | Processing %s closed PRs", day, org, len(closed_prs))
-            process_prs(writer, closed_prs, day, name="prs_closed")
+            log.info("%s | %s | Processing %s merged PRs", day, org, len(merged_prs))
+            process_prs(writer, merged_prs, day, name="prs_merged")
 
 
 @click.command()
