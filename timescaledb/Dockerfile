@@ -1,3 +1,3 @@
-FROM timescale/timescaledb-ha:pg14-latest@sha256:19eb9276ee367411728e768217120e55300ac9c3bb5eadcf47aa5ded627f6db1
+FROM timescale/timescaledb:pg14-latest@sha256:c453fa2d290d578a5983b5823e9ffbf16f478735d8c121620436c4a9c6e55df5
 
 COPY timescaledb/init.sql /docker-entrypoint-initdb.d/
