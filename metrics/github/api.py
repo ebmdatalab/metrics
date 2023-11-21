@@ -153,8 +153,8 @@ def prs_open_in_range(org, start, end):
     return list(_iter_pull_requests(org, date_range))
 
 
-def prs_closed_on_date(org, date):
-    query = f"closed:{date}"
+def prs_merged_on_date(org, date):
+    query = f"merged:{date}"
 
     return list(_iter_pull_requests(org, query))
 
