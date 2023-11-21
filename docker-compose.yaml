@@ -30,7 +30,8 @@ services:
       - grafana:/var/lib/grafana
 
   timescaledb:
-    image: timescale/timescaledb-ha:pg14-latest
+    build:
+      dockerfile: timescaledb/Dockerfile
     environment:
       POSTGRES_DB: metrics
       POSTGRES_PASSWORD: pass
