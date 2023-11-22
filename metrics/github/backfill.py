@@ -90,6 +90,7 @@ def iter_repos(org):
         repositories(first: 100, after: $cursor) {
           nodes {
             name
+            archivedAt
           }
           pageInfo {
               endCursor
@@ -102,6 +103,7 @@ def iter_repos(org):
     for repo in get_query(query, path=["organization", "repositories"], org=org):
         yield {
             "name": repo["name"],
+            "archived": repo["archivedAt"],
         }
 
 
@@ -130,11 +132,15 @@ def iter_repo_prs(org, repo):
     }
     """
     for pr in get_query(
-        query, path=["organization", "repository", "pullRequests"], org=org, repo=repo
+        query,
+        path=["organization", "repository", "pullRequests"],
+        org=org,
+        repo=repo["name"],
     ):
         yield {
             "org": org,
-            "repo": repo,
+            "repo": repo["name"],
+            "repo_archived_at": date_from_iso(repo["archived"]),
             "author": pr["author"]["login"],
             "created": pr["createdAt"],
             "closed": pr["closedAt"],

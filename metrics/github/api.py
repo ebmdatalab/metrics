@@ -123,6 +123,7 @@ def _iter_pull_requests(org, date_range):
                 owner {
                   login
                 }
+                archivedAt
               }
             }
           }
@@ -143,6 +144,7 @@ def _iter_pull_requests(org, date_range):
             "merged": date_from_iso(pr["mergedAt"]),
             "author": pr["author"]["login"],
             "repo": pr["repository"]["name"],
+            "repo_archived_at": date_from_iso(pr["repository"]["archivedAt"]),
             "org": pr["repository"]["owner"]["login"],
         }
 
