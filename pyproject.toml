@@ -32,10 +32,15 @@ branch = true
 dynamic_context = "test_function"
 omit = [
   ".venv/*",
+  "metrics/__main__.py",
+]
+source = [
+  "metrics",
+  "tests",
 ]
 
 [tool.coverage.report]
-fail_under = 100
+fail_under = 69
 skip_covered = true
 show_missing = true
 

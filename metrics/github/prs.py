@@ -15,8 +15,10 @@ def process_prs(writer, prs, date, name=""):
 
             orgs = {pr["org"] for pr in prs_by_author_and_repo}
             if len(orgs) > 1:
-                breakpoint()
-                print(len(orgs))
+                # we expected the given PRs to be from the same org
+                raise ValueError(
+                    f"Expected 1 org, but found {len(orgs)} orgs, unsure how to proceed"
+                )
 
             org = list(orgs)[0]
 
