@@ -114,6 +114,7 @@ def _iter_pull_requests(org, date_range):
             ... on PullRequest {
               createdAt
               closedAt
+              mergedAt
               author {
                 login
               }
@@ -139,6 +140,7 @@ def _iter_pull_requests(org, date_range):
         yield {
             "created": date_from_iso(pr["createdAt"]),
             "closed": date_from_iso(pr["closedAt"]),
+            "merged": date_from_iso(pr["mergedAt"]),
             "author": pr["author"]["login"],
             "repo": pr["repository"]["name"],
             "org": pr["repository"]["owner"]["login"],
