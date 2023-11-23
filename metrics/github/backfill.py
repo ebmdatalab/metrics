@@ -136,9 +136,9 @@ def iter_repo_prs(org, repo):
             "org": org,
             "repo": repo,
             "author": pr["author"]["login"],
-            "created": pr["createdAt"],
-            "closed": pr["closedAt"],
-            "merged": pr["mergedAt"],
+            "created": date_from_iso(pr["createdAt"]),
+            "closed": date_from_iso(pr["closedAt"]),
+            "merged": date_from_iso(pr["mergedAt"]),
         }
 
 
@@ -148,7 +148,7 @@ def iter_prs(org):
 
 
 def open_prs(prs, org, days_threshold):
-    earliest = date_from_iso(min([pr["created"] for pr in prs]))
+    earliest = min([pr["created"] for pr in prs])
     start = previous_weekday(earliest, 0)  # Monday
     mondays = list(iter_days(start, date.today(), step=timedelta(days=7)))
 
@@ -162,8 +162,8 @@ def open_prs(prs, org, days_threshold):
         Checks whether a PR is open today and if it's been open for greater or
         equal to the threshold of days.
         """
-        closed = date_from_iso(pr["closed"]) or today
-        opened = date_from_iso(pr["created"])
+        closed = pr["closed"] or today
+        opened = pr["created"]
 
         open_today = (opened <= start) and (closed >= end)
         if not open_today:
@@ -189,18 +189,16 @@ def open_prs(prs, org, days_threshold):
 
 
 def pr_throughput(prs, org):
-    start = date_from_iso(min([pr["created"] for pr in prs]))
+    start = min([pr["created"] for pr in prs])
     days = list(iter_days(start, date.today()))
 
     with TimescaleDBWriter(GitHubPullRequests) as writer:
         for day in days:
-            opened_prs = [pr for pr in prs if date_from_iso(pr["created"]) == day]
+            opened_prs = [pr for pr in prs if pr["created"] == day]
             log.info("%s | %s | Processing %s opened PRs", day, org, len(opened_prs))
             process_prs(writer, opened_prs, day, name="prs_opened")
 
-            merged_prs = [
-                pr for pr in prs if pr["merged"] and date_from_iso(pr["merged"]) == day
-            ]
+            merged_prs = [pr for pr in prs if pr["merged"] and pr["merged"] == day]
             log.info("%s | %s | Processing %s merged PRs", day, org, len(merged_prs))
             process_prs(writer, merged_prs, day, name="prs_merged")
 
