@@ -10,7 +10,7 @@ from ..timescaledb import TimescaleDBWriter
 from ..timescaledb.tables import GitHubPullRequests
 from ..tools.dates import date_from_iso, iter_days, previous_weekday
 from .api import session
-from .prs import process_prs
+from .prs import drop_archived_prs, process_prs
 
 
 setup_logging()
@@ -149,8 +149,8 @@ def iter_repo_prs(org, repo):
 
 
 def iter_prs(org):
-    for r in iter_repos(org):
-        yield from iter_repo_prs(org, r["name"])
+    for repo in iter_repos(org):
+        yield from iter_repo_prs(org, repo)
 
 
 def open_prs(prs, org, days_threshold):
@@ -170,6 +170,9 @@ def open_prs(prs, org, days_threshold):
         """
         closed = pr["closed"] or today
         opened = pr["created"]
+
+        if pr["repo_archived_at"] and start > pr["repo_archived_at"]:
+            return False
 
         open_today = (opened <= start) and (closed >= end)
         if not open_today:
@@ -205,6 +208,7 @@ def pr_throughput(prs, org):
             process_prs(writer, opened_prs, day, name="prs_opened")
 
             merged_prs = [pr for pr in prs if pr["merged"] and pr["merged"] == day]
+            merged_prs = drop_archived_prs(merged_prs, key="merged")
             log.info("%s | %s | Processing %s merged PRs", day, org, len(merged_prs))
             process_prs(writer, merged_prs, day, name="prs_merged")
 
@@ -217,6 +221,9 @@ def backfill(ctx, org):
     prs = list(iter_prs(org))
 
     org_prs = [pr for pr in prs if pr["org"] == org]
+    # remove all PRs opened after a repo was archived, we don't expect to ever
+    # want these.
+    org_prs = drop_archived_prs(org_prs)
     log.info("Backfilling with %s PRs for %s", len(org_prs), org)
 
     open_prs(org_prs, org, days_threshold=7)

@@ -1,3 +1,23 @@
+def drop_archived_prs(prs, key="created"):
+    """
+    Drop PRs where the given key happened before the repo's archival date
+
+    By default this removes PRs opened after the point at which a repo was
+    archived, but can be configured for other checks, eg merging.
+    """
+
+    def predicate(pr, key):
+        if not pr["repo_archived_at"]:
+            return True
+
+        if pr[key] < pr["repo_archived_at"]:
+            return True
+
+        return False
+
+    return [pr for pr in prs if predicate(pr, key)]
+
+
 def process_prs(writer, prs, date, name=""):
     """
     Given a list of PRs, break them down in series for writing

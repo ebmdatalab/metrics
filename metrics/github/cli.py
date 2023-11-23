@@ -8,7 +8,7 @@ from ..timescaledb.tables import GitHubPullRequests
 from ..tools.dates import previous_weekday
 from . import api
 from .backfill import backfill
-from .prs import process_prs
+from .prs import drop_archived_prs, process_prs
 
 
 log = structlog.get_logger()
@@ -51,6 +51,7 @@ def open_prs(ctx, org, date, days_threshold):
         for pr in prs
         if (pr["closed"] - pr["created"]) >= timedelta(days=days_threshold)
     ]
+    open_prs = drop_archived_prs(open_prs)
 
     log.info("%s | %s | Processing %s PRs", date, org, len(open_prs))
     with TimescaleDBWriter(GitHubPullRequests) as writer:
@@ -69,10 +70,12 @@ def pr_throughput(ctx, org, date):
 
     with TimescaleDBWriter(GitHubPullRequests) as writer:
         opened_prs = api.prs_opened_on_date(org, date)
+        opened_prs = drop_archived_prs(opened_prs)
         log.info("%s | %s | Processing %s opened PRs", date, org, len(opened_prs))
         process_prs(writer, opened_prs, date, name="prs_opened")
 
         merged_prs = api.prs_merged_on_date(org, date)
+        merged_prs = drop_archived_prs(merged_prs, key="merged")
         log.info("%s | %s | Processing %s merged PRs", date, org, len(merged_prs))
         process_prs(writer, merged_prs, date, name="prs_merged")
 

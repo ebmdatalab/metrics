@@ -2,7 +2,37 @@ from datetime import date
 
 import pytest
 
-from metrics.github.prs import process_prs
+from metrics.github.prs import drop_archived_prs, process_prs
+
+
+@pytest.mark.parametrize("key", ["created", "merged"])
+def test_drop_archived_prs(key):
+    pr1 = {
+        "created": date(2023, 11, 7),
+        "merged": date(2023, 11, 7),
+        "repo_archived_at": date(2023, 11, 8),
+    }
+    pr2 = {
+        "created": date(2023, 11, 8),
+        "merged": date(2023, 11, 8),
+        "repo_archived_at": date(2023, 11, 8),
+    }
+    pr3 = {
+        "created": date(2023, 11, 9),
+        "merged": date(2023, 11, 9),
+        "repo_archived_at": date(2023, 11, 8),
+    }
+    pr4 = {
+        "created": date(2023, 11, 10),
+        "merged": date(2023, 11, 10),
+        "repo_archived_at": None,
+    }
+
+    output = drop_archived_prs([pr1, pr2, pr3, pr4], key=key)
+    assert {o["created"] for o in output} == {
+        pr1["created"],
+        pr4["created"],
+    }
 
 
 def test_process_prs_success():
