@@ -31,7 +31,7 @@ def ensure_table(engine, table):
 
 
 class TimescaleDBWriter:
-    inserts = []
+    values = []
 
     def __init__(self, table, engine=None):
         if engine is None:
@@ -46,30 +46,29 @@ class TimescaleDBWriter:
         return self
 
     def __exit__(self, *args):
+        # get the primary key name from the given table
+        constraint = inspect(self.engine).get_pk_constraint(self.table.name)["name"]
+
+        log.debug("Will insert %s rows", len(self.values), table=self.table.name)
         with self.engine.begin() as connection:
-            for stmt in self.inserts:
-                connection.execute(stmt)
+            stmt = insert(self.table).values(self.values)
+
+            # use the constraint for this table to drive upserting where the
+            # new value (excluded.value) is used to update the row
+            do_update_stmt = stmt.on_conflict_do_update(
+                constraint=constraint,
+                set_={"value": stmt.excluded.value},
+            )
+
+            connection.execute(do_update_stmt)
+
+        log.debug("Inserted %s rows", len(self.values), table=self.table.name)
 
     def write(self, date, value, **kwargs):
         # convert date to a timestamp
         # TODO: do we need to do any checking to make sure this is tz-aware and in
         # UTC?
         dt = datetime.combine(date, time())
+        value = {"time": dt, "value": value, **kwargs}
 
-        # get the primary key name from the given table
-        constraint = inspect(self.engine).get_pk_constraint(self.table.name)["name"]
-
-        # TODO: could we put do all the rows at once in the values() call and
-        # then use EXCLUDED to reference the value in the set_?
-        insert_stmt = (
-            insert(self.table)
-            .values(time=dt, value=value, **kwargs)
-            .on_conflict_do_update(
-                constraint=constraint,
-                set_={"value": value},
-            )
-        )
-
-        self.inserts.append(insert_stmt)
-
-        log.debug(insert_stmt)
+        self.values.append(value)
