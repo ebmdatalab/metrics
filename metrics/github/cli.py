@@ -2,9 +2,11 @@ from datetime import date, timedelta
 
 import click
 import structlog
+from sqlalchemy import create_engine
 
-from ..timescaledb import TimescaleDBWriter
+from ..timescaledb import TimescaleDBWriter, drop_tables
 from ..timescaledb.tables import GitHubPullRequests
+from ..timescaledb.writer import TIMESCALEDB_URL
 from ..tools.dates import iter_days, previous_weekday
 from . import api
 from .prs import process_prs
@@ -75,6 +77,14 @@ def pr_throughput(prs, org):
 def github(ctx, token):
     ctx.ensure_object(dict)
     ctx.obj["TOKEN"] = token
+
+    log.info("Dropping existing github_* tables")
+    # TODO: we have this in two places now, can we pull into some kind of
+    # service wrapper?
+    engine = create_engine(TIMESCALEDB_URL)
+    with engine.begin() as connection:
+        drop_tables(connection, prefix="github_")
+    log.info("Dropped existing github_* tables")
 
     orgs = [
         "ebmdatalab",
