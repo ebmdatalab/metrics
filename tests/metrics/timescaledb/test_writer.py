@@ -1,7 +1,7 @@
 from datetime import date
 
 import pytest
-from sqlalchemy import TIMESTAMP, Column, Integer, Table, inspect, select, text
+from sqlalchemy import TIMESTAMP, Column, Integer, Table, select, text
 from sqlalchemy.engine import make_url
 
 from metrics.timescaledb.tables import metadata
@@ -43,15 +43,15 @@ def table():
     )
 
 
-def test_timescaledbwriter(engine, table):
+def test_timescaledbwriter(engine, has_table, table):
     # check ensure_table is setting up the table
-    assert not inspect(engine).has_table(table.name)
+    assert not has_table(table.name)
 
     with TimescaleDBWriter(table, engine) as writer:
         for i in range(1, 4):
             writer.write(date(2023, 11, i), i)
 
-    assert inspect(engine).has_table(table.name)
+    assert has_table(table.name)
 
     # check there are timescaledb child tables
     # https://stackoverflow.com/questions/1461722/how-to-find-child-tables-that-inherit-from-another-table-in-psql
