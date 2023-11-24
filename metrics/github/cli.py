@@ -91,6 +91,7 @@ def github(ctx, token):
         "opensafely-core",
     ]
     for org in orgs:
+        log.info("Working with org: %s", org)
         prs = list(api.iter_prs(org))
         log.info("Backfilling with %s PRs for %s", len(prs), org)
 
