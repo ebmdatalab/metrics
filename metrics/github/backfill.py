@@ -220,11 +220,10 @@ def backfill(ctx, org):
     """Backfill GitHub data for the given GitHub ORG"""
     prs = list(iter_prs(org))
 
-    org_prs = [pr for pr in prs if pr["org"] == org]
     # remove all PRs opened after a repo was archived, we don't expect to ever
     # want these.
-    org_prs = drop_archived_prs(org_prs)
-    log.info("Backfilling with %s PRs for %s", len(org_prs), org)
+    prs = drop_archived_prs(prs)
+    log.info("Backfilling with %s PRs for %s", len(prs), org)
 
-    open_prs(org_prs, org, days_threshold=7)
-    pr_throughput(org_prs, org)
+    open_prs(prs, org, days_threshold=7)
+    pr_throughput(prs, org)
