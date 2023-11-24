@@ -31,14 +31,13 @@ def ensure_table(engine, table):
 
 
 class TimescaleDBWriter:
-    values = []
-
     def __init__(self, table, engine=None):
         if engine is None:
             engine = create_engine(TIMESCALEDB_URL)
 
         self.engine = engine
         self.table = table
+        self.values = []
 
     def __enter__(self):
         ensure_table(self.engine, self.table)
