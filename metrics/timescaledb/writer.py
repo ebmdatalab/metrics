@@ -5,6 +5,8 @@ import structlog
 from sqlalchemy import create_engine, inspect, schema, text
 from sqlalchemy.dialects.postgresql import insert
 
+from ..tools.iter import batched
+
 
 log = structlog.get_logger()
 
@@ -48,20 +50,21 @@ class TimescaleDBWriter:
         # get the primary key name from the given table
         constraint = inspect(self.engine).get_pk_constraint(self.table.name)["name"]
 
-        log.debug("Will insert %s rows", len(self.values), table=self.table.name)
         with self.engine.begin() as connection:
-            stmt = insert(self.table).values(self.values)
+            # batch our values (which are currently 5 item dicts) so we don't
+            # hit the 65535 params limit
+            for values in batched(self.values, 10_000):
+                stmt = insert(self.table).values(values)
 
-            # use the constraint for this table to drive upserting where the
-            # new value (excluded.value) is used to update the row
-            do_update_stmt = stmt.on_conflict_do_update(
-                constraint=constraint,
-                set_={"value": stmt.excluded.value},
-            )
+                # use the constraint for this table to drive upserting where the
+                # new value (excluded.value) is used to update the row
+                do_update_stmt = stmt.on_conflict_do_update(
+                    constraint=constraint,
+                    set_={"value": stmt.excluded.value},
+                )
 
-            connection.execute(do_update_stmt)
-
-        log.debug("Inserted %s rows", len(self.values), table=self.table.name)
+                connection.execute(do_update_stmt)
+                log.info("Inserted %s rows", len(values), table=self.table.name)
 
     def write(self, date, value, **kwargs):
         # convert date to a timestamp
