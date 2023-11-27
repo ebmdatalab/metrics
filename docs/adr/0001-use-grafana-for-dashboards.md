@@ -1,4 +1,4 @@
-# 1. Record architecture decisions
+# 1. Use self-hosted Grafana for dashboards
 
 Date: 2023-11-16
 
