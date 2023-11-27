@@ -1,80 +1,88 @@
-from datetime import timedelta
+from datetime import date, timedelta
 
 import click
 import structlog
 
 from ..timescaledb import TimescaleDBWriter
 from ..timescaledb.tables import GitHubPullRequests
-from ..tools.dates import previous_weekday
+from ..tools.dates import iter_days, previous_weekday
 from . import api
-from .backfill import backfill
 from .prs import process_prs
 
 
 log = structlog.get_logger()
 
 
-@click.group()
+def open_prs(prs, org, days_threshold):
+    earliest = min([pr["created"] for pr in prs])
+    start = previous_weekday(earliest, 0)  # Monday
+    mondays = list(iter_days(start, date.today(), step=timedelta(days=7)))
+
+    today = date.today()
+    threshold = timedelta(days=days_threshold)
+
+    def open_on_day(pr, start, end):
+        """
+        Filter function for PRs
+
+        Checks whether a PR is open today and if it's been open for greater or
+        equal to the threshold of days.
+        """
+        closed = pr["closed"] or today
+        opened = pr["created"]
+
+        open_today = (opened <= start) and (closed >= end)
+        if not open_today:
+            return False
+
+        return (closed - opened) >= threshold
+
+    with TimescaleDBWriter(GitHubPullRequests) as writer:
+        for start in mondays:
+            end = start + timedelta(days=6)
+            prs_on_day = [pr for pr in prs if open_on_day(pr, start, end)]
+
+            name = f"queue_older_than_{days_threshold}_days"
+
+            log.info(
+                "%s | %s | Processing %s PRs from week starting %s",
+                name,
+                org,
+                len(prs_on_day),
+                start,
+            )
+            process_prs(writer, prs_on_day, start, name=name)
+
+
+def pr_throughput(prs, org):
+    start = min([pr["created"] for pr in prs])
+    days = list(iter_days(start, date.today()))
+
+    with TimescaleDBWriter(GitHubPullRequests) as writer:
+        for day in days:
+            opened_prs = [pr for pr in prs if pr["created"] == day]
+            log.info("%s | %s | Processing %s opened PRs", day, org, len(opened_prs))
+            process_prs(writer, opened_prs, day, name="prs_opened")
+
+            merged_prs = [pr for pr in prs if pr["merged"] and pr["merged"] == day]
+            log.info("%s | %s | Processing %s merged PRs", day, org, len(merged_prs))
+            process_prs(writer, merged_prs, day, name="prs_merged")
+
+
+@click.command()
 @click.option("--token", required=True, envvar="GITHUB_TOKEN")
 @click.pass_context
 def github(ctx, token):
     ctx.ensure_object(dict)
-
     ctx.obj["TOKEN"] = token
 
-
-@github.command()
-@click.argument("org")
-@click.argument("date", type=click.DateTime())
-@click.argument("--days-threshold", type=int, default=7)
-@click.pass_context
-def open_prs(ctx, org, date, days_threshold):
-    """
-    How many open PRs were there this week?
-
-    The number of PRs open for DAYS_THRESHOLD (defaults to 7 days) in the
-    previous week to the given date.
-
-    Week here is defined as the dates covering the most recent Monday to Sunday
-    (inclusive) before the given date, eg if the given date is a Tuesday this
-    command will step back a week+1 day to collect a full weeks worth of data.
-    """
-    date = date.date()
-
-    end = previous_weekday(date, 6)  # Most recent Sunday
-    start = end - timedelta(days=6)  # Monday before that Sunday
-    prs = api.prs_open_in_range(org, start, end)
-
-    # remove PRs which have been open <days_threshold days
-    open_prs = [
-        pr
-        for pr in prs
-        if (pr["closed"] - pr["created"]) >= timedelta(days=days_threshold)
+    orgs = [
+        "ebmdatalab",
+        "opensafely-core",
     ]
+    for org in orgs:
+        prs = list(api.iter_prs(org))
+        log.info("Backfilling with %s PRs for %s", len(prs), org)
 
-    log.info("%s | %s | Processing %s PRs", date, org, len(open_prs))
-    with TimescaleDBWriter(GitHubPullRequests) as writer:
-        process_prs(
-            writer, open_prs, date, name=f"queue_older_than_{days_threshold}_days"
-        )
-
-
-@github.command()
-@click.argument("org")
-@click.argument("date", type=click.DateTime())
-@click.pass_context
-def pr_throughput(ctx, org, date):
-    """PRs opened and PRs closed in the given day"""
-    date = date.date()
-
-    with TimescaleDBWriter(GitHubPullRequests) as writer:
-        opened_prs = api.prs_opened_on_date(org, date)
-        log.info("%s | %s | Processing %s opened PRs", date, org, len(opened_prs))
-        process_prs(writer, opened_prs, date, name="prs_opened")
-
-        merged_prs = api.prs_merged_on_date(org, date)
-        log.info("%s | %s | Processing %s merged PRs", date, org, len(merged_prs))
-        process_prs(writer, merged_prs, date, name="prs_merged")
-
-
-github.add_command(backfill)
+        open_prs(prs, org, days_threshold=7)
+        pr_throughput(prs, org)
