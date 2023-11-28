@@ -14,6 +14,19 @@ GitHubPullRequests = Table(
     Column("repo", Text, primary_key=True),
 )
 
+
+GitHubVulnerabilities = Table(
+    "github_vulnerabilities",
+    metadata,
+    Column("time", TIMESTAMP(timezone=True), primary_key=True),
+    Column("value", Integer),
+    Column("open", Integer),
+    Column("closed", Integer),
+    Column("organisation", Text),
+    Column("repo", Text, primary_key=True),
+)
+
+
 SlackTechSupport = Table(
     "slack_tech_support",
     metadata,

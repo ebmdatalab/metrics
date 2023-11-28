@@ -5,10 +5,10 @@ import structlog
 from sqlalchemy import create_engine
 
 from ..timescaledb import TimescaleDBWriter, drop_tables
-from ..timescaledb.tables import GitHubPullRequests
+from ..timescaledb.tables import GitHubPullRequests, GitHubVulnerabilities
 from ..timescaledb.writer import TIMESCALEDB_URL
 from ..tools.dates import iter_days, previous_weekday
-from . import api
+from . import api, security
 from .prs import drop_archived_prs, process_prs
 
 
@@ -89,6 +89,14 @@ def pr_throughput(prs, org):
             process_prs(writer, merged_prs, day, name="prs_merged")
 
 
+def vulnerabilities(org):
+    vulns = security.parse_vulnerabilities(security.get_vulnerabilities(org), org)
+    with TimescaleDBWriter(GitHubVulnerabilities) as writer:
+        for v in vulns:
+            date = v.pop("date")
+            writer.write(date, value=0, **v)
+
+
 @click.command()
 @click.option("--token", required=True, envvar="GITHUB_TOKEN")
 @click.pass_context
@@ -115,3 +123,4 @@ def github(ctx, token):
 
         open_prs(prs, org, days_threshold=7)
         pr_throughput(prs, org)
+        vulnerabilities(org)
