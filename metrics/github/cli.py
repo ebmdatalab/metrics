@@ -1,4 +1,4 @@
-from datetime import date, timedelta
+from datetime import UTC, date, datetime, time, timedelta
 
 import click
 import structlog
@@ -16,44 +16,54 @@ log = structlog.get_logger()
 
 
 def open_prs(prs, org, days_threshold):
+    """
+    How many PRs were open at a given sample point?
+
+    We're using Monday morning here to match how the values in throughput are
+    bucketed with timeseriesdb's time_bucket() function
+
+    So we start with the Monday before the earliest PR, then iterate from that
+    Monday to todays date, filtering the list of PRs down to just those open on
+    the given Monday morning.
+    """
     earliest = min([pr["created"] for pr in prs])
     start = previous_weekday(earliest, 0)  # Monday
     mondays = list(iter_days(start, date.today(), step=timedelta(days=7)))
 
-    today = date.today()
+    the_future = datetime(9999, 1, 1, tzinfo=UTC)
     threshold = timedelta(days=days_threshold)
 
-    def open_on_day(pr, start, end):
+    def is_open(pr, dt):
         """
         Filter function for PRs
 
-        Checks whether a PR is open today and if it's been open for greater or
-        equal to the threshold of days.
+        Checks whether a PR was open at the given datetime, and if it has been
+        open long enough.
         """
-        closed = pr["closed"] or today
-        opened = pr["created"]
+        closed = pr["closed_at"] or the_future
+        opened = pr["created_at"]
 
-        open_today = (opened <= start) and (closed >= end)
-        if not open_today:
+        open_now = opened < dt < closed
+        if not open_now:
             return False
 
         return (closed - opened) >= threshold
 
     with TimescaleDBWriter(GitHubPullRequests) as writer:
-        for start in mondays:
-            end = start + timedelta(days=6)
-            prs_on_day = [pr for pr in prs if open_on_day(pr, start, end)]
+        for monday in mondays:
+            dt = datetime.combine(monday, time(), tzinfo=UTC)
+            prs_open = [pr for pr in prs if is_open(pr, dt)]
 
             name = f"queue_older_than_{days_threshold}_days"
 
             log.info(
-                "%s | %s | Processing %s PRs from week starting %s",
+                "%s | %s | Processing %s PRs open at %s",
                 name,
                 org,
-                len(prs_on_day),
-                start,
+                len(prs_open),
+                dt,
             )
-            process_prs(writer, prs_on_day, start, name=name)
+            process_prs(writer, prs_open, monday, name=name)
 
 
 def pr_throughput(prs, org):
