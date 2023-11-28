@@ -1,3 +1,31 @@
+from datetime import datetime
+
+
+def drop_archived_prs(prs, date):
+    """
+    Drop PRs where their repo's archival date happened before the given date
+
+    We expose a repo's archived date in both date and datetime format, so this
+    function will pick the relevant one based on the type of the given date.
+    """
+
+    suffix = "_at" if isinstance(date, datetime) else ""
+    key = f"repo_archived{suffix}"
+
+    def keep(pr, date):
+        if not pr[key]:
+            # the repo hasn't been archived yet
+            return True
+
+        if date < pr[key]:
+            # the repo has not been archived by date
+            return True
+
+        return False
+
+    return [pr for pr in prs if keep(pr, date)]
+
+
 def process_prs(writer, prs, date, name=""):
     """
     Given a list of PRs, break them down in series for writing
