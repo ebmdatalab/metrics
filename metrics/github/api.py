@@ -6,7 +6,7 @@ from datetime import date
 import requests
 import structlog
 
-from ..tools.dates import date_from_iso
+from ..tools.dates import date_from_iso, datetime_from_iso
 
 
 log = structlog.get_logger()
@@ -139,9 +139,12 @@ def iter_repo_prs(org, repo):
             "org": org,
             "repo": repo,
             "author": pr["author"]["login"],
-            "created": date_from_iso(pr["createdAt"]),
             "closed": date_from_iso(pr["closedAt"]),
+            "closed_at": datetime_from_iso(pr["closedAt"]),
+            "created": date_from_iso(pr["createdAt"]),
+            "created_at": datetime_from_iso(pr["createdAt"]),
             "merged": date_from_iso(pr["mergedAt"]),
+            "merged_at": datetime_from_iso(pr["mergedAt"]),
         }
 
 
