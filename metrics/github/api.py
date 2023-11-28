@@ -21,7 +21,7 @@ session.headers = {
 }
 
 
-def _get_query_page(*, query, session, cursor, **kwargs):
+def get_query_page(*, query, session, cursor, **kwargs):
     """
     Get a page of the given query
 
@@ -65,109 +65,92 @@ def _get_query_page(*, query, session, cursor, **kwargs):
         )
         raise RuntimeError(msg)
 
-    return results["data"]["search"]
+    return results["data"]
 
 
-def _iter_query_results(query, **kwargs):
-    """
-    Get results from a GraphQL query
+def get_query(query, path, **kwargs):
+    def extract(data):
+        result = data
+        for key in path:
+            result = result[key]
+        return result
 
-    Given a GraphQL query, return all results across one or more pages as a
-    single generator.  We currently assume all results live under
-
-        data.organization.team.repositories
-
-    GitHub's GraphQL API provides cursor-based pagination, so this function
-    wraps the actual API calls done in _get_query_page and tracks the cursor.
-    one.
-    """
+    more_pages = True
     cursor = None
-    while True:
-        data = _get_query_page(
-            query=query,
-            session=session,
-            cursor=cursor,
-            **kwargs,
+    while more_pages:
+        page = extract(
+            get_query_page(query=query, session=session, cursor=cursor, **kwargs)
         )
-
-        for edge in data["edges"]:
-            yield edge["node"]
-
-        if not data["pageInfo"]["hasNextPage"]:
-            break
-
-        # update the cursor we pass into the GraphQL query
-        cursor = data["pageInfo"]["endCursor"]  # pragma: no cover
+        yield from page["nodes"]
+        more_pages = page["pageInfo"]["hasNextPage"]
+        cursor = page["pageInfo"]["endCursor"]
 
 
-def _iter_pull_requests(org, date_range):
-    # we can't seem to interpolate graphql variables into a string, so doing it
-    # here
-    search_query = f"is:pr draft:false org:{org} {date_range}"
-    log.debug(f"GitHub search query: {search_query}")
-
+def iter_repos(org):
     query = """
-    query getPRs($cursor: String, $searchQuery: String!){
-      search(query: $searchQuery, type:ISSUE, first: 100, after: $cursor) {
-        edges {
-          node {
-            ... on PullRequest {
-              createdAt
-              closedAt
-              mergedAt
-              author {
-                login
-              }
-              repository {
-                name
-                owner {
-                  login
-                }
-              }
-            }
+    query repos($cursor: String, $org: String!) {
+      organization(login: $org) {
+        repositories(first: 100, after: $cursor) {
+          nodes {
+            name
           }
-        }
-        pageInfo {
-            endCursor
-            hasNextPage
+          pageInfo {
+              endCursor
+              hasNextPage
+          }
         }
       }
     }
-
     """
-    results = list(_iter_query_results(query, searchQuery=search_query))
-    for pr in results:
+    for repo in get_query(query, path=["organization", "repositories"], org=org):
         yield {
-            "created": date_from_iso(pr["createdAt"]),
-            "closed": date_from_iso(pr["closedAt"]),
-            "merged": date_from_iso(pr["mergedAt"]),
-            "author": pr["author"]["login"],
-            "repo": pr["repository"]["name"],
-            "org": pr["repository"]["owner"]["login"],
+            "name": repo["name"],
         }
 
 
-def prs_open_in_range(org, start, end):
-    start = start.isoformat()
-    end = end.isoformat()
-    date_range = f"created:<={start} closed:>={end}"
+def iter_repo_prs(org, repo):
+    query = """
+    query prs($cursor: String, $org: String!, $repo: String!) {
+      organization(login: $org) {
+        repository(name: $repo) {
+          pullRequests(first: 100, after: $cursor) {
+            nodes {
+              author {
+                login
+              }
+              number
+              createdAt
+              closedAt
+              mergedAt
+            }
+            pageInfo {
+              endCursor
+              hasNextPage
+            }
+          }
+        }
+      }
+    }
+    """
+    for pr in get_query(
+        query, path=["organization", "repository", "pullRequests"], org=org, repo=repo
+    ):
+        yield {
+            "org": org,
+            "repo": repo,
+            "author": pr["author"]["login"],
+            "created": date_from_iso(pr["createdAt"]),
+            "closed": date_from_iso(pr["closedAt"]),
+            "merged": date_from_iso(pr["mergedAt"]),
+        }
 
-    return list(_iter_pull_requests(org, date_range))
 
-
-def prs_merged_on_date(org, date):
-    query = f"merged:{date}"
-
-    return list(_iter_pull_requests(org, query))
-
-
-def prs_opened_on_date(org, date):
-    query = f"created:{date}"
-
-    return list(_iter_pull_requests(org, query))
+def iter_prs(org):
+    for r in iter_repos(org):
+        yield from iter_repo_prs(org, r["name"])
 
 
 if __name__ == "__main__":
     orgs = ["ebmdatalab", "opensafely-core"]
-    for pr in list(_iter_pull_requests(orgs[1], date(2023, 10, 24))):
+    for pr in list(iter_prs(orgs[1], date(2023, 10, 24))):
         print(pr)
