@@ -5,6 +5,8 @@ import structlog
 from sqlalchemy import create_engine, inspect, schema, text
 from sqlalchemy.dialects.postgresql import insert
 
+from ..tools.iter import batched
+
 
 log = structlog.get_logger()
 
@@ -31,14 +33,13 @@ def ensure_table(engine, table):
 
 
 class TimescaleDBWriter:
-    inserts = []
-
     def __init__(self, table, engine=None):
         if engine is None:
             engine = create_engine(TIMESCALEDB_URL)
 
         self.engine = engine
         self.table = table
+        self.values = []
 
     def __enter__(self):
         ensure_table(self.engine, self.table)
@@ -46,30 +47,30 @@ class TimescaleDBWriter:
         return self
 
     def __exit__(self, *args):
+        # get the primary key name from the given table
+        constraint = inspect(self.engine).get_pk_constraint(self.table.name)["name"]
+
         with self.engine.begin() as connection:
-            for stmt in self.inserts:
-                connection.execute(stmt)
+            # batch our values (which are currently 5 item dicts) so we don't
+            # hit the 65535 params limit
+            for values in batched(self.values, 10_000):
+                stmt = insert(self.table).values(values)
+
+                # use the constraint for this table to drive upserting where the
+                # new value (excluded.value) is used to update the row
+                do_update_stmt = stmt.on_conflict_do_update(
+                    constraint=constraint,
+                    set_={"value": stmt.excluded.value},
+                )
+
+                connection.execute(do_update_stmt)
+                log.info("Inserted %s rows", len(values), table=self.table.name)
 
     def write(self, date, value, **kwargs):
         # convert date to a timestamp
         # TODO: do we need to do any checking to make sure this is tz-aware and in
         # UTC?
         dt = datetime.combine(date, time())
+        value = {"time": dt, "value": value, **kwargs}
 
-        # get the primary key name from the given table
-        constraint = inspect(self.engine).get_pk_constraint(self.table.name)["name"]
-
-        # TODO: could we put do all the rows at once in the values() call and
-        # then use EXCLUDED to reference the value in the set_?
-        insert_stmt = (
-            insert(self.table)
-            .values(time=dt, value=value, **kwargs)
-            .on_conflict_do_update(
-                constraint=constraint,
-                set_={"value": value},
-            )
-        )
-
-        self.inserts.append(insert_stmt)
-
-        log.debug(insert_stmt)
+        self.values.append(value)

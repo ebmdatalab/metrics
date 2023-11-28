@@ -1,5 +1,5 @@
 import pytest
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, inspect
 from sqlalchemy.engine import make_url
 from sqlalchemy_utils import create_database, database_exists, drop_database
 
@@ -23,3 +23,11 @@ def engine():
 
     # drop the database on test suite exit
     drop_database(url)
+
+
+@pytest.fixture
+def has_table(engine):
+    def checker(table_name):
+        return inspect(engine).has_table(table_name)
+
+    return checker
