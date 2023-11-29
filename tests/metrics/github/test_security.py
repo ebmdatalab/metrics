@@ -7,6 +7,7 @@ def fake_vulnerabilities(org):
     github_response = [
         {
             "name": "opencodelists",
+            "archivedAt": None,
             "vulnerabilityAlerts": {
                 "nodes": [
                     {

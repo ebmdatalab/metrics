@@ -36,6 +36,7 @@ def get_vulnerabilities(org):
         repositories(first: 100) {
           nodes {
             name
+            archivedAt
             vulnerabilityAlerts(first: 100) {
               nodes {
                 number
@@ -90,7 +91,8 @@ def parse_vulnerabilities(vulnerabilities, org):
     for repo in vulnerabilities:
         repo_name = repo["name"]
         alerts = repo["vulnerabilityAlerts"]["nodes"]
-        if not alerts:
+
+        if repo["archivedAt"] or not alerts:
             continue
 
         earliest_date = datetime.fromisoformat(alerts[0]["createdAt"]).date()
@@ -108,8 +110,8 @@ def parse_vulnerabilities(vulnerabilities, org):
 
 def print_vulnerabilities(vulns):  # pragma: no cover
     print(f"There are {len(vulns)} alerts")
-    print(parse_vulnerabilities(vulns))
+    print(parse_vulnerabilities(vulns, "opensafely-core"))
 
 
 if __name__ == "__main__":  # pragma: no cover
-    print_vulnerabilities(get_vulnerabilities())
+    print_vulnerabilities(get_vulnerabilities("opensafely-core"))
