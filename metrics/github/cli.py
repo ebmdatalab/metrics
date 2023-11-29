@@ -68,6 +68,9 @@ def open_prs(prs, org, days_threshold):
 
 
 def pr_throughput(prs, org):
+    """
+    PRs opened and closed each day from the earliest day to today
+    """
     start = min([pr["created"] for pr in prs])
     days = list(iter_days(start, date.today()))
 
