@@ -3,6 +3,11 @@ from datetime import datetime, timedelta
 
 import requests
 import structlog
+from sqlalchemy import create_engine
+
+from ..timescaledb import TimescaleDBWriter, drop_tables
+from ..timescaledb.tables import GitHubVulnerabilities
+from ..timescaledb.writer import TIMESCALEDB_URL
 
 
 log = structlog.get_logger()
@@ -22,8 +27,8 @@ def make_request(query, variables):
     )
 
     if not response.ok:
-        print(response.headers)
-        print(response.content)
+        log.info(response.headers)
+        log.info(response.content)
 
     response.raise_for_status()
     return response.json()
@@ -108,10 +113,20 @@ def parse_vulnerabilities(vulnerabilities, org):
     return results
 
 
-def print_vulnerabilities(vulns):  # pragma: no cover
-    print(f"There are {len(vulns)} alerts")
-    print(parse_vulnerabilities(vulns, "opensafely-core"))
+def vulnerabilities(org):
+    vulns = parse_vulnerabilities(get_vulnerabilities(org), org)
+    with TimescaleDBWriter(GitHubVulnerabilities) as writer:
+        for v in vulns:
+            date = v.pop("date")
+            writer.write(date, value=0, **v)
 
 
 if __name__ == "__main__":  # pragma: no cover
-    print_vulnerabilities(get_vulnerabilities("opensafely-core"))
+    log.info("Dropping existing github_vulnerabilities table")
+    engine = create_engine(TIMESCALEDB_URL)
+    with engine.begin() as connection:
+        drop_tables(connection, prefix="github_vulnerabilities")
+    log.info("Dropped existing github_vulnerabilities table")
+
+    vulnerabilities("ebmdatalab")
+    vulnerabilities("opensafely-core")

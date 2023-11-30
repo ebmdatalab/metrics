@@ -5,6 +5,10 @@
       "schedule": "@daily"
     },
     {
+      "command": "python -m metrics.github.security",
+      "schedule": "@daily"
+    },
+    {
       "command": "python -m metrics slack tech-support",
       "schedule": "@daily"
     }
