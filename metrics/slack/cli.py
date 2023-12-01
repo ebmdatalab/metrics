@@ -2,10 +2,16 @@ import itertools
 from datetime import datetime
 
 import click
+import structlog
+from sqlalchemy import create_engine
 
-from ..timescaledb import TimescaleDBWriter
+from ..timescaledb import TimescaleDBWriter, drop_tables
 from ..timescaledb.tables import SlackTechSupport
+from ..timescaledb.writer import TIMESCALEDB_URL
 from .api import get_app, iter_messages
+
+
+log = structlog.get_logger()
 
 
 @click.group()
@@ -20,21 +26,22 @@ def slack(ctx, signing_secret, token):
 
 
 @slack.command()
-@click.argument("date", type=click.DateTime(), required=False)
 @click.option(
     "--tech-support-channel-id", required=True, envvar="SLACK_TECH_SUPPORT_CHANNEL_ID"
 )
-@click.option("--backfill", is_flag=True)
 @click.pass_context
-def tech_support(ctx, date, tech_support_channel_id, backfill):
-    if backfill and date:
-        raise click.BadParameter("--backfill cannot be used with a date")
-
-    day = None if backfill else date.date()
-
+def tech_support(ctx, tech_support_channel_id):
     app = get_app(ctx.obj["SLACK_SIGNING_SECRET"], ctx.obj["SLACK_TOKEN"])
 
-    messages = iter_messages(app, tech_support_channel_id, date=day)
+    messages = iter_messages(app, tech_support_channel_id)
+
+    log.info("Dropping existing slack_* tables")
+    # TODO: we have this in three places now, can we pull into some kind of
+    # service wrapper?
+    engine = create_engine(TIMESCALEDB_URL)
+    with engine.begin() as connection:
+        drop_tables(connection, prefix="slack_")
+    log.info("Dropped existing slack_* tables")
 
     with TimescaleDBWriter(SlackTechSupport) as writer:
         for date, messages in itertools.groupby(

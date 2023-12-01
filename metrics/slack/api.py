@@ -1,5 +1,3 @@
-from datetime import datetime, time, timedelta
-
 from slack_bolt import App
 
 
@@ -10,11 +8,8 @@ def get_app(signing_secret, token):
     return App(token=token, signing_secret=signing_secret)
 
 
-def iter_messages(app, channel_id, date=None):
+def iter_messages(app, channel_id):
     start = end = 0
-    if date:
-        start = datetime.combine(date, time()).timestamp()
-        end = (datetime.combine(date, time()) + timedelta(days=1)).timestamp()
 
     for page in app.client.conversations_history(
         channel=channel_id,
