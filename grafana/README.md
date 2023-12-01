@@ -71,13 +71,12 @@ GRANT SELECT ON jobserver_user_grafana TO grafanareader;
 
 ### Connect from Grafana
 
-In the Grafana UI:
+Go to the DigitalOcean db cluster read-only node `Connection Details` & get some credentials (`Host`, `Database`, `User`, `Password`). Enter these into a new data source in the Grafana UI by following these links:
 
 * Adminstration
 * Plugins
 * PostgreSQL
 * Add new data source
-* Enter `Host`, `Database`, `User`, `Password` from DigitalOcean db cluster read-only node `Connection Details`
 
 ### Missing datasource
 
