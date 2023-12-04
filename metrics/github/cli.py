@@ -69,7 +69,7 @@ def open_prs(prs, org, days_threshold):
 
 def pr_throughput(prs, org):
     """
-    PRs opened and closed each day from the earliest day to today
+    PRs closed each day from the earliest day to today
     """
     start = min([pr["created"] for pr in prs])
     days = list(iter_days(start, date.today()))
@@ -77,10 +77,6 @@ def pr_throughput(prs, org):
     with TimescaleDBWriter(GitHubPullRequests) as writer:
         for day in days:
             valid_prs = drop_archived_prs(prs, day)
-
-            opened_prs = [pr for pr in valid_prs if pr["created"] == day]
-            log.info("%s | %s | Processing %s opened PRs", day, org, len(opened_prs))
-            process_prs(writer, opened_prs, day, name="prs_opened")
 
             merged_prs = [
                 pr for pr in valid_prs if pr["merged"] and pr["merged"] == day
