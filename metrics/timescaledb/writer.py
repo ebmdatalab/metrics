@@ -1,5 +1,4 @@
 import os
-from datetime import datetime, time
 
 import structlog
 from sqlalchemy import create_engine, inspect, schema, text
@@ -39,21 +38,23 @@ class TimescaleDBWriter:
 
         self.engine = engine
         self.table = table
-        self.values = []
 
     def __enter__(self):
         ensure_table(self.engine, self.table)
 
         return self
 
-    def __exit__(self, *args):
+    def __exit__(self, *args, **kwargs):
+        pass
+
+    def write(self, rows):
         # get the primary key name from the given table
         constraint = inspect(self.engine).get_pk_constraint(self.table.name)["name"]
 
         with self.engine.begin() as connection:
             # batch our values (which are currently 5 item dicts) so we don't
             # hit the 65535 params limit
-            for values in batched(self.values, 10_000):
+            for values in batched(rows, 10_000):
                 stmt = insert(self.table).values(values)
 
                 # use the constraint for this table to drive upserting where the
@@ -65,12 +66,3 @@ class TimescaleDBWriter:
 
                 connection.execute(do_update_stmt)
                 log.info("Inserted %s rows", len(values), table=self.table.name)
-
-    def write(self, date, value, **kwargs):
-        # convert date to a timestamp
-        # TODO: do we need to do any checking to make sure this is tz-aware and in
-        # UTC?
-        dt = datetime.combine(date, time())
-        value = {"time": dt, "value": value, **kwargs}
-
-        self.values.append(value)

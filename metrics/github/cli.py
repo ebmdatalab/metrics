@@ -9,7 +9,7 @@ from ..timescaledb.tables import GitHubPullRequests
 from ..timescaledb.writer import TIMESCALEDB_URL
 from ..tools.dates import iter_days, previous_weekday
 from . import api
-from .prs import drop_archived_prs, process_prs
+from .prs import drop_archived_prs, iter_prs
 
 
 log = structlog.get_logger()
@@ -50,22 +50,24 @@ def old_prs(prs, org, days_threshold):
 
         return (closed - opened) >= threshold
 
-    with TimescaleDBWriter(GitHubPullRequests) as writer:
-        for monday in mondays:
-            dt = datetime.combine(monday, time(), tzinfo=UTC)
-            prs_open = [pr for pr in prs if is_open(pr, dt)]
-            prs_open = drop_archived_prs(prs_open, monday)
+    for monday in mondays:
+        dt = datetime.combine(monday, time(), tzinfo=UTC)
+        prs_open = [pr for pr in prs if is_open(pr, dt)]
+        prs_open = drop_archived_prs(prs_open, monday)
 
-            name = f"queue_older_than_{days_threshold}_days"
+        name = f"queue_older_than_{days_threshold}_days"
 
-            log.info(
-                "%s | %s | Processing %s PRs open at %s",
-                name,
-                org,
-                len(prs_open),
-                dt,
-            )
-            process_prs(writer, prs_open, monday, name=name)
+        log.info(
+            "%s | %s | Processing %s PRs open at %s",
+            name,
+            org,
+            len(prs_open),
+            dt,
+        )
+        processed_prs = list(iter_prs(prs_open, monday, name))
+
+    with TimescaleDBWriter(GitHubPullRequests) as db:
+        db.write(processed_prs)
 
 
 def pr_throughput(prs, org):
@@ -75,15 +77,15 @@ def pr_throughput(prs, org):
     start = min([pr["created"] for pr in prs])
     days = list(iter_days(start, date.today()))
 
-    with TimescaleDBWriter(GitHubPullRequests) as writer:
-        for day in days:
-            valid_prs = drop_archived_prs(prs, day)
+    for day in days:
+        valid_prs = drop_archived_prs(prs, day)
 
-            merged_prs = [
-                pr for pr in valid_prs if pr["merged"] and pr["merged"] == day
-            ]
-            log.info("%s | %s | Processing %s merged PRs", day, org, len(merged_prs))
-            process_prs(writer, merged_prs, day, name="prs_merged")
+        merged_prs = [pr for pr in valid_prs if pr["merged"] and pr["merged"] == day]
+        log.info("%s | %s | Processing %s merged PRs", day, org, len(merged_prs))
+        processed_prs = list(iter_prs(merged_prs, day, name="prs_merged"))
+
+    with TimescaleDBWriter(GitHubPullRequests) as db:
+        db.write(processed_prs)
 
 
 @click.command()

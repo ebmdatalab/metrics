@@ -1,5 +1,5 @@
 import itertools
-from datetime import datetime
+from datetime import datetime, time
 
 import click
 import structlog
@@ -43,8 +43,17 @@ def tech_support(ctx, tech_support_channel_id):
         drop_tables(connection, prefix="slack_")
     log.info("Dropped existing slack_* tables")
 
-    with TimescaleDBWriter(SlackTechSupport) as writer:
-        for date, messages in itertools.groupby(
-            messages, lambda m: datetime.fromtimestamp(float(m["ts"])).date()
-        ):
-            writer.write(date, len(list(messages)), name="requests")
+    rows = []
+    for date, messages in itertools.groupby(
+        messages, lambda m: datetime.fromtimestamp(float(m["ts"])).date()
+    ):
+        rows.append(
+            {
+                "time": datetime.combine(date, time()),
+                "value": len(list(messages)),
+                "name": "requests",
+            }
+        )
+
+    with TimescaleDBWriter(SlackTechSupport) as db:
+        db.write(rows)

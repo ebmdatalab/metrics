@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import UTC, datetime
 
 import pytest
 from sqlalchemy import TIMESTAMP, Column, Integer, Table, select, text
@@ -47,9 +47,11 @@ def test_timescaledbwriter(engine, has_table, table):
     # check ensure_table is setting up the table
     assert not has_table(table.name)
 
-    with TimescaleDBWriter(table, engine) as writer:
-        for i in range(1, 4):
-            writer.write(date(2023, 11, i), i)
+    rows = [
+        {"time": datetime(2023, 11, i, tzinfo=UTC), "value": i} for i in range(1, 4)
+    ]
+    with TimescaleDBWriter(table, engine) as db:
+        db.write(rows)
 
     assert has_table(table.name)
 
@@ -63,5 +65,5 @@ def test_timescaledbwriter(engine, has_table, table):
 
 
 def test_timescaledbwriter_with_default_engine(table):
-    writer = TimescaleDBWriter(table)
-    assert writer.engine.url == make_url(TIMESCALEDB_URL), writer.engine.url
+    db = TimescaleDBWriter(table)
+    assert db.engine.url == make_url(TIMESCALEDB_URL), db.engine.url

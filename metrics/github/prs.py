@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, time
 
 
 def drop_archived_prs(prs, date):
@@ -26,7 +26,7 @@ def drop_archived_prs(prs, date):
     return [pr for pr in prs if keep(pr, date)]
 
 
-def process_prs(writer, prs, date, name=""):
+def iter_prs(prs, date, name):
     """
     Given a list of PRs, break them down in series for writing
 
@@ -50,11 +50,11 @@ def process_prs(writer, prs, date, name=""):
 
             org = list(orgs)[0]
 
-            writer.write(
-                date,
-                len(prs_by_author_and_repo),
-                name=name,
-                author=author,
-                organisation=org,
-                repo=repo,
-            )
+            yield {
+                "time": datetime.combine(date, time()),
+                "value": len(prs_by_author_and_repo),
+                "name": name,
+                "author": author,
+                "organisation": org,
+                "repo": repo,
+            }
