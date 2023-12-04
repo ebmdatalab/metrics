@@ -7,25 +7,20 @@ from metrics.github.prs import drop_archived_prs, iter_prs
 
 def test_drop_archived_prs():
     pr1 = {
-        "repo_archived": date(2023, 11, 6),
         "repo_archived_at": datetime(2023, 11, 6),
     }
     pr2 = {
-        "repo_archived": date(2023, 11, 7),
         "repo_archived_at": datetime(2023, 11, 7),
     }
     pr3 = {
-        "repo_archived": date(2023, 11, 8),
         "repo_archived_at": datetime(2023, 11, 8),
     }
     pr4 = {
-        "repo_archived": None,
         "repo_archived_at": None,
     }
     prs = [pr1, pr2, pr3, pr4]
 
     assert drop_archived_prs(prs, date=date(2023, 11, 7)) == [pr3, pr4]
-    assert drop_archived_prs(prs, date=datetime(2023, 11, 7)) == [pr3, pr4]
 
 
 def test_process_prs_success():

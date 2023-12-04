@@ -28,7 +28,7 @@ def old_prs(prs, org, days_threshold):
     Monday to todays date, filtering the list of PRs down to just those open on
     the given Monday morning.
     """
-    earliest = min([pr["created"] for pr in prs])
+    earliest = min([pr["created_at"] for pr in prs]).date()
     start = previous_weekday(earliest, 0)  # Monday
     mondays = list(iter_days(start, date.today(), step=timedelta(days=7)))
 
@@ -72,13 +72,15 @@ def pr_throughput(prs, org):
     """
     PRs closed each day from the earliest day to today
     """
-    start = min([pr["created"] for pr in prs])
+    start = min([pr["created_at"] for pr in prs]).date()
     days = list(iter_days(start, date.today()))
 
     for day in days:
         valid_prs = drop_archived_prs(prs, day)
+        merged_prs = [
+            pr for pr in valid_prs if pr["merged_at"] and pr["merged_at"].date() == day
+        ]
 
-        merged_prs = [pr for pr in valid_prs if pr["merged"] and pr["merged"] == day]
         log.info("%s | %s | Processing %s merged PRs", day, org, len(merged_prs))
         yield from iter_prs(merged_prs, day, name="prs_merged")
 
