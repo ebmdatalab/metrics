@@ -15,9 +15,10 @@ from .prs import drop_archived_prs, process_prs
 log = structlog.get_logger()
 
 
-def open_prs(prs, org, days_threshold):
+def old_prs(prs, org, days_threshold):
     """
-    How many PRs were open at a given sample point?
+    How many PRs had been open for the given days threshold at a given sample
+    point?
 
     We're using Monday morning here to match how the values in throughput are
     bucketed with timeseriesdb's time_bucket() function
@@ -109,5 +110,5 @@ def github(ctx, token):
         prs = list(api.iter_prs(org))
         log.info("Backfilling with %s PRs for %s", len(prs), org)
 
-        open_prs(prs, org, days_threshold=7)
+        old_prs(prs, org, days_threshold=7)
         pr_throughput(prs, org)
