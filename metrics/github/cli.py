@@ -1,3 +1,4 @@
+import itertools
 from datetime import UTC, date, datetime, time, timedelta
 
 import click
@@ -64,10 +65,7 @@ def old_prs(prs, org, days_threshold):
             len(prs_open),
             dt,
         )
-        processed_prs = list(iter_prs(prs_open, monday, name))
-
-    with TimescaleDBWriter(GitHubPullRequests) as db:
-        db.write(processed_prs)
+        yield from iter_prs(prs_open, monday, name)
 
 
 def pr_throughput(prs, org):
@@ -82,10 +80,7 @@ def pr_throughput(prs, org):
 
         merged_prs = [pr for pr in valid_prs if pr["merged"] and pr["merged"] == day]
         log.info("%s | %s | Processing %s merged PRs", day, org, len(merged_prs))
-        processed_prs = list(iter_prs(merged_prs, day, name="prs_merged"))
-
-    with TimescaleDBWriter(GitHubPullRequests) as db:
-        db.write(processed_prs)
+        yield from iter_prs(merged_prs, day, name="prs_merged")
 
 
 @click.command()
@@ -112,5 +107,12 @@ def github(ctx, token):
         prs = list(api.iter_prs(org))
         log.info("Backfilling with %s PRs for %s", len(prs), org)
 
-        old_prs(prs, org, days_threshold=7)
-        pr_throughput(prs, org)
+        rows = list(
+            itertools.chain(
+                old_prs(prs, org, days_threshold=7),
+                pr_throughput(prs, org),
+            )
+        )
+
+        with TimescaleDBWriter(GitHubPullRequests) as db:
+            db.write(rows)
