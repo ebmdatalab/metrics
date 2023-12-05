@@ -18,8 +18,10 @@ log = structlog.get_logger()
 
 def old_prs(prs, org, days_threshold):
     """
-    How many PRs had been open for the given days threshold at a given sample
-    point?
+    Track "old" PRs
+
+    Defined as: How many PRs had been open for the given days threshold at a
+    given sample point?
 
     We're using Monday morning here to match how the values in throughput are
     bucketed with timeseriesdb's time_bucket() function
@@ -35,7 +37,7 @@ def old_prs(prs, org, days_threshold):
     the_future = datetime(9999, 1, 1, tzinfo=UTC)
     threshold = timedelta(days=days_threshold)
 
-    def is_open(pr, dt):
+    def is_old(pr, dt):
         """
         Filter function for PRs
 
@@ -53,19 +55,19 @@ def old_prs(prs, org, days_threshold):
 
     for monday in mondays:
         dt = datetime.combine(monday, time(), tzinfo=UTC)
-        prs_open = [pr for pr in prs if is_open(pr, dt)]
-        prs_open = drop_archived_prs(prs_open, monday)
+        valid_prs = [pr for pr in prs if is_old(pr, dt)]
+        valid_prs = drop_archived_prs(valid_prs, monday)
 
         name = f"queue_older_than_{days_threshold}_days"
 
         log.info(
-            "%s | %s | Processing %s PRs open at %s",
+            "%s | %s | Processing %s old PRs at %s",
             name,
             org,
-            len(prs_open),
+            len(valid_prs),
             dt,
         )
-        yield from iter_prs(prs_open, monday, name)
+        yield from iter_prs(valid_prs, monday, name)
 
 
 def pr_throughput(prs, org):
