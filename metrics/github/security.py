@@ -5,9 +5,9 @@ import requests
 import structlog
 from sqlalchemy import create_engine
 
-from ..timescaledb import TimescaleDBWriter, drop_tables
-from ..timescaledb.tables import GitHubVulnerabilities
-from ..timescaledb.writer import TIMESCALEDB_URL
+from .. import timescaledb
+from ..timescaledb import drop_tables
+from ..timescaledb.db import TIMESCALEDB_URL
 from ..tools import dates
 
 
@@ -115,10 +115,13 @@ def parse_vulnerabilities(vulnerabilities, org):
 
 def vulnerabilities(org):
     vulns = parse_vulnerabilities(get_vulnerabilities(org), org)
-    with TimescaleDBWriter(GitHubVulnerabilities) as writer:
-        for v in vulns:
-            date = v.pop("date")
-            writer.write(date, value=0, **v)
+
+    rows = []
+    for v in vulns:
+        date = v.pop("date")
+        rows.append({"time": date, "value": 0, **v})
+
+    timescaledb.write(timescaledb.GitHubVulnerabilities, rows)
 
 
 if __name__ == "__main__":  # pragma: no cover

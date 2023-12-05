@@ -1,8 +1,11 @@
-from .db import drop_tables
-from .writer import timescaledb_writer
+from .db import drop_tables, write
+from .tables import GitHubPullRequests, GitHubVulnerabilities, SlackTechSupport
 
 
 __all__ = [
-    "timescaledb_writer",
+    "GitHubPullRequests",
+    "GitHubVulnerabilities",
+    "SlackTechSupport",
     "drop_tables",
+    "write",
 ]

@@ -1,10 +1,23 @@
+import os
+
 import structlog
-from sqlalchemy import text
+from sqlalchemy import create_engine, inspect, schema, text
+from sqlalchemy.dialects.postgresql import insert
 
 from ..tools.iter import batched
 
 
 log = structlog.get_logger()
+
+
+# psycopg2 is still the default postgres dialect for sqlalchemy so we inject
+# +psycopg to enable using v3.
+# Nit: We currently need to reuse this in a few places around the codebase, but
+# ideally we'd have some kind of service where we could inject a different URL
+# for testing.
+TIMESCALEDB_URL = os.environ["TIMESCALEDB_URL"].replace(
+    "postgresql", "postgresql+psycopg"
+)
 
 
 def delete_rows(connection, name, n=10000):
@@ -74,6 +87,21 @@ def drop_tables(connection, *, prefix):
         log.debug("Removed raw table", table=table)
 
 
+def ensure_table(engine, table):
+    """
+    Ensure both the table and hypertable config exist in the database
+    """
+    with engine.begin() as connection:
+        connection.execute(schema.CreateTable(table, if_not_exists=True))
+
+    with engine.begin() as connection:
+        connection.execute(
+            text(
+                f"SELECT create_hypertable('{table.name}', 'time', if_not_exists => TRUE);"
+            )
+        )
+
+
 def has_rows(connection, name):
     """Count the number of rows in the given table"""
     sql = text(f"SELECT COUNT(*) FROM {name}")
@@ -96,3 +124,29 @@ def iter_raw_tables(connection, prefix):
     )
 
     yield from connection.scalars(sql, {"like": f"{prefix}_%"})
+
+
+def write(table, rows, engine=None):
+    if engine is None:
+        engine = create_engine(TIMESCALEDB_URL)
+
+    ensure_table(engine, table)
+
+    # get the primary key name from the given table
+    constraint = inspect(engine).get_pk_constraint(table.name)["name"]
+
+    with engine.begin() as connection:
+        # batch our values (which are currently 5 item dicts) so we don't
+        # hit the 65535 params limit
+        for values in batched(rows, 10_000):
+            stmt = insert(table).values(values)
+
+            # use the constraint for this table to drive upserting where the
+            # new value (excluded.value) is used to update the row
+            do_update_stmt = stmt.on_conflict_do_update(
+                constraint=constraint,
+                set_={"value": stmt.excluded.value},
+            )
+
+            connection.execute(do_update_stmt)
+            log.info("Inserted %s rows", len(values), table=table.name)

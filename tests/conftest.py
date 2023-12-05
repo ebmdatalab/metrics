@@ -3,7 +3,7 @@ from sqlalchemy import create_engine, inspect
 from sqlalchemy.engine import make_url
 from sqlalchemy_utils import create_database, database_exists, drop_database
 
-from metrics.timescaledb.writer import TIMESCALEDB_URL
+from metrics.timescaledb.db import TIMESCALEDB_URL
 
 
 @pytest.fixture(scope="session", autouse=True)

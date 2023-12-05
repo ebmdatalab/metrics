@@ -5,9 +5,8 @@ import click
 import structlog
 from sqlalchemy import create_engine
 
-from ..timescaledb import drop_tables, timescaledb_writer
-from ..timescaledb.tables import GitHubPullRequests
-from ..timescaledb.writer import TIMESCALEDB_URL
+from .. import timescaledb
+from ..timescaledb.db import TIMESCALEDB_URL
 from ..tools.dates import iter_days, previous_weekday
 from . import api
 from .prs import drop_archived_prs, iter_prs
@@ -99,7 +98,7 @@ def github(ctx, token):
     # service wrapper?
     engine = create_engine(TIMESCALEDB_URL)
     with engine.begin() as connection:
-        drop_tables(connection, prefix="github_")
+        timescaledb.drop_tables(connection, prefix="github_")
     log.info("Dropped existing github_* tables")
 
     orgs = [
@@ -118,4 +117,4 @@ def github(ctx, token):
             )
         )
 
-        timescaledb_writer(GitHubPullRequests, rows)
+        timescaledb.write(timescaledb.GitHubPullRequests, rows)
