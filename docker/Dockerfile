@@ -115,6 +115,7 @@ LABEL org.opencontainers.image.title="metrics" \
 
 # copy application code
 COPY metrics /app/metrics
+COPY metrics/app.json /app/app.json
 
 # finally, tag with build information. These will change regularly, therefore
 # we do them as the last action.
