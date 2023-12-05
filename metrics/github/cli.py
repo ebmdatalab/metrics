@@ -5,7 +5,7 @@ import click
 import structlog
 from sqlalchemy import create_engine
 
-from ..timescaledb import TimescaleDBWriter, drop_tables
+from ..timescaledb import drop_tables, timescaledb_writer
 from ..timescaledb.tables import GitHubPullRequests
 from ..timescaledb.writer import TIMESCALEDB_URL
 from ..tools.dates import iter_days, previous_weekday
@@ -116,5 +116,4 @@ def github(ctx, token):
             )
         )
 
-        with TimescaleDBWriter(GitHubPullRequests) as db:
-            db.write(rows)
+        timescaledb_writer(GitHubPullRequests, rows)

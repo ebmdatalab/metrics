@@ -5,7 +5,7 @@ import click
 import structlog
 from sqlalchemy import create_engine
 
-from ..timescaledb import TimescaleDBWriter, drop_tables
+from ..timescaledb import drop_tables, timescaledb_writer
 from ..timescaledb.tables import SlackTechSupport
 from ..timescaledb.writer import TIMESCALEDB_URL
 from .api import get_app, iter_messages
@@ -55,5 +55,4 @@ def tech_support(ctx, tech_support_channel_id):
             }
         )
 
-    with TimescaleDBWriter(SlackTechSupport) as db:
-        db.write(rows)
+    timescaledb_writer(SlackTechSupport, rows)

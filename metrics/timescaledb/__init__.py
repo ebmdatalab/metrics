@@ -1,8 +1,8 @@
 from .db import drop_tables
-from .writer import TimescaleDBWriter
+from .writer import timescaledb_writer
 
 
 __all__ = [
-    "TimescaleDBWriter",
+    "timescaledb_writer",
     "drop_tables",
 ]

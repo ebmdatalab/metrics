@@ -1,11 +1,11 @@
 from datetime import UTC, datetime
+from unittest.mock import patch
 
 import pytest
 from sqlalchemy import TIMESTAMP, Column, Integer, Table, select, text
-from sqlalchemy.engine import make_url
 
 from metrics.timescaledb.tables import metadata
-from metrics.timescaledb.writer import TIMESCALEDB_URL, TimescaleDBWriter
+from metrics.timescaledb.writer import TIMESCALEDB_URL, timescaledb_writer
 
 
 def get_rows(engine, table):
@@ -50,8 +50,7 @@ def test_timescaledbwriter(engine, has_table, table):
     rows = [
         {"time": datetime(2023, 11, i, tzinfo=UTC), "value": i} for i in range(1, 4)
     ]
-    with TimescaleDBWriter(table, engine) as db:
-        db.write(rows)
+    timescaledb_writer(table, rows, engine)
 
     assert has_table(table.name)
 
@@ -65,5 +64,9 @@ def test_timescaledbwriter(engine, has_table, table):
 
 
 def test_timescaledbwriter_with_default_engine(table):
-    db = TimescaleDBWriter(table)
-    assert db.engine.url == make_url(TIMESCALEDB_URL), db.engine.url
+    with patch(
+        "metrics.timescaledb.writer.create_engine", autospec=True
+    ) as mocked_create_engine:
+        timescaledb_writer(table, [])
+
+        mocked_create_engine.assert_called_once_with(TIMESCALEDB_URL)
