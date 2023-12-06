@@ -81,3 +81,7 @@ Go to the DigitalOcean db cluster read-only node `Connection Details` & get some
 ### Missing datasource
 
 If you import a Dashboard from a JSON file, the visualisations may error with "Could not find datasource $UUID". It is sometimes possible to fix this by some combination of hitting "Run query" & "Refresh", otherwise you could recreate the visulation by copy-pasting SQL etc. 
+
+## Auto-update
+
+In order to get auto-updates we use a Dockerfile with a specific SHA of the upstream grafana image, which [dependabot is monitoring](https://github.com/ebmdatalab/metrics/blob/c46ba14c5f5f52ac2232da32542d226acea85be9/.github/dependabot.yml#L15-L18). We have a Github Action to auto-merge dependabot's PRs, and the merge to main should trigger a deployment of the new version of grafana to our instance.
