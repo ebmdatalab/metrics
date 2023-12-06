@@ -1,5 +1,4 @@
 import os
-from datetime import datetime, timedelta
 
 import requests
 import structlog
@@ -8,6 +7,7 @@ from sqlalchemy import create_engine
 from ..timescaledb import TimescaleDBWriter, drop_tables
 from ..timescaledb.tables import GitHubVulnerabilities
 from ..timescaledb.writer import TIMESCALEDB_URL
+from ..tools import dates
 
 
 log = structlog.get_logger()
@@ -67,7 +67,7 @@ def date_before(date_string, target_date):
     if not date_string:
         return False
 
-    return datetime.fromisoformat(date_string).date() <= target_date
+    return dates.date_from_iso(date_string) <= target_date
 
 
 def parse_vulnerabilities_for_date(vulns, repo, target_date, org):
@@ -100,15 +100,11 @@ def parse_vulnerabilities(vulnerabilities, org):
         if repo["archivedAt"] or not alerts:
             continue
 
-        earliest_date = datetime.fromisoformat(alerts[0]["createdAt"]).date()
-        latest_date = datetime.fromisoformat(alerts[-1]["createdAt"]).date()
-        one_day = timedelta(days=1)
+        earliest_date = dates.date_from_iso(alerts[0]["createdAt"])
+        latest_date = dates.date_from_iso(alerts[-1]["createdAt"])
 
-        while earliest_date <= latest_date:
-            results.append(
-                parse_vulnerabilities_for_date(alerts, repo_name, earliest_date, org)
-            )
-            earliest_date += one_day
+        for day in dates.iter_days(earliest_date, latest_date):
+            results.append(parse_vulnerabilities_for_date(alerts, repo_name, day, org))
 
     return results
 
