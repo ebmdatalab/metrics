@@ -27,7 +27,7 @@ def engine():
 
 @pytest.fixture
 def has_table(engine):
-    def checker(table_name):
-        return inspect(engine).has_table(table_name)
+    def checker(table):
+        return inspect(engine).has_table(table.name)
 
     return checker

@@ -1,4 +1,4 @@
-from .db import drop_tables, write
+from .db import reset_table, write
 from .tables import GitHubPullRequests, GitHubVulnerabilities, SlackTechSupport
 
 
@@ -6,6 +6,6 @@ __all__ = [
     "GitHubPullRequests",
     "GitHubVulnerabilities",
     "SlackTechSupport",
-    "drop_tables",
+    "reset_table",
     "write",
 ]

@@ -62,9 +62,9 @@ def drop_table(connection, name):
     connection.execute(text(f"DROP TABLE {name}"), {"table_name": name})
 
 
-def drop_tables(connection, *, prefix):
+def drop_hypertable(engine, table):
     """
-    Drop the tables with the given prefix
+    Drop the given table
 
     We have limited shared memory in our hosted database, so we can't DROP or
     TRUNCATE our hypertables.  Instead for each "raw" table we need to:
@@ -72,7 +72,11 @@ def drop_tables(connection, *, prefix):
      * drop the sharded "child" tables in batches
      * drop the now empty raw table
     """
-    for table in iter_raw_tables(connection, prefix):
+    # we don't actually use the Table directly in any of the functions below,
+    # so we grab the name here to avoid calling .name everywhere
+    table = table.name
+
+    with engine.begin() as connection:
         log.debug("Removing table: %s", table)
 
         while has_rows(connection, table):
@@ -108,29 +112,18 @@ def has_rows(connection, name):
     return connection.scalar(sql) > 0
 
 
-def iter_raw_tables(connection, prefix):
-    """Get a list of tables which start with the given prefix"""
-    sql = text(
-        """
-        SELECT
-          tablename
-        FROM
-          pg_catalog.pg_tables
-        WHERE
-          schemaname = 'public'
-          AND
-          tablename LIKE :like
-        """
-    )
-
-    yield from connection.scalars(sql, {"like": f"{prefix}_%"})
+def reset_table(engine, table):
+    """
+    Reset the given Table
+    """
+    drop_hypertable(engine, table)
+    ensure_table(engine, table)
+    log.info("Reset table", table=table.name)
 
 
 def write(table, rows, engine=None):
     if engine is None:
         engine = create_engine(TIMESCALEDB_URL)
-
-    ensure_table(engine, table)
 
     # get the primary key name from the given table
     constraint = inspect(engine).get_pk_constraint(table.name)["name"]

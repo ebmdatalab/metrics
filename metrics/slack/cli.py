@@ -34,14 +34,6 @@ def tech_support(ctx, tech_support_channel_id):
 
     messages = iter_messages(app, tech_support_channel_id)
 
-    log.info("Dropping existing slack_* tables")
-    # TODO: we have this in three places now, can we pull into some kind of
-    # service wrapper?
-    engine = create_engine(TIMESCALEDB_URL)
-    with engine.begin() as connection:
-        timescaledb.drop_tables(connection, prefix="slack_")
-    log.info("Dropped existing slack_* tables")
-
     rows = []
     for date, messages in itertools.groupby(
         messages, lambda m: datetime.fromtimestamp(float(m["ts"])).date()
@@ -54,4 +46,8 @@ def tech_support(ctx, tech_support_channel_id):
             }
         )
 
+    # TODO: we have this in three places now, can we pull into some kind of
+    # service wrapper?
+    engine = create_engine(TIMESCALEDB_URL)
+    timescaledb.reset_table(engine, timescaledb.SlackTechSupport)
     timescaledb.write(timescaledb.SlackTechSupport, rows)

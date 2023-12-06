@@ -5,7 +5,7 @@ import pytest
 from sqlalchemy import TIMESTAMP, Column, Integer, Table, select, text
 
 from metrics import timescaledb
-from metrics.timescaledb.db import TIMESCALEDB_URL, drop_tables
+from metrics.timescaledb.db import TIMESCALEDB_URL, ensure_table, has_rows
 from metrics.timescaledb.tables import metadata
 
 
@@ -44,7 +44,21 @@ def table():
     )
 
 
-def test_drop_tables(engine, has_table):
+def test_ensure_table(engine, has_table, table):
+    assert not has_table(timescaledb.GitHubPullRequests)
+
+    ensure_table(engine, timescaledb.GitHubPullRequests)
+
+    assert has_table(timescaledb.GitHubPullRequests)
+
+    # check there are timescaledb child tables
+    # https://stackoverflow.com/questions/1461722/how-to-find-child-tables-that-inherit-from-another-table-in-psql
+    is_hypertable(engine, timescaledb.GitHubPullRequests)
+
+
+def test_reset_table(engine, has_table):
+    ensure_table(engine, timescaledb.GitHubPullRequests)
+
     # put enough rows in the db to make sure we exercise the batch removal of
     # rows.  timescaledb's write() will ensure the table exists for us.
     rows = []
@@ -63,26 +77,25 @@ def test_drop_tables(engine, has_table):
 
     timescaledb.write(timescaledb.GitHubPullRequests, rows, engine)
 
+    assert has_table(timescaledb.GitHubPullRequests)
     with engine.begin() as connection:
-        drop_tables(connection, prefix="github_")
+        assert has_rows(connection, timescaledb.GitHubPullRequests.name)
 
-    assert not has_table(timescaledb.GitHubPullRequests.name)
+    timescaledb.reset_table(engine, timescaledb.GitHubPullRequests)
+
+    assert has_table(timescaledb.GitHubPullRequests)
+    with engine.begin() as connection:
+        assert not has_rows(connection, timescaledb.GitHubPullRequests)
 
 
-def test_write(engine, has_table, table):
-    # check ensure_table is setting up the table
-    assert not has_table(table.name)
+def test_write(engine, table):
+    # set up a table to write to
+    ensure_table(engine, table)
 
     rows = [
         {"time": datetime(2023, 11, i, tzinfo=UTC), "value": i} for i in range(1, 4)
     ]
     timescaledb.write(table, rows, engine)
-
-    assert has_table(table.name)
-
-    # check there are timescaledb child tables
-    # https://stackoverflow.com/questions/1461722/how-to-find-child-tables-that-inherit-from-another-table-in-psql
-    is_hypertable(engine, table)
 
     # check rows are in table
     rows = get_rows(engine, table)

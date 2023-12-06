@@ -6,7 +6,6 @@ import structlog
 from sqlalchemy import create_engine
 
 from .. import timescaledb
-from ..timescaledb import drop_tables
 from ..timescaledb.db import TIMESCALEDB_URL
 from ..tools import dates
 
@@ -125,11 +124,10 @@ def vulnerabilities(org):
 
 
 if __name__ == "__main__":  # pragma: no cover
-    log.info("Dropping existing github_vulnerabilities table")
+    # TODO: we have this in two places now, can we pull into some kind of
+    # service wrapper?
     engine = create_engine(TIMESCALEDB_URL)
-    with engine.begin() as connection:
-        drop_tables(connection, prefix="github_vulnerabilities")
-    log.info("Dropped existing github_vulnerabilities table")
+    timescaledb.reset_table(engine, timescaledb.GitHubVulnerabilities)
 
     vulnerabilities("ebmdatalab")
     vulnerabilities("opensafely-core")

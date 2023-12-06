@@ -93,13 +93,11 @@ def github(ctx, token):
     ctx.ensure_object(dict)
     ctx.obj["TOKEN"] = token
 
-    log.info("Dropping existing github_* tables")
     # TODO: we have this in two places now, can we pull into some kind of
     # service wrapper?
     engine = create_engine(TIMESCALEDB_URL)
-    with engine.begin() as connection:
-        timescaledb.drop_tables(connection, prefix="github_")
-    log.info("Dropped existing github_* tables")
+
+    timescaledb.reset_table(engine, timescaledb.GitHubPullRequests)
 
     orgs = [
         "ebmdatalab",
