@@ -3,10 +3,8 @@ from datetime import UTC, date, datetime, time, timedelta
 
 import click
 import structlog
-from sqlalchemy import create_engine
 
 from .. import timescaledb
-from ..timescaledb.db import TIMESCALEDB_URL
 from ..tools.dates import iter_days, previous_weekday
 from . import api
 from .prs import drop_archived_prs, iter_prs
@@ -93,11 +91,7 @@ def github(ctx, token):
     ctx.ensure_object(dict)
     ctx.obj["TOKEN"] = token
 
-    # TODO: we have this in two places now, can we pull into some kind of
-    # service wrapper?
-    engine = create_engine(TIMESCALEDB_URL)
-
-    timescaledb.reset_table(engine, timescaledb.GitHubPullRequests)
+    timescaledb.reset_table(timescaledb.GitHubPullRequests)
 
     orgs = [
         "ebmdatalab",

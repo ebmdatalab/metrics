@@ -3,10 +3,8 @@ from datetime import datetime, time
 
 import click
 import structlog
-from sqlalchemy import create_engine
 
 from .. import timescaledb
-from ..timescaledb.db import TIMESCALEDB_URL
 from .api import get_app, iter_messages
 
 
@@ -46,8 +44,5 @@ def tech_support(ctx, tech_support_channel_id):
             }
         )
 
-    # TODO: we have this in three places now, can we pull into some kind of
-    # service wrapper?
-    engine = create_engine(TIMESCALEDB_URL)
-    timescaledb.reset_table(engine, timescaledb.SlackTechSupport)
+    timescaledb.reset_table(timescaledb.SlackTechSupport)
     timescaledb.write(timescaledb.SlackTechSupport, rows)

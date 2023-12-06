@@ -3,21 +3,12 @@ import os
 import structlog
 from sqlalchemy import create_engine, inspect, schema, text
 from sqlalchemy.dialects.postgresql import insert
+from sqlalchemy.engine import make_url
 
 from ..tools.iter import batched
 
 
 log = structlog.get_logger()
-
-
-# psycopg2 is still the default postgres dialect for sqlalchemy so we inject
-# +psycopg to enable using v3.
-# Nit: We currently need to reuse this in a few places around the codebase, but
-# ideally we'd have some kind of service where we could inject a different URL
-# for testing.
-TIMESCALEDB_URL = os.environ["TIMESCALEDB_URL"].replace(
-    "postgresql", "postgresql+psycopg"
-)
 
 
 def delete_rows(connection, name, n=10000):
@@ -106,16 +97,41 @@ def ensure_table(engine, table):
         )
 
 
+def get_engine():
+    return create_engine(get_url())
+
+
+def get_url(database_prefix=None):
+    """
+    Get the final database connection URL
+
+    We split this out from get_engine() so the tests can possibly drop the
+    database first, and because we need to set the dialect before we use the
+    URL.
+    """
+    # psycopg2 is still the default postgres dialect for sqlalchemy so we inject
+    # +psycopg to enable using v3.
+    raw_url = os.environ["TIMESCALEDB_URL"].replace("postgresql", "postgresql+psycopg")
+
+    # build a sqlalchemy.URL from the url and append a prefix if one has been passed in
+    url = make_url(raw_url)
+    if database_prefix:
+        url = url.set(database=f"{database_prefix}_{url.database}")
+
+    return url
+
+
 def has_rows(connection, name):
     """Count the number of rows in the given table"""
     sql = text(f"SELECT COUNT(*) FROM {name}")
     return connection.scalar(sql) > 0
 
 
-def reset_table(engine, table):
-    """
-    Reset the given Table
-    """
+def reset_table(table, engine=None):
+    """Reset the given Table"""
+    if engine is None:
+        engine = get_engine()
+
     drop_hypertable(engine, table)
     ensure_table(engine, table)
     log.info("Reset table", table=table.name)
@@ -123,7 +139,7 @@ def reset_table(engine, table):
 
 def write(table, rows, engine=None):
     if engine is None:
-        engine = create_engine(TIMESCALEDB_URL)
+        engine = get_engine()
 
     # get the primary key name from the given table
     constraint = inspect(engine).get_pk_constraint(table.name)["name"]

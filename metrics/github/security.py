@@ -3,10 +3,8 @@ import os
 
 import requests
 import structlog
-from sqlalchemy import create_engine
 
 from .. import timescaledb
-from ..timescaledb.db import TIMESCALEDB_URL
 from ..tools import dates
 
 
@@ -124,10 +122,7 @@ def vulnerabilities(org):
 
 
 if __name__ == "__main__":  # pragma: no cover
-    # TODO: we have this in two places now, can we pull into some kind of
-    # service wrapper?
-    engine = create_engine(TIMESCALEDB_URL)
-    timescaledb.reset_table(engine, timescaledb.GitHubVulnerabilities)
+    timescaledb.reset_table(timescaledb.GitHubVulnerabilities)
 
     vulnerabilities("ebmdatalab")
     vulnerabilities("opensafely-core")

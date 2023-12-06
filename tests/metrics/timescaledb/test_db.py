@@ -5,7 +5,7 @@ import pytest
 from sqlalchemy import TIMESTAMP, Column, Integer, Table, select, text
 
 from metrics import timescaledb
-from metrics.timescaledb.db import TIMESCALEDB_URL, ensure_table, has_rows
+from metrics.timescaledb.db import ensure_table, get_url, has_rows
 from metrics.timescaledb.tables import metadata
 
 
@@ -56,6 +56,23 @@ def test_ensure_table(engine, has_table, table):
     is_hypertable(engine, timescaledb.GitHubPullRequests)
 
 
+def test_get_url(monkeypatch):
+    monkeypatch.setenv("TIMESCALEDB_URL", "postgresql://test/db")
+
+    url = get_url()
+
+    assert url.drivername == "postgresql+psycopg"
+    assert url.database == "db"
+
+
+def test_get_url_with_prefix(monkeypatch):
+    monkeypatch.setenv("TIMESCALEDB_URL", "postgres://test/db")
+
+    url = get_url(database_prefix="myprefix")
+
+    assert url.database == "myprefix_db"
+
+
 def test_reset_table(engine, has_table):
     ensure_table(engine, timescaledb.GitHubPullRequests)
 
@@ -75,13 +92,13 @@ def test_reset_table(engine, has_table):
             }
         )
 
-    timescaledb.write(timescaledb.GitHubPullRequests, rows, engine)
+    timescaledb.write(timescaledb.GitHubPullRequests, rows, engine=engine)
 
     assert has_table(timescaledb.GitHubPullRequests)
     with engine.begin() as connection:
         assert has_rows(connection, timescaledb.GitHubPullRequests.name)
 
-    timescaledb.reset_table(engine, timescaledb.GitHubPullRequests)
+    timescaledb.reset_table(timescaledb.GitHubPullRequests, engine=engine)
 
     assert has_table(timescaledb.GitHubPullRequests)
     with engine.begin() as connection:
@@ -95,7 +112,7 @@ def test_write(engine, table):
     rows = [
         {"time": datetime(2023, 11, i, tzinfo=UTC), "value": i} for i in range(1, 4)
     ]
-    timescaledb.write(table, rows, engine)
+    timescaledb.write(table, rows, engine=engine)
 
     # check rows are in table
     rows = get_rows(engine, table)
@@ -104,8 +121,8 @@ def test_write(engine, table):
 
 def test_write_with_default_engine(table):
     with patch(
-        "metrics.timescaledb.db.create_engine", autospec=True
+        "metrics.timescaledb.db.get_engine", autospec=True
     ) as mocked_create_engine:
         timescaledb.write(table, [])
 
-        mocked_create_engine.assert_called_once_with(TIMESCALEDB_URL)
+        mocked_create_engine.assert_called_once()
