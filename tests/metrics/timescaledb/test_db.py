@@ -5,7 +5,7 @@ import pytest
 from sqlalchemy import TIMESTAMP, Column, Integer, Table, select, text
 
 from metrics import timescaledb
-from metrics.timescaledb.db import ensure_table, get_url, has_rows
+from metrics.timescaledb.db import ensure_table, get_url, has_rows, has_table
 from metrics.timescaledb.tables import metadata
 
 
@@ -44,12 +44,14 @@ def table():
     )
 
 
-def test_ensure_table(engine, has_table, table):
-    assert not has_table(timescaledb.GitHubPullRequests)
+def test_ensure_table(engine, table):
+    with engine.begin() as connection:
+        assert not has_table(connection, timescaledb.GitHubPullRequests.name)
 
     ensure_table(engine, timescaledb.GitHubPullRequests)
 
-    assert has_table(timescaledb.GitHubPullRequests)
+    with engine.begin() as connection:
+        assert has_table(connection, timescaledb.GitHubPullRequests.name)
 
     # check there are timescaledb child tables
     # https://stackoverflow.com/questions/1461722/how-to-find-child-tables-that-inherit-from-another-table-in-psql
@@ -73,7 +75,7 @@ def test_get_url_with_prefix(monkeypatch):
     assert url.database == "myprefix_db"
 
 
-def test_reset_table(engine, has_table):
+def test_reset_table(engine):
     ensure_table(engine, timescaledb.GitHubPullRequests)
 
     # put enough rows in the db to make sure we exercise the batch removal of
@@ -94,15 +96,15 @@ def test_reset_table(engine, has_table):
 
     timescaledb.write(timescaledb.GitHubPullRequests, rows, engine=engine)
 
-    assert has_table(timescaledb.GitHubPullRequests)
     with engine.begin() as connection:
+        assert has_table(connection, timescaledb.GitHubPullRequests.name)
         assert has_rows(connection, timescaledb.GitHubPullRequests.name)
 
     timescaledb.reset_table(timescaledb.GitHubPullRequests, engine=engine)
 
-    assert has_table(timescaledb.GitHubPullRequests)
     with engine.begin() as connection:
-        assert not has_rows(connection, timescaledb.GitHubPullRequests)
+        assert has_table(connection, timescaledb.GitHubPullRequests.name)
+        assert not has_rows(connection, timescaledb.GitHubPullRequests.name)
 
 
 def test_write(engine, table):

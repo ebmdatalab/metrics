@@ -70,6 +70,9 @@ def drop_hypertable(engine, table):
     with engine.begin() as connection:
         log.debug("Removing table: %s", table)
 
+        if not has_table(connection, table):
+            return
+
         while has_rows(connection, table):
             delete_rows(connection, table)
 
@@ -119,6 +122,10 @@ def get_url(database_prefix=None):
         url = url.set(database=f"{database_prefix}_{url.database}")
 
     return url
+
+
+def has_table(engine, table):
+    return inspect(engine).has_table(table)
 
 
 def has_rows(connection, name):

@@ -1,5 +1,5 @@
 import pytest
-from sqlalchemy import create_engine, inspect
+from sqlalchemy import create_engine
 from sqlalchemy_utils import create_database, database_exists, drop_database
 
 from metrics.timescaledb.db import get_url
@@ -19,11 +19,3 @@ def engine():
 
     # drop the database on test suite exit
     drop_database(url)
-
-
-@pytest.fixture
-def has_table(engine):
-    def checker(table):
-        return inspect(engine).has_table(table.name)
-
-    return checker
