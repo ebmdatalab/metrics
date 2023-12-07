@@ -1,3 +1,4 @@
+import json
 import os
 
 import requests
@@ -60,6 +61,9 @@ def get_vulnerabilities(org):
     """
     variables = {"org": org}
     response = make_request(query, variables)
+    if "data" not in response:
+        raise RuntimeError(json.dumps(response, indent=2))
+
     return response["data"]["organization"]["repositories"]["nodes"]
 
 
