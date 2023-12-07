@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, time
 
 
 def drop_archived_prs(prs, date):
@@ -9,15 +9,12 @@ def drop_archived_prs(prs, date):
     function will pick the relevant one based on the type of the given date.
     """
 
-    suffix = "_at" if isinstance(date, datetime) else ""
-    key = f"repo_archived{suffix}"
-
     def keep(pr, date):
-        if not pr[key]:
+        if not pr["repo_archived_at"]:
             # the repo hasn't been archived yet
             return True
 
-        if date < pr[key]:
+        if date < pr["repo_archived_at"].date():
             # the repo has not been archived by date
             return True
 
@@ -26,7 +23,7 @@ def drop_archived_prs(prs, date):
     return [pr for pr in prs if keep(pr, date)]
 
 
-def process_prs(writer, prs, date, name=""):
+def iter_prs(prs, date, name):
     """
     Given a list of PRs, break them down in series for writing
 
@@ -50,11 +47,11 @@ def process_prs(writer, prs, date, name=""):
 
             org = list(orgs)[0]
 
-            writer.write(
-                date,
-                len(prs_by_author_and_repo),
-                name=name,
-                author=author,
-                organisation=org,
-                repo=repo,
-            )
+            yield {
+                "time": datetime.combine(date, time()),
+                "value": len(prs_by_author_and_repo),
+                "name": name,
+                "author": author,
+                "organisation": org,
+                "repo": repo,
+            }

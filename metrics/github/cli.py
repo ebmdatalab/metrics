@@ -1,23 +1,24 @@
+import itertools
 from datetime import UTC, date, datetime, time, timedelta
 
 import click
 import structlog
-from sqlalchemy import create_engine
 
-from ..timescaledb import TimescaleDBWriter, drop_tables
-from ..timescaledb.tables import GitHubPullRequests
-from ..timescaledb.writer import TIMESCALEDB_URL
+from .. import timescaledb
 from ..tools.dates import iter_days, previous_weekday
 from . import api
-from .prs import drop_archived_prs, process_prs
+from .prs import drop_archived_prs, iter_prs
 
 
 log = structlog.get_logger()
 
 
-def open_prs(prs, org, days_threshold):
+def old_prs(prs, org, days_threshold):
     """
-    How many PRs were open at a given sample point?
+    Track "old" PRs
+
+    Defined as: How many PRs had been open for the given days threshold at a
+    given sample point?
 
     We're using Monday morning here to match how the values in throughput are
     bucketed with timeseriesdb's time_bucket() function
@@ -26,14 +27,14 @@ def open_prs(prs, org, days_threshold):
     Monday to todays date, filtering the list of PRs down to just those open on
     the given Monday morning.
     """
-    earliest = min([pr["created"] for pr in prs])
+    earliest = min([pr["created_at"] for pr in prs]).date()
     start = previous_weekday(earliest, 0)  # Monday
     mondays = list(iter_days(start, date.today(), step=timedelta(days=7)))
 
     the_future = datetime(9999, 1, 1, tzinfo=UTC)
     threshold = timedelta(days=days_threshold)
 
-    def is_open(pr, dt):
+    def is_old(pr, dt):
         """
         Filter function for PRs
 
@@ -49,44 +50,38 @@ def open_prs(prs, org, days_threshold):
 
         return (closed - opened) >= threshold
 
-    with TimescaleDBWriter(GitHubPullRequests) as writer:
-        for monday in mondays:
-            dt = datetime.combine(monday, time(), tzinfo=UTC)
-            prs_open = [pr for pr in prs if is_open(pr, dt)]
-            prs_open = drop_archived_prs(prs_open, monday)
+    for monday in mondays:
+        dt = datetime.combine(monday, time(), tzinfo=UTC)
+        valid_prs = [pr for pr in prs if is_old(pr, dt)]
+        valid_prs = drop_archived_prs(valid_prs, monday)
 
-            name = f"queue_older_than_{days_threshold}_days"
+        name = f"queue_older_than_{days_threshold}_days"
 
-            log.info(
-                "%s | %s | Processing %s PRs open at %s",
-                name,
-                org,
-                len(prs_open),
-                dt,
-            )
-            process_prs(writer, prs_open, monday, name=name)
+        log.info(
+            "%s | %s | Processing %s old PRs at %s",
+            name,
+            org,
+            len(valid_prs),
+            dt,
+        )
+        yield from iter_prs(valid_prs, monday, name)
 
 
 def pr_throughput(prs, org):
     """
-    PRs opened and closed each day from the earliest day to today
+    PRs closed each day from the earliest day to today
     """
-    start = min([pr["created"] for pr in prs])
+    start = min([pr["created_at"] for pr in prs]).date()
     days = list(iter_days(start, date.today()))
 
-    with TimescaleDBWriter(GitHubPullRequests) as writer:
-        for day in days:
-            valid_prs = drop_archived_prs(prs, day)
+    for day in days:
+        valid_prs = drop_archived_prs(prs, day)
+        merged_prs = [
+            pr for pr in valid_prs if pr["merged_at"] and pr["merged_at"].date() == day
+        ]
 
-            opened_prs = [pr for pr in valid_prs if pr["created"] == day]
-            log.info("%s | %s | Processing %s opened PRs", day, org, len(opened_prs))
-            process_prs(writer, opened_prs, day, name="prs_opened")
-
-            merged_prs = [
-                pr for pr in valid_prs if pr["merged"] and pr["merged"] == day
-            ]
-            log.info("%s | %s | Processing %s merged PRs", day, org, len(merged_prs))
-            process_prs(writer, merged_prs, day, name="prs_merged")
+        log.info("%s | %s | Processing %s merged PRs", day, org, len(merged_prs))
+        yield from iter_prs(merged_prs, day, name="prs_merged")
 
 
 @click.command()
@@ -96,13 +91,7 @@ def github(ctx, token):
     ctx.ensure_object(dict)
     ctx.obj["TOKEN"] = token
 
-    log.info("Dropping existing github_* tables")
-    # TODO: we have this in two places now, can we pull into some kind of
-    # service wrapper?
-    engine = create_engine(TIMESCALEDB_URL)
-    with engine.begin() as connection:
-        drop_tables(connection, prefix="github_")
-    log.info("Dropped existing github_* tables")
+    timescaledb.reset_table(timescaledb.GitHubPullRequests)
 
     orgs = [
         "ebmdatalab",
@@ -113,5 +102,11 @@ def github(ctx, token):
         prs = list(api.iter_prs(org))
         log.info("Backfilling with %s PRs for %s", len(prs), org)
 
-        open_prs(prs, org, days_threshold=7)
-        pr_throughput(prs, org)
+        rows = list(
+            itertools.chain(
+                old_prs(prs, org, days_threshold=7),
+                pr_throughput(prs, org),
+            )
+        )
+
+        timescaledb.write(timescaledb.GitHubPullRequests, rows)

@@ -1,13 +1,10 @@
 import itertools
-from datetime import datetime
+from datetime import datetime, time
 
 import click
 import structlog
-from sqlalchemy import create_engine
 
-from ..timescaledb import TimescaleDBWriter, drop_tables
-from ..timescaledb.tables import SlackTechSupport
-from ..timescaledb.writer import TIMESCALEDB_URL
+from .. import timescaledb
 from .api import get_app, iter_messages
 
 
@@ -35,16 +32,17 @@ def tech_support(ctx, tech_support_channel_id):
 
     messages = iter_messages(app, tech_support_channel_id)
 
-    log.info("Dropping existing slack_* tables")
-    # TODO: we have this in three places now, can we pull into some kind of
-    # service wrapper?
-    engine = create_engine(TIMESCALEDB_URL)
-    with engine.begin() as connection:
-        drop_tables(connection, prefix="slack_")
-    log.info("Dropped existing slack_* tables")
+    rows = []
+    for date, messages in itertools.groupby(
+        messages, lambda m: datetime.fromtimestamp(float(m["ts"])).date()
+    ):
+        rows.append(
+            {
+                "time": datetime.combine(date, time()),
+                "value": len(list(messages)),
+                "name": "requests",
+            }
+        )
 
-    with TimescaleDBWriter(SlackTechSupport) as writer:
-        for date, messages in itertools.groupby(
-            messages, lambda m: datetime.fromtimestamp(float(m["ts"])).date()
-        ):
-            writer.write(date, len(list(messages)), name="requests")
+    timescaledb.reset_table(timescaledb.SlackTechSupport)
+    timescaledb.write(timescaledb.SlackTechSupport, rows)
