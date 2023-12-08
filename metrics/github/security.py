@@ -13,26 +13,32 @@ log = structlog.get_logger()
 GITHUB_TOKEN = os.environ["GITHUB_TOKEN"]
 
 session = requests.Session()
-session.headers = {
-    "Authorization": f"bearer {GITHUB_TOKEN}",
-    "User-Agent": "Bennett Metrics Testing",
-}
 
 
-def make_request(query, variables):
-    response = session.post(
-        "https://api.github.com/graphql", json={"query": query, "variables": variables}
-    )
+class GitHubClient:
+    def __init__(self, org, token):
+        self.org = org
+        self.token = token
 
-    if not response.ok:
-        log.info(response.headers)
-        log.info(response.content)
+    def post(self, query):
+        session.headers = {
+            "Authorization": f"bearer {self.token}",
+            "User-Agent": "Bennett Metrics",
+        }
+        response = session.post(
+            "https://api.github.com/graphql",
+            json={"query": query, "variables": {"org": self.org}},
+        )
 
-    response.raise_for_status()
-    return response.json()
+        if not response.ok:
+            log.info(response.headers)
+            log.info(response.content)
+
+        response.raise_for_status()
+        return response.json()
 
 
-def get_vulnerabilities(org):
+def get_vulnerabilities(client):
     query = """
     query vulnerabilities($org: String!) {
       organization(login: $org) {
@@ -56,8 +62,8 @@ def get_vulnerabilities(org):
       }
     }
     """
-    variables = {"org": org}
-    response = make_request(query, variables)
+
+    response = client.make_request(query)
     if "data" not in response:
         raise RuntimeError(json.dumps(response, indent=2))
 
@@ -110,8 +116,8 @@ def parse_vulnerabilities(vulnerabilities, org):
     return results
 
 
-def vulnerabilities(org):
-    vulns = parse_vulnerabilities(get_vulnerabilities(org), org)
+def vulnerabilities(client):
+    vulns = parse_vulnerabilities(get_vulnerabilities(client), client.org)
 
     rows = []
     for v in vulns:
@@ -124,5 +130,8 @@ def vulnerabilities(org):
 if __name__ == "__main__":  # pragma: no cover
     timescaledb.reset_table(timescaledb.GitHubVulnerabilities)
 
-    vulnerabilities("ebmdatalab")
-    vulnerabilities("opensafely-core")
+    client = GitHubClient("ebmdatalab", GITHUB_TOKEN)
+    vulnerabilities(client)
+
+    client = GitHubClient("opensafely-core", GITHUB_TOKEN)
+    vulnerabilities(client)
