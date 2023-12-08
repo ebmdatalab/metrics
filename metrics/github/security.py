@@ -1,41 +1,13 @@
 import json
-import os
 
-import requests
 import structlog
 
 from .. import timescaledb
 from ..tools import dates
+from . import api
 
 
 log = structlog.get_logger()
-
-GITHUB_TOKEN = os.environ["GITHUB_TOKEN"]
-
-session = requests.Session()
-
-
-class GitHubClient:
-    def __init__(self, org, token):
-        self.org = org
-        self.token = token
-
-    def post(self, query):
-        session.headers = {
-            "Authorization": f"bearer {self.token}",
-            "User-Agent": "Bennett Metrics",
-        }
-        response = session.post(
-            "https://api.github.com/graphql",
-            json={"query": query, "variables": {"org": self.org}},
-        )
-
-        if not response.ok:
-            log.info(response.headers)
-            log.info(response.content)
-
-        response.raise_for_status()
-        return response.json()
 
 
 def get_vulnerabilities(client):
@@ -63,7 +35,7 @@ def get_vulnerabilities(client):
     }
     """
 
-    response = client.make_request(query)
+    response = client.post(query, {})
     if "data" not in response:
         raise RuntimeError(json.dumps(response, indent=2))
 
@@ -130,8 +102,8 @@ def vulnerabilities(client):
 if __name__ == "__main__":  # pragma: no cover
     timescaledb.reset_table(timescaledb.GitHubVulnerabilities)
 
-    client = GitHubClient("ebmdatalab", GITHUB_TOKEN)
+    client = api.GitHubClient("ebmdatalab", api.GITHUB_TOKEN)
     vulnerabilities(client)
 
-    client = GitHubClient("opensafely-core", GITHUB_TOKEN)
+    client = api.GitHubClient("opensafely-core", api.GITHUB_TOKEN)
     vulnerabilities(client)
