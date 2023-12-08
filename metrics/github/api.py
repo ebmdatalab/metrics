@@ -15,13 +15,32 @@ GITHUB_TOKEN = os.environ["GITHUB_TOKEN"]
 
 
 session = requests.Session()
-session.headers = {
-    "Authorization": f"bearer {GITHUB_TOKEN}",
-    "User-Agent": "Bennett Metrics",
-}
 
 
-def get_query_page(*, query, session, cursor, **kwargs):
+class GitHubClient:
+    def __init__(self, org, token):
+        self.org = org
+        self.token = token
+
+    def post(self, query, variables):
+        session.headers = {
+            "Authorization": f"bearer {self.token}",
+            "User-Agent": "Bennett Metrics",
+        }
+        response = session.post(
+            "https://api.github.com/graphql",
+            json={"query": query, "variables": {"org": self.org, **variables}},
+        )
+
+        if not response.ok:
+            log.info(response.headers)
+            log.info(response.content)
+
+        response.raise_for_status()
+        return response.json()
+
+
+def get_query_page(*, query, cursor, org, **kwargs):
     """
     Get a page of the given query
 
@@ -32,19 +51,10 @@ def get_query_page(*, query, session, cursor, **kwargs):
 
     [1]: https://graphql.org/learn/pagination/#end-of-list-counts-and-connections
     """
-    # use GraphQL variables to avoid string interpolation
     variables = {"cursor": cursor, **kwargs}
-    payload = {"query": query, "variables": variables}
-
     log.debug(query=query, **variables)
-    r = session.post("https://api.github.com/graphql", json=payload)
-
-    if not r.ok:  # pragma: no cover
-        print(r.headers)
-        print(r.content)
-
-    r.raise_for_status()
-    results = r.json()
+    client = GitHubClient(org, GITHUB_TOKEN)
+    results = client.post(query, variables)
 
     # In some cases graphql will return a 200 response when there are errors.
     # https://sachee.medium.com/200-ok-error-handling-in-graphql-7ec869aec9bc
@@ -78,9 +88,7 @@ def get_query(query, path, **kwargs):
     more_pages = True
     cursor = None
     while more_pages:
-        page = extract(
-            get_query_page(query=query, session=session, cursor=cursor, **kwargs)
-        )
+        page = extract(get_query_page(query=query, cursor=cursor, **kwargs))
         yield from page["nodes"]
         more_pages = page["pageInfo"]["hasNextPage"]
         cursor = page["pageInfo"]["endCursor"]
