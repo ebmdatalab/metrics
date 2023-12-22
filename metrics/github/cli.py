@@ -97,7 +97,8 @@ def github(ctx):
     ]
     for org in orgs:
         log.info("Working with org: %s", org)
-        prs = list(api.iter_prs(org))
+        client = api.GitHubClient(org, api.GITHUB_TOKEN)
+        prs = list(api.iter_prs(client))
         log.info("Backfilling with %s PRs for %s", len(prs), org)
 
         rows = itertools.chain(
