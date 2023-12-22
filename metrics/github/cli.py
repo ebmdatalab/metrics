@@ -100,11 +100,9 @@ def github(ctx):
         prs = list(api.iter_prs(org))
         log.info("Backfilling with %s PRs for %s", len(prs), org)
 
-        rows = list(
-            itertools.chain(
-                old_prs(prs, org, days_threshold=7),
-                pr_throughput(prs, org),
-            )
+        rows = itertools.chain(
+            old_prs(prs, org, days_threshold=7),
+            pr_throughput(prs, org),
         )
 
         timescaledb.write(timescaledb.GitHubPullRequests, rows)
