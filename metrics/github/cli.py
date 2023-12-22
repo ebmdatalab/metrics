@@ -85,11 +85,9 @@ def pr_throughput(prs, org):
 
 
 @click.command()
-@click.option("--token", required=True, envvar="GITHUB_TOKEN")
 @click.pass_context
-def github(ctx, token):
+def github(ctx):
     ctx.ensure_object(dict)
-    ctx.obj["TOKEN"] = token
 
     timescaledb.reset_table(timescaledb.GitHubPullRequests)
 
