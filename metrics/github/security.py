@@ -1,4 +1,5 @@
 import json
+import os
 
 import structlog
 
@@ -102,8 +103,9 @@ def vulnerabilities(client):
 if __name__ == "__main__":  # pragma: no cover
     timescaledb.reset_table(timescaledb.GitHubVulnerabilities)
 
-    client = api.GitHubClient("ebmdatalab", api.GITHUB_TOKEN)
+    GITHUB_TOKEN = os.environ["GITHUB_TOKEN"]
+    client = api.GitHubClient("ebmdatalab", GITHUB_TOKEN)
     vulnerabilities(client)
 
-    client = api.GitHubClient("opensafely-core", api.GITHUB_TOKEN)
+    client = api.GitHubClient("opensafely-core", GITHUB_TOKEN)
     vulnerabilities(client)

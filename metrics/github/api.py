@@ -10,8 +10,6 @@ from ..tools.dates import datetime_from_iso
 
 log = structlog.get_logger()
 
-GITHUB_TOKEN = os.environ["GITHUB_TOKEN"]
-
 
 session = requests.Session()
 
@@ -161,6 +159,7 @@ def iter_prs(client):
 
 
 if __name__ == "__main__":
+    GITHUB_TOKEN = os.environ["GITHUB_TOKEN"]
     client = GitHubClient("opensafely-core", GITHUB_TOKEN)
     for pr in iter_prs(client):
         print(pr)
