@@ -104,8 +104,11 @@ if __name__ == "__main__":  # pragma: no cover
     timescaledb.reset_table(timescaledb.GitHubVulnerabilities)
 
     GITHUB_TOKEN = os.environ["GITHUB_TOKEN"]
-    client = api.GitHubClient("ebmdatalab", GITHUB_TOKEN)
+    os_core_token = os.environ.get("GITHUB_OS_CORE_TOKEN", GITHUB_TOKEN)
+    ebmdatalab_token = os.environ.get("GITHUB_EBMDATALAB_TOKEN", GITHUB_TOKEN)
+
+    client = api.GitHubClient("ebmdatalab", ebmdatalab_token)
     vulnerabilities(client)
 
-    client = api.GitHubClient("opensafely-core", GITHUB_TOKEN)
+    client = api.GitHubClient("opensafely-core", os_core_token)
     vulnerabilities(client)
