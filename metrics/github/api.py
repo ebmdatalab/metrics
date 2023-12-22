@@ -1,7 +1,6 @@
 import json
 import os
 import textwrap
-from datetime import date
 
 import requests
 import structlog
@@ -156,13 +155,12 @@ def iter_repo_prs(client, repo):
         }
 
 
-def iter_prs(org):
-    client = GitHubClient(org, GITHUB_TOKEN)
+def iter_prs(client):
     for repo in iter_repos(client):
         yield from iter_repo_prs(client, repo)
 
 
 if __name__ == "__main__":
-    orgs = ["ebmdatalab", "opensafely-core"]
-    for pr in list(iter_prs(orgs[1], date(2023, 10, 24))):
+    client = GitHubClient("opensafely-core", GITHUB_TOKEN)
+    for pr in iter_prs(client):
         print(pr)
