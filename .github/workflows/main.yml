@@ -53,6 +53,8 @@ jobs:
       - name: Run tests
         env:
           GITHUB_TOKEN:
+          GITHUB_EBMDATALAB_TOKEN:
+          GITHUB_OS_CORE_TOKEN:
           SLACK_SIGNING_SECRET:
           SLACK_TECH_SUPPORT_CHANNEL_ID:
           SLACK_TOKEN:
@@ -148,7 +150,7 @@ jobs:
 
       - name: Publish image
         run: |
-            echo ${{ secrets.GITHUB_TOKEN }} | docker login "$REGISTRY" -u ${{ github.actor }} --password-stdin
+            echo ${{ secrets.GITHUB_OS_CORE_TOKEN }} | docker login "$REGISTRY" -u ${{ github.actor }} --password-stdin
             docker tag "$IMAGE_NAME" "$PUBLIC_IMAGE_NAME":latest
             docker push "$PUBLIC_IMAGE_NAME":latest
 
