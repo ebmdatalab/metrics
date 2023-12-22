@@ -1,4 +1,5 @@
 import itertools
+import os
 from datetime import UTC, date, datetime, time, timedelta
 
 import click
@@ -91,13 +92,14 @@ def github(ctx):
 
     timescaledb.reset_table(timescaledb.GitHubPullRequests)
 
+    GITHUB_TOKEN = os.environ["GITHUB_TOKEN"]
     orgs = [
         "ebmdatalab",
         "opensafely-core",
     ]
     for org in orgs:
         log.info("Working with org: %s", org)
-        client = api.GitHubClient(org, api.GITHUB_TOKEN)
+        client = api.GitHubClient(org, GITHUB_TOKEN)
         prs = list(api.iter_prs(client))
         log.info("Backfilling with %s PRs for %s", len(prs), org)
 
