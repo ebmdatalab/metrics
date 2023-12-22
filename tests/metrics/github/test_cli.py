@@ -29,8 +29,7 @@ def test_github():
         Usage: cli github [OPTIONS]
 
         Options:
-          --token TEXT  [required]
-          --help        Show this message and exit.
+          --help  Show this message and exit.
         """
     ).lstrip()  # lstrip so dedent works and we retain the leading newline
     assert result.output == expected, result.output
