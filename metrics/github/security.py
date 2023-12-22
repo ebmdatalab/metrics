@@ -108,7 +108,9 @@ if __name__ == "__main__":  # pragma: no cover
     ebmdatalab_token = os.environ.get("GITHUB_EBMDATALAB_TOKEN", GITHUB_TOKEN)
 
     client = api.GitHubClient("ebmdatalab", ebmdatalab_token)
+    log.info("Fetching vulnerabilities for %s", client.org)
     vulnerabilities(client)
 
     client = api.GitHubClient("opensafely-core", os_core_token)
+    log.info("Fetching vulnerabilities for %s", client.org)
     vulnerabilities(client)
