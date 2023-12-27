@@ -1,4 +1,3 @@
-import json
 import os
 
 import structlog
@@ -11,24 +10,41 @@ from . import api
 log = structlog.get_logger()
 
 
-def get_vulnerabilities(client):
+def fetch_repos(client):
     query = """
-    query vulnerabilities($org: String!) {
+    query repos($cursor: String, $org: String!) {
       organization(login: $org) {
-        repositories(first: 100) {
+        repositories(first: 100, after: $cursor) {
           nodes {
             name
             archivedAt
-            vulnerabilityAlerts(first: 100) {
-              nodes {
-                number
-                createdAt
-                fixedAt
-                dismissedAt
-              }
-              pageInfo {
-                hasNextPage endCursor
-              }
+          }
+          pageInfo {
+              endCursor
+              hasNextPage
+          }
+        }
+      }
+    }
+    """
+    return client.get_query(query, path=["organization", "repositories"])
+
+
+def fetch_vulnerabilities(client):
+    query = """
+    query vulnerabilities($cursor: String, $org: String!, $repo: String!) {
+      organization(login: $org) {
+        repository(name: $repo) {
+          name
+          vulnerabilityAlerts(first: 100, after: $cursor) {
+            nodes {
+              createdAt
+              fixedAt
+              dismissedAt
+            }
+            pageInfo {
+              endCursor
+              hasNextPage
             }
           }
         }
@@ -36,11 +52,24 @@ def get_vulnerabilities(client):
     }
     """
 
-    response = client.post(query, {})
-    if "data" not in response:
-        raise RuntimeError(json.dumps(response, indent=2))
+    repos = []
+    for repo in fetch_repos(client):
+        if repo["archivedAt"]:
+            continue
 
-    return response["data"]["organization"]["repositories"]["nodes"]
+        vulnerabilities = list(
+            client.get_query(
+                query,
+                path=["organization", "repository", "vulnerabilityAlerts"],
+                org=client.org,
+                repo=repo["name"],
+            )
+        )
+
+        if vulnerabilities:
+            repos.append({"repo": repo["name"], "vulnerabilities": vulnerabilities})
+
+    return repos
 
 
 def date_before(date_string, target_date):
@@ -70,27 +99,20 @@ def parse_vulnerabilities_for_date(vulns, repo, target_date, org):
     }
 
 
-def parse_vulnerabilities(vulnerabilities, org):
-    results = []
+def parse_vulnerabilities(repos, org):
+    for repo in repos:
+        repo_name = repo["repo"]
+        vulnerabilities = repo["vulnerabilities"]
 
-    for repo in vulnerabilities:
-        repo_name = repo["name"]
-        alerts = repo["vulnerabilityAlerts"]["nodes"]
-
-        if repo["archivedAt"] or not alerts:
-            continue
-
-        earliest_date = dates.date_from_iso(alerts[0]["createdAt"])
-        latest_date = dates.date_from_iso(alerts[-1]["createdAt"])
+        earliest_date = dates.date_from_iso(vulnerabilities[0]["createdAt"])
+        latest_date = dates.date_from_iso(vulnerabilities[-1]["createdAt"])
 
         for day in dates.iter_days(earliest_date, latest_date):
-            results.append(parse_vulnerabilities_for_date(alerts, repo_name, day, org))
-
-    return results
+            yield parse_vulnerabilities_for_date(vulnerabilities, repo_name, day, org)
 
 
 def vulnerabilities(client):
-    vulns = parse_vulnerabilities(get_vulnerabilities(client), client.org)
+    vulns = parse_vulnerabilities(fetch_vulnerabilities(client), client.org)
 
     rows = []
     for v in vulns:
