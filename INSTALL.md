@@ -16,6 +16,8 @@ dokku config:set metrics SLACK_TOKEN='xxx'
 dokku config:set metrics TIMESCALEDB_URL='xxx'
 ```
 
+The `GITHUB_EBMDATALAB_TOKEN` and `GITHUB_OS_CORE_TOKEN` are fine-grained GitHub personal access tokens that are used for authenticating with the GitHub GraphQL API. Each token is assigned to a single organisation and should have read access to *all repositories* owned by that organisation with the following repository permissions: Code scanning alerts, Dependabot alerts, Metadata, Pull requests and Repository security advisories.
+
 ## Disable checks
 Dokku performs health checks on apps during deploy by sending requests to port 80.
 This tool isn't a web app so it can't accept requests on a port.
