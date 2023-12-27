@@ -47,7 +47,6 @@ class GitHubClient:
         [1]: https://graphql.org/learn/pagination/#end-of-list-counts-and-connections
         """
         variables = {"cursor": cursor, **kwargs}
-        log.debug(query=query, **variables)
         results = self.post(query, variables)
 
         # In some cases graphql will return a 200 response when there are errors.
