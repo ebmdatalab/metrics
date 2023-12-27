@@ -72,22 +72,15 @@ def fetch_vulnerabilities(client):
     return repos
 
 
-def date_before(date_string, target_date):
-    if not date_string:
-        return False
-
-    return dates.date_from_iso(date_string) <= target_date
-
-
 def parse_vulnerabilities_for_date(vulns, repo, target_date, org):
     closed_vulns = 0
     open_vulns = 0
     for row in vulns:
-        if date_before(row["fixedAt"], target_date) or date_before(
+        if dates.date_before(row["fixedAt"], target_date) or dates.date_before(
             row["dismissedAt"], target_date
         ):
             closed_vulns += 1
-        elif date_before(row["createdAt"], target_date):
+        elif dates.date_before(row["createdAt"], target_date):
             open_vulns += 1
 
     return {
