@@ -3,6 +3,7 @@ from datetime import date, datetime
 import pytest
 
 from metrics.tools.dates import (
+    date_before,
     date_from_iso,
     datetime_from_iso,
     iter_days,
@@ -81,3 +82,19 @@ def test_iter_days_with_empty_values():
 )
 def test_previous_weekday(d, weekday, expected):
     assert previous_weekday(d, weekday) == expected
+
+
+def test_date_before_is_true_when_before():
+    assert date_before("2022-11-07T15:14:37Z", date(2023, 11, 16)) is True
+
+
+def test_date_before_is_true_when_same_day():
+    assert date_before("2023-11-16T09:01:12Z", date(2023, 11, 16)) is True
+
+
+def test_date_before_is_false_when_after():
+    assert date_before("2023-11-17T15:14:37Z", date(2023, 11, 16)) is False
+
+
+def test_date_before_missing_date():
+    assert date_before(None, date(2023, 11, 16)) is False
