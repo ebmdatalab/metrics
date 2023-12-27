@@ -114,12 +114,9 @@ def parse_vulnerabilities(repos, org):
 def vulnerabilities(client):
     vulns = parse_vulnerabilities(fetch_vulnerabilities(client), client.org)
 
-    rows = []
     for v in vulns:
         date = v.pop("date")
-        rows.append({"time": date, "value": 0, **v})
-
-    timescaledb.write(timescaledb.GitHubVulnerabilities, rows)
+        yield {"time": date, "value": 0, **v}
 
 
 if __name__ == "__main__":  # pragma: no cover
@@ -131,8 +128,8 @@ if __name__ == "__main__":  # pragma: no cover
 
     client = api.GitHubClient("ebmdatalab", ebmdatalab_token)
     log.info("Fetching vulnerabilities for %s", client.org)
-    vulnerabilities(client)
+    timescaledb.write(timescaledb.GitHubVulnerabilities, vulnerabilities(client))
 
     client = api.GitHubClient("opensafely-core", os_core_token)
     log.info("Fetching vulnerabilities for %s", client.org)
-    vulnerabilities(client)
+    timescaledb.write(timescaledb.GitHubVulnerabilities, vulnerabilities(client))
