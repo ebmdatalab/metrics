@@ -84,10 +84,7 @@ class Repo:
     vulnerabilities: list[Vulnerability]
 
     def __post_init__(self):
-        if self.vulnerabilities:
-            self.vulnerabilities = sorted(
-                self.vulnerabilities, key=lambda v: v.created_at
-            )
+        self.vulnerabilities = sorted(self.vulnerabilities, key=lambda v: v.created_at)
 
     def earliest_date(self):
         return self.vulnerabilities[0].created_at
@@ -96,34 +93,7 @@ class Repo:
         return self.vulnerabilities[-1].created_at
 
 
-def parse_vulnerabilities_by_day(repo, target_date):
-    closed_vulns = 0
-    open_vulns = 0
-    for vuln in repo.vulnerabilities:
-        if vuln.is_closed_at(target_date):
-            closed_vulns += 1
-        elif vuln.is_open_at(target_date):
-            open_vulns += 1
-
-    return {
-        "date": target_date,
-        "closed": closed_vulns,
-        "open": open_vulns,
-        "organisation": repo.org,
-        "repo": repo.name,
-    }
-
-
-def parse_vulnerabilities(repos):
-    for repo in repos:
-        if not repo.vulnerabilities:
-            continue
-        for day in dates.iter_days(repo.earliest_date(), repo.latest_date()):
-            yield parse_vulnerabilities_by_day(repo, day)
-
-
 def get_repos(client):
-    repos = []
     for repo in query_repos(client):
         if repo["archivedAt"]:
             continue
@@ -137,15 +107,23 @@ def get_repos(client):
                     dates.date_from_iso(vuln["dismissedAt"]),
                 )
             )
-        repos.append(Repo(repo["name"], client.org, vulnerabilities))
-
-    return repos
+        if vulnerabilities:
+            yield Repo(repo["name"], client.org, vulnerabilities)
 
 
 def vulnerabilities(client):
-    for vuln in parse_vulnerabilities(get_repos(client)):
-        date = vuln.pop("date")
-        yield {"time": date, "value": 0, **vuln}
+    for repo in get_repos(client):
+        for day in dates.iter_days(repo.earliest_date(), repo.latest_date()):
+            closed_vulns = sum([1 for v in repo.vulnerabilities if v.is_closed_at(day)])
+            open_vulns = sum([1 for v in repo.vulnerabilities if v.is_open_at(day)])
+            yield {
+                "time": day,
+                "closed": closed_vulns,
+                "open": open_vulns,
+                "organisation": repo.org,
+                "repo": repo.name,
+                "value": 0,  # needed for the timescaledb
+            }
 
 
 if __name__ == "__main__":  # pragma: no cover
