@@ -67,13 +67,24 @@ def test_get_repos():
     fake_client = lambda: None
     fake_client.org = "test-org"
 
-    result = security.get_repos(fake_client)
+    result = list(security.get_repos(fake_client))
 
     assert len(result) == 2
     assert result[0].name == "opencodelists"
     assert len(result[0].vulnerabilities) == 7
     assert result[1].name == "job-server"
     assert len(result[1].vulnerabilities) == 7
+
+
+def test_get_repos_when_no_vulnerabilities():
+    security.query_repos = fake_repos
+    security.query_vulnerabilities = lambda x, y: []
+    fake_client = lambda: None
+    fake_client.org = "test-org"
+
+    result = list(security.get_repos(fake_client))
+
+    assert len(result) == 0
 
 
 def test_repo_earliest_date():
@@ -138,92 +149,17 @@ def test_vulnerability_closed_at_is_closed():
     assert v.is_closed_at(date(2023, 10, 29))
 
 
-def test_parse_vulnerabilities_by_day():
-    vulnerabilities = [
-        security.Vulnerability(date(2023, 10, 26), None, None),
-        security.Vulnerability(date(2023, 10, 29), None, None),
-    ]
-    repo = security.Repo("test", "test-org", vulnerabilities)
-
-    result = security.parse_vulnerabilities_by_day(repo, date(2023, 10, 26))
-
-    assert result == {
-        "date": date(2023, 10, 26),
-        "closed": 0,
-        "open": 1,
-        "organisation": "test-org",
-        "repo": "test",
-    }
-
-
-def test_parse_vulnerabilities_by_day_including_closed():
-    vulnerabilities = [
-        security.Vulnerability(date(2023, 10, 13), date(2023, 10, 20), None),
-        security.Vulnerability(date(2023, 10, 26), None, None),
-        security.Vulnerability(date(2023, 10, 29), None, None),
-    ]
-    repo = security.Repo("test", "test-org", vulnerabilities)
-
-    result = security.parse_vulnerabilities_by_day(repo, date(2023, 10, 26))
-
-    assert result == {
-        "date": date(2023, 10, 26),
-        "closed": 1,
-        "open": 1,
-        "organisation": "test-org",
-        "repo": "test",
-    }
-
-
-def test_parse_vulnerabilities():
-    vulnerabilities = [
-        security.Vulnerability(date(2023, 10, 13), date(2023, 10, 20), None),
-        security.Vulnerability(date(2023, 10, 26), None, None),
-        security.Vulnerability(date(2023, 10, 29), None, None),
-    ]
-    repos = [
-        security.Repo("test", "test-org", vulnerabilities),
-        security.Repo("test", "test-org", vulnerabilities),
-    ]
-
-    result = list(security.parse_vulnerabilities(repos))
-
-    assert len(result) == 34
-    assert result[0] == {
-        "closed": 0,
-        "date": date(2023, 10, 13),
-        "open": 1,
-        "organisation": "test-org",
-        "repo": "test",
-    }
-
-
-def test_parse_vulnerabilities_when_no_vulnerabilities():
-    vulnerabilities = [
-        security.Vulnerability(date(2023, 10, 13), date(2023, 10, 20), None),
-        security.Vulnerability(date(2023, 10, 26), None, None),
-        security.Vulnerability(date(2023, 10, 29), None, None),
-    ]
-    repos = [
-        security.Repo("test", "test-org", vulnerabilities),
-        security.Repo("test", "test-org", []),
-    ]
-
-    result = list(security.parse_vulnerabilities(repos))
-
-    assert len(result) == 17
-
-
 def test_vulnerabilities():
     def fake_repos(client):
         vulnerabilities = [
             security.Vulnerability(date(2023, 10, 13), date(2023, 10, 20), None),
+            security.Vulnerability(date(2023, 10, 13), None, date(2023, 10, 21)),
             security.Vulnerability(date(2023, 10, 26), None, None),
             security.Vulnerability(date(2023, 10, 29), None, None),
         ]
         return [
             security.Repo("test", "test-org", vulnerabilities),
-            security.Repo("test", "test-org", vulnerabilities),
+            security.Repo("test2", "test-org", vulnerabilities),
         ]
 
     security.get_repos = fake_repos
@@ -235,7 +171,23 @@ def test_vulnerabilities():
         "time": date(2023, 10, 13),
         "value": 0,
         "closed": 0,
+        "open": 2,
+        "organisation": "test-org",
+        "repo": "test",
+    }
+    assert result[7] == {
+        "time": date(2023, 10, 20),
+        "value": 0,
+        "closed": 1,
         "open": 1,
         "organisation": "test-org",
         "repo": "test",
+    }
+    assert result[33] == {
+        "time": date(2023, 10, 29),
+        "value": 0,
+        "closed": 2,
+        "open": 2,
+        "organisation": "test-org",
+        "repo": "test2",
     }
