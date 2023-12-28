@@ -40,10 +40,3 @@ def previous_weekday(d, weekday):
         output -= timedelta(days=1)
 
     return output
-
-
-def date_before(date_string, target_date):
-    if not date_string:
-        return False
-
-    return date_from_iso(date_string) <= target_date
