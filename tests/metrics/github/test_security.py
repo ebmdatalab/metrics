@@ -3,85 +3,239 @@ from datetime import date
 from metrics.github import security
 
 
-def fake_vulnerabilities():
+def fake_repos(client):
+    return [
+        {
+            "name": "opencodelists",
+            "archivedAt": None,
+        },
+        {
+            "name": "old-repo",
+            "archivedAt": "2023-04-20T18:22:11Z",
+        },
+        {
+            "name": "job-server",
+            "archivedAt": None,
+        },
+    ]
+
+
+def fake_vulnerabilities(client, repo):
     response = [
         {
-            "repo": "opencodelists",
-            "vulnerabilities": [
-                {
-                    "createdAt": "2022-02-10T01:36:54Z",
-                    "fixedAt": None,
-                    "dismissedAt": None,
-                },
-                {
-                    "createdAt": "2022-10-18T17:20:30Z",
-                    "fixedAt": "2022-10-24T14:27:29Z",
-                    "dismissedAt": None,
-                },
-                {
-                    "createdAt": "2022-10-18T21:08:22Z",
-                    "fixedAt": "2022-11-09T13:01:04Z",
-                    "dismissedAt": None,
-                },
-                {
-                    "createdAt": "2022-11-01T17:52:53Z",
-                    "fixedAt": "2022-11-07T15:14:37Z",
-                    "dismissedAt": None,
-                },
-                {
-                    "createdAt": "2023-08-30T04:44:56Z",
-                    "fixedAt": None,
-                    "dismissedAt": "2023-09-04T15:07:44Z",
-                },
-                {
-                    "createdAt": "2023-10-03T02:46:00Z",
-                    "fixedAt": None,
-                    "dismissedAt": None,
-                },
-                {
-                    "createdAt": "2023-10-26T15:02:17Z",
-                    "fixedAt": None,
-                    "dismissedAt": None,
-                },
-            ],
+            "createdAt": "2022-02-10T01:36:54Z",
+            "fixedAt": None,
+            "dismissedAt": None,
+        },
+        {
+            "createdAt": "2022-10-18T17:20:30Z",
+            "fixedAt": "2022-10-24T14:27:29Z",
+            "dismissedAt": None,
+        },
+        {
+            "createdAt": "2022-10-18T21:08:22Z",
+            "fixedAt": "2022-11-09T13:01:04Z",
+            "dismissedAt": None,
+        },
+        {
+            "createdAt": "2022-11-01T17:52:53Z",
+            "fixedAt": "2022-11-07T15:14:37Z",
+            "dismissedAt": None,
+        },
+        {
+            "createdAt": "2023-08-30T04:44:56Z",
+            "fixedAt": None,
+            "dismissedAt": "2023-09-04T15:07:44Z",
+        },
+        {
+            "createdAt": "2023-10-03T02:46:00Z",
+            "fixedAt": None,
+            "dismissedAt": None,
+        },
+        {
+            "createdAt": "2023-10-26T15:02:17Z",
+            "fixedAt": None,
+            "dismissedAt": None,
         },
     ]
     return response
 
 
-def test_security_number_of_alerts_today():
-    today = date(2023, 11, 28)
+def test_get_repos():
+    security.query_repos = fake_repos
+    security.query_vulnerabilities = fake_vulnerabilities
+    fake_client = lambda: None
+    fake_client.org = "test-org"
 
-    alerts = fake_vulnerabilities()[0]["vulnerabilities"]
-    result = security.parse_vulnerabilities_for_date(
-        alerts, "opencodelists", today, "test-org"
-    )
+    result = security.get_repos(fake_client)
 
-    assert str(result["date"]) == "2023-11-28"
-    assert result["closed"] == 4
-    assert result["open"] == 3
-
-
-def test_security_number_of_alerts_last_year():
-    target_date = date(2022, 11, 1)
-
-    alerts = fake_vulnerabilities()[0]["vulnerabilities"]
-    result = security.parse_vulnerabilities_for_date(
-        alerts, "opencodelists", target_date, "test-org"
-    )
-
-    assert str(result["date"]) == "2022-11-01"
-    assert result["closed"] == 1
-    assert result["open"] == 3
+    assert len(result) == 2
+    assert result[0].name == "opencodelists"
+    assert len(result[0].vulnerabilities) == 7
+    assert result[1].name == "job-server"
+    assert len(result[1].vulnerabilities) == 7
 
 
-def test_security_parse_vulnerabilities_earliest_and_latest_date():
-    result = list(security.parse_vulnerabilities(fake_vulnerabilities(), "test-org"))
+def test_repo_earliest_date():
+    vulnerabilities = [
+        security.Vulnerability(date(2023, 10, 26), None, None),
+        security.Vulnerability(date(2023, 10, 29), None, None),
+    ]
+    repo = security.Repo("test", "test-org", vulnerabilities)
 
-    assert len(result) == 624
-    assert str(result[0]["date"]) == "2022-02-10"
-    assert result[0]["closed"] == 0
-    assert result[0]["open"] == 1
-    assert str(result[-1]["date"]) == "2023-10-26"
-    assert result[-1]["closed"] == 4
-    assert result[-1]["open"] == 3
+    assert repo.earliest_date() == date(2023, 10, 26)
+
+
+def test_repo_latest_date():
+    vulnerabilities = [
+        security.Vulnerability(date(2023, 10, 26), None, None),
+        security.Vulnerability(date(2023, 10, 29), None, None),
+    ]
+    repo = security.Repo("test", "test-org", vulnerabilities)
+
+    assert repo.latest_date() == date(2023, 10, 29)
+
+
+def test_vulnerability_open_at():
+    v = security.Vulnerability(date(2023, 10, 26), None, None)
+
+    assert v.is_open_at(date(2023, 10, 29))
+
+
+def test_vulnerability_open_at_same_day():
+    v = security.Vulnerability(date(2023, 10, 26), None, None)
+
+    assert v.is_open_at(date(2023, 10, 26))
+
+
+def test_vulnerability_open_at_date_in_past():
+    v = security.Vulnerability(date(2023, 10, 26), None, None)
+
+    assert v.is_open_at(date(2023, 10, 20)) is False
+
+
+def test_vulnerability_open_has_been_closed():
+    v = security.Vulnerability(date(2023, 10, 26), date(2023, 10, 28), None)
+
+    assert v.is_open_at(date(2023, 10, 30)) is False
+
+
+def test_vulnerability_closed_at():
+    v = security.Vulnerability(date(2023, 10, 26), date(2023, 10, 28), None)
+
+    assert v.is_closed_at(date(2023, 10, 29))
+
+
+def test_vulnerability_closed_at_still_open():
+    v = security.Vulnerability(date(2023, 10, 26), date(2023, 10, 28), None)
+
+    assert v.is_closed_at(date(2023, 10, 27)) is False
+
+
+def test_vulnerability_closed_at_is_closed():
+    v = security.Vulnerability(date(2023, 10, 26), date(2023, 10, 28), None)
+
+    assert v.is_closed_at(date(2023, 10, 29))
+
+
+def test_parse_vulnerabilities_by_day():
+    vulnerabilities = [
+        security.Vulnerability(date(2023, 10, 26), None, None),
+        security.Vulnerability(date(2023, 10, 29), None, None),
+    ]
+    repo = security.Repo("test", "test-org", vulnerabilities)
+
+    result = security.parse_vulnerabilities_by_day(repo, date(2023, 10, 26))
+
+    assert result == {
+        "date": date(2023, 10, 26),
+        "closed": 0,
+        "open": 1,
+        "organisation": "test-org",
+        "repo": "test",
+    }
+
+
+def test_parse_vulnerabilities_by_day_including_closed():
+    vulnerabilities = [
+        security.Vulnerability(date(2023, 10, 13), date(2023, 10, 20), None),
+        security.Vulnerability(date(2023, 10, 26), None, None),
+        security.Vulnerability(date(2023, 10, 29), None, None),
+    ]
+    repo = security.Repo("test", "test-org", vulnerabilities)
+
+    result = security.parse_vulnerabilities_by_day(repo, date(2023, 10, 26))
+
+    assert result == {
+        "date": date(2023, 10, 26),
+        "closed": 1,
+        "open": 1,
+        "organisation": "test-org",
+        "repo": "test",
+    }
+
+
+def test_parse_vulnerabilities():
+    vulnerabilities = [
+        security.Vulnerability(date(2023, 10, 13), date(2023, 10, 20), None),
+        security.Vulnerability(date(2023, 10, 26), None, None),
+        security.Vulnerability(date(2023, 10, 29), None, None),
+    ]
+    repos = [
+        security.Repo("test", "test-org", vulnerabilities),
+        security.Repo("test", "test-org", vulnerabilities),
+    ]
+
+    result = list(security.parse_vulnerabilities(repos))
+
+    assert len(result) == 34
+    assert result[0] == {
+        "closed": 0,
+        "date": date(2023, 10, 13),
+        "open": 1,
+        "organisation": "test-org",
+        "repo": "test",
+    }
+
+
+def test_parse_vulnerabilities_when_no_vulnerabilities():
+    vulnerabilities = [
+        security.Vulnerability(date(2023, 10, 13), date(2023, 10, 20), None),
+        security.Vulnerability(date(2023, 10, 26), None, None),
+        security.Vulnerability(date(2023, 10, 29), None, None),
+    ]
+    repos = [
+        security.Repo("test", "test-org", vulnerabilities),
+        security.Repo("test", "test-org", []),
+    ]
+
+    result = list(security.parse_vulnerabilities(repos))
+
+    assert len(result) == 17
+
+
+def test_vulnerabilities():
+    def fake_repos(client):
+        vulnerabilities = [
+            security.Vulnerability(date(2023, 10, 13), date(2023, 10, 20), None),
+            security.Vulnerability(date(2023, 10, 26), None, None),
+            security.Vulnerability(date(2023, 10, 29), None, None),
+        ]
+        return [
+            security.Repo("test", "test-org", vulnerabilities),
+            security.Repo("test", "test-org", vulnerabilities),
+        ]
+
+    security.get_repos = fake_repos
+
+    result = list(security.vulnerabilities({}))
+
+    assert len(result) == 34
+    assert result[0] == {
+        "time": date(2023, 10, 13),
+        "value": 0,
+        "closed": 0,
+        "open": 1,
+        "organisation": "test-org",
+        "repo": "test",
+    }

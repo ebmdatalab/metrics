@@ -1,4 +1,6 @@
 import os
+from dataclasses import dataclass
+from datetime import date
 
 import structlog
 
@@ -10,7 +12,7 @@ from . import api
 log = structlog.get_logger()
 
 
-def fetch_repos(client):
+def query_repos(client):
     query = """
     query repos($cursor: String, $org: String!) {
       organization(login: $org) {
@@ -30,7 +32,7 @@ def fetch_repos(client):
     return client.get_query(query, path=["organization", "repositories"])
 
 
-def fetch_vulnerabilities(client):
+def query_vulnerabilities(client, repo):
     query = """
     query vulnerabilities($cursor: String, $org: String!, $repo: String!) {
       organization(login: $org) {
@@ -52,64 +54,98 @@ def fetch_vulnerabilities(client):
     }
     """
 
-    repos = []
-    for repo in fetch_repos(client):
-        if repo["archivedAt"]:
-            continue
+    return client.get_query(
+        query,
+        path=["organization", "repository", "vulnerabilityAlerts"],
+        org=client.org,
+        repo=repo["name"],
+    )
 
-        vulnerabilities = list(
-            client.get_query(
-                query,
-                path=["organization", "repository", "vulnerabilityAlerts"],
-                org=client.org,
-                repo=repo["name"],
-            )
+
+@dataclass
+class Vulnerability:
+    created_at: date
+    fixed_at: date
+    dismissed_at: date
+
+    def is_open_at(self, target_date):
+        return self.created_at <= target_date and not self.is_closed_at(target_date)
+
+    def is_closed_at(self, target_date):
+        return (self.fixed_at is not None and self.fixed_at <= target_date) or (
+            self.dismissed_at is not None and self.dismissed_at <= target_date
         )
 
-        if vulnerabilities:
-            repos.append({"repo": repo["name"], "vulnerabilities": vulnerabilities})
 
-    return repos
+@dataclass
+class Repo:
+    name: str
+    org: str
+    vulnerabilities: list[Vulnerability]
+
+    def __post_init__(self):
+        if self.vulnerabilities:
+            self.vulnerabilities = sorted(
+                self.vulnerabilities, key=lambda v: v.created_at
+            )
+
+    def earliest_date(self):
+        return self.vulnerabilities[0].created_at
+
+    def latest_date(self):
+        return self.vulnerabilities[-1].created_at
 
 
-def parse_vulnerabilities_for_date(vulns, repo, target_date, org):
+def parse_vulnerabilities_by_day(repo, target_date):
     closed_vulns = 0
     open_vulns = 0
-    for row in vulns:
-        if dates.date_before(row["fixedAt"], target_date) or dates.date_before(
-            row["dismissedAt"], target_date
-        ):
+    for vuln in repo.vulnerabilities:
+        if vuln.is_closed_at(target_date):
             closed_vulns += 1
-        elif dates.date_before(row["createdAt"], target_date):
+        elif vuln.is_open_at(target_date):
             open_vulns += 1
 
     return {
         "date": target_date,
         "closed": closed_vulns,
         "open": open_vulns,
-        "organisation": org,
-        "repo": repo,
+        "organisation": repo.org,
+        "repo": repo.name,
     }
 
 
-def parse_vulnerabilities(repos, org):
+def parse_vulnerabilities(repos):
     for repo in repos:
-        repo_name = repo["repo"]
-        vulnerabilities = repo["vulnerabilities"]
+        if not repo.vulnerabilities:
+            continue
+        for day in dates.iter_days(repo.earliest_date(), repo.latest_date()):
+            yield parse_vulnerabilities_by_day(repo, day)
 
-        earliest_date = dates.date_from_iso(vulnerabilities[0]["createdAt"])
-        latest_date = dates.date_from_iso(vulnerabilities[-1]["createdAt"])
 
-        for day in dates.iter_days(earliest_date, latest_date):
-            yield parse_vulnerabilities_for_date(vulnerabilities, repo_name, day, org)
+def get_repos(client):
+    repos = []
+    for repo in query_repos(client):
+        if repo["archivedAt"]:
+            continue
+
+        vulnerabilities = []
+        for vuln in query_vulnerabilities(client, repo):
+            vulnerabilities.append(
+                Vulnerability(
+                    dates.date_from_iso(vuln["createdAt"]),
+                    dates.date_from_iso(vuln["fixedAt"]),
+                    dates.date_from_iso(vuln["dismissedAt"]),
+                )
+            )
+        repos.append(Repo(repo["name"], client.org, vulnerabilities))
+
+    return repos
 
 
 def vulnerabilities(client):
-    vulns = parse_vulnerabilities(fetch_vulnerabilities(client), client.org)
-
-    for v in vulns:
-        date = v.pop("date")
-        yield {"time": date, "value": 0, **v}
+    for vuln in parse_vulnerabilities(get_repos(client)):
+        date = vuln.pop("date")
+        yield {"time": date, "value": 0, **vuln}
 
 
 if __name__ == "__main__":  # pragma: no cover
