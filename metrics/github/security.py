@@ -1,6 +1,6 @@
 import os
 from dataclasses import dataclass
-from datetime import date
+from datetime import date, timedelta
 
 import structlog
 
@@ -89,9 +89,6 @@ class Repo:
     def earliest_date(self):
         return self.vulnerabilities[0].created_at
 
-    def latest_date(self):
-        return self.vulnerabilities[-1].created_at
-
 
 def get_repos(client):
     for repo in query_repos(client):
@@ -111,9 +108,9 @@ def get_repos(client):
             yield Repo(repo["name"], client.org, vulnerabilities)
 
 
-def vulnerabilities(client):
+def vulnerabilities(client, to_date):
     for repo in get_repos(client):
-        for day in dates.iter_days(repo.earliest_date(), repo.latest_date()):
+        for day in dates.iter_days(repo.earliest_date(), to_date):
             closed_vulns = sum([1 for v in repo.vulnerabilities if v.is_closed_at(day)])
             open_vulns = sum([1 for v in repo.vulnerabilities if v.is_open_at(day)])
             yield {
@@ -132,11 +129,16 @@ if __name__ == "__main__":  # pragma: no cover
     GITHUB_TOKEN = os.environ.get("GITHUB_TOKEN")
     os_core_token = os.environ.get("GITHUB_OS_CORE_TOKEN", GITHUB_TOKEN)
     ebmdatalab_token = os.environ.get("GITHUB_EBMDATALAB_TOKEN", GITHUB_TOKEN)
+    yesterday = date.today() - timedelta(days=1)
 
     client = api.GitHubClient("ebmdatalab", ebmdatalab_token)
     log.info("Fetching vulnerabilities for %s", client.org)
-    timescaledb.write(timescaledb.GitHubVulnerabilities, vulnerabilities(client))
+    timescaledb.write(
+        timescaledb.GitHubVulnerabilities, vulnerabilities(client, yesterday)
+    )
 
     client = api.GitHubClient("opensafely-core", os_core_token)
     log.info("Fetching vulnerabilities for %s", client.org)
-    timescaledb.write(timescaledb.GitHubVulnerabilities, vulnerabilities(client))
+    timescaledb.write(
+        timescaledb.GitHubVulnerabilities, vulnerabilities(client, yesterday)
+    )

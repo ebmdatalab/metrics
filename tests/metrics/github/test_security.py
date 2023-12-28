@@ -97,16 +97,6 @@ def test_repo_earliest_date():
     assert repo.earliest_date() == date(2023, 10, 26)
 
 
-def test_repo_latest_date():
-    vulnerabilities = [
-        security.Vulnerability(date(2023, 10, 26), None, None),
-        security.Vulnerability(date(2023, 10, 29), None, None),
-    ]
-    repo = security.Repo("test", "test-org", vulnerabilities)
-
-    assert repo.latest_date() == date(2023, 10, 29)
-
-
 def test_vulnerability_open_at():
     v = security.Vulnerability(date(2023, 10, 26), None, None)
 
@@ -164,7 +154,7 @@ def test_vulnerabilities():
 
     security.get_repos = fake_repos
 
-    result = list(security.vulnerabilities({}))
+    result = list(security.vulnerabilities({}, date(2023, 10, 29)))
 
     assert len(result) == 34
     assert result[0] == {
