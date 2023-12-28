@@ -76,6 +76,14 @@ class Vulnerability:
             self.dismissed_at is not None and self.dismissed_at <= target_date
         )
 
+    @staticmethod
+    def from_dict(my_dict):
+        return Vulnerability(
+            dates.date_from_iso(my_dict["createdAt"]),
+            dates.date_from_iso(my_dict["fixedAt"]),
+            dates.date_from_iso(my_dict["dismissedAt"]),
+        )
+
 
 @dataclass
 class Repo:
@@ -97,13 +105,8 @@ def get_repos(client):
 
         vulnerabilities = []
         for vuln in query_vulnerabilities(client, repo):
-            vulnerabilities.append(
-                Vulnerability(
-                    dates.date_from_iso(vuln["createdAt"]),
-                    dates.date_from_iso(vuln["fixedAt"]),
-                    dates.date_from_iso(vuln["dismissedAt"]),
-                )
-            )
+            vulnerabilities.append(Vulnerability.from_dict(vuln))
+
         if vulnerabilities:
             yield Repo(repo["name"], client.org, vulnerabilities)
 
@@ -113,6 +116,7 @@ def vulnerabilities(client, to_date):
         for day in dates.iter_days(repo.earliest_date(), to_date):
             closed_vulns = sum([1 for v in repo.vulnerabilities if v.is_closed_at(day)])
             open_vulns = sum([1 for v in repo.vulnerabilities if v.is_open_at(day)])
+
             yield {
                 "time": day,
                 "closed": closed_vulns,
