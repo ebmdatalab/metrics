@@ -46,7 +46,7 @@ jobs:
           docker save grafana-grafana | gzip > /tmp/grafana.tar.gz
 
       - name: Upload docker image
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
             name: grafana-image
             path: /tmp/grafana.tar.gz
