@@ -92,7 +92,7 @@ jobs:
           docker save metrics | gzip > /tmp/metrics.tar.gz
 
       - name: Upload docker image
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
             name: metrics-image
             path: /tmp/metrics.tar.gz
