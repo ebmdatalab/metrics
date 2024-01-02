@@ -128,8 +128,6 @@ def vulnerabilities(client, to_date):
 
 
 if __name__ == "__main__":  # pragma: no cover
-    timescaledb.reset_table(timescaledb.GitHubVulnerabilities)
-
     GITHUB_TOKEN = os.environ.get("GITHUB_TOKEN")
     os_core_token = os.environ.get("GITHUB_OS_CORE_TOKEN", GITHUB_TOKEN)
     ebmdatalab_token = os.environ.get("GITHUB_EBMDATALAB_TOKEN", GITHUB_TOKEN)
@@ -137,12 +135,12 @@ if __name__ == "__main__":  # pragma: no cover
 
     client = api.GitHubClient("ebmdatalab", ebmdatalab_token)
     log.info("Fetching vulnerabilities for %s", client.org)
-    timescaledb.write(
-        timescaledb.GitHubVulnerabilities, vulnerabilities(client, yesterday)
-    )
+    ebmdatalab_vulns = vulnerabilities(client, yesterday)
 
     client = api.GitHubClient("opensafely-core", os_core_token)
     log.info("Fetching vulnerabilities for %s", client.org)
-    timescaledb.write(
-        timescaledb.GitHubVulnerabilities, vulnerabilities(client, yesterday)
-    )
+    os_core_vulns = vulnerabilities(client, yesterday)
+
+    timescaledb.reset_table(timescaledb.GitHubVulnerabilities)
+    timescaledb.write(timescaledb.GitHubVulnerabilities, ebmdatalab_vulns)
+    timescaledb.write(timescaledb.GitHubVulnerabilities, os_core_vulns)
