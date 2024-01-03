@@ -1,5 +1,8 @@
+*.egg-info/
 .coverage
+.env
 .pytest-cache/
 .venv/
+__pycache__/
 github.db
 htmlcov
