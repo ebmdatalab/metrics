@@ -1,4 +1,5 @@
 import itertools
+import os
 from datetime import UTC, date, datetime, time, timedelta
 
 import click
@@ -85,28 +86,29 @@ def pr_throughput(prs, org):
 
 
 @click.command()
-@click.option("--token", required=True, envvar="GITHUB_TOKEN")
 @click.pass_context
-def github(ctx, token):
+def github(ctx):
     ctx.ensure_object(dict)
-    ctx.obj["TOKEN"] = token
 
     timescaledb.reset_table(timescaledb.GitHubPullRequests)
 
-    orgs = [
-        "ebmdatalab",
-        "opensafely-core",
-    ]
-    for org in orgs:
+    GITHUB_TOKEN = os.environ.get("GITHUB_TOKEN")
+    os_core_token = os.environ.get("GITHUB_OS_CORE_TOKEN", GITHUB_TOKEN)
+    ebmdatalab_token = os.environ.get("GITHUB_EBMDATALAB_TOKEN", GITHUB_TOKEN)
+    orgs = {
+        "ebmdatalab": os_core_token,
+        "opensafely-core": ebmdatalab_token,
+    }
+
+    for org, token in orgs.items():
         log.info("Working with org: %s", org)
-        prs = list(api.iter_prs(org))
+        client = api.GitHubClient(org, token)
+        prs = list(api.iter_prs(client))
         log.info("Backfilling with %s PRs for %s", len(prs), org)
 
-        rows = list(
-            itertools.chain(
-                old_prs(prs, org, days_threshold=7),
-                pr_throughput(prs, org),
-            )
+        rows = itertools.chain(
+            old_prs(prs, org, days_threshold=7),
+            pr_throughput(prs, org),
         )
 
         timescaledb.write(timescaledb.GitHubPullRequests, rows)

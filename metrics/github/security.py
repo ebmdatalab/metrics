@@ -1,38 +1,17 @@
 import json
 import os
 
-import requests
 import structlog
 
 from .. import timescaledb
 from ..tools import dates
+from . import api
 
 
 log = structlog.get_logger()
 
-GITHUB_TOKEN = os.environ["GITHUB_TOKEN"]
 
-session = requests.Session()
-session.headers = {
-    "Authorization": f"bearer {GITHUB_TOKEN}",
-    "User-Agent": "Bennett Metrics Testing",
-}
-
-
-def make_request(query, variables):
-    response = session.post(
-        "https://api.github.com/graphql", json={"query": query, "variables": variables}
-    )
-
-    if not response.ok:
-        log.info(response.headers)
-        log.info(response.content)
-
-    response.raise_for_status()
-    return response.json()
-
-
-def get_vulnerabilities(org):
+def get_vulnerabilities(client):
     query = """
     query vulnerabilities($org: String!) {
       organization(login: $org) {
@@ -56,8 +35,8 @@ def get_vulnerabilities(org):
       }
     }
     """
-    variables = {"org": org}
-    response = make_request(query, variables)
+
+    response = client.post(query, {})
     if "data" not in response:
         raise RuntimeError(json.dumps(response, indent=2))
 
@@ -110,8 +89,8 @@ def parse_vulnerabilities(vulnerabilities, org):
     return results
 
 
-def vulnerabilities(org):
-    vulns = parse_vulnerabilities(get_vulnerabilities(org), org)
+def vulnerabilities(client):
+    vulns = parse_vulnerabilities(get_vulnerabilities(client), client.org)
 
     rows = []
     for v in vulns:
@@ -124,5 +103,14 @@ def vulnerabilities(org):
 if __name__ == "__main__":  # pragma: no cover
     timescaledb.reset_table(timescaledb.GitHubVulnerabilities)
 
-    vulnerabilities("ebmdatalab")
-    vulnerabilities("opensafely-core")
+    GITHUB_TOKEN = os.environ.get("GITHUB_TOKEN")
+    os_core_token = os.environ.get("GITHUB_OS_CORE_TOKEN", GITHUB_TOKEN)
+    ebmdatalab_token = os.environ.get("GITHUB_EBMDATALAB_TOKEN", GITHUB_TOKEN)
+
+    client = api.GitHubClient("ebmdatalab", ebmdatalab_token)
+    log.info("Fetching vulnerabilities for %s", client.org)
+    vulnerabilities(client)
+
+    client = api.GitHubClient("opensafely-core", os_core_token)
+    log.info("Fetching vulnerabilities for %s", client.org)
+    vulnerabilities(client)
