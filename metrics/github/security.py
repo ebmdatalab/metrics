@@ -128,9 +128,8 @@ def vulnerabilities(client, to_date):
 
 
 if __name__ == "__main__":  # pragma: no cover
-    GITHUB_TOKEN = os.environ.get("GITHUB_TOKEN")
-    os_core_token = os.environ.get("GITHUB_OS_CORE_TOKEN", GITHUB_TOKEN)
-    ebmdatalab_token = os.environ.get("GITHUB_EBMDATALAB_TOKEN", GITHUB_TOKEN)
+    os_core_token = os.environ["GITHUB_OS_CORE_TOKEN"]
+    ebmdatalab_token = os.environ["GITHUB_EBMDATALAB_TOKEN"]
     yesterday = date.today() - timedelta(days=1)
 
     client = api.GitHubClient("ebmdatalab", ebmdatalab_token)

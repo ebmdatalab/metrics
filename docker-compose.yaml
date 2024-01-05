@@ -61,7 +61,6 @@ services:
     # use dockers builitin PID daemon
     init: true
     environment:
-      - GITHUB_TOKEN=dummy
       - SLACK_SIGNING_SECRET=dummy
       - SLACK_TECH_SUPPORT_CHANNEL_ID=dummy
       - SLACK_TOKEN=dummy
@@ -88,7 +87,6 @@ services:
       # mount our current code
       - .:/app
     environment:
-      - GITHUB_TOKEN=${GITHUB_TOKEN:-}
       - SLACK_SIGNING_SECRET=${SLACK_SIGNING_SECRET:-}
       - SLACK_TECH_SUPPORT_CHANNEL_ID=${SLACK_TECH_SUPPORT_CHANNEL_ID:-}
       - SLACK_TOKEN=${SLACK_TOKEN:-}
