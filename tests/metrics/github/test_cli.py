@@ -99,7 +99,7 @@ def test_old_prs():
     ]
     prs = week1 + week2 + week3 + week4
 
-    outputs = list(old_prs(prs, "bennett", days_threshold=7))
+    outputs = list(old_prs(prs, days_threshold=7))
 
     def output_for_week(starting_day, outputs):
         # break up the outputs to make them easier to work with when asserting
@@ -176,9 +176,7 @@ def test_pr_throughput():
     ]
 
     # the output so we can compare consistently
-    output = list(
-        sorted(pr_throughput(prs, "bennett"), key=lambda r: (r["time"], r["author"]))
-    )
+    output = list(sorted(pr_throughput(prs), key=lambda r: (r["time"], r["author"])))
 
     assert output == expected
 
