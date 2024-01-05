@@ -1,4 +1,3 @@
-import itertools
 import os
 from datetime import UTC, date, datetime, time, timedelta
 
@@ -58,13 +57,6 @@ def old_prs(prs, org, days_threshold):
 
         name = f"queue_older_than_{days_threshold}_days"
 
-        log.info(
-            "%s | %s | Processing %s old PRs at %s",
-            name,
-            org,
-            len(valid_prs),
-            dt,
-        )
         yield from iter_prs(valid_prs, monday, name)
 
 
@@ -81,7 +73,6 @@ def pr_throughput(prs, org):
             pr for pr in valid_prs if pr["merged_at"] and pr["merged_at"].date() == day
         ]
 
-        log.info("%s | %s | Processing %s merged PRs", day, org, len(merged_prs))
         yield from iter_prs(merged_prs, day, name="prs_merged")
 
 
@@ -90,22 +81,27 @@ def pr_throughput(prs, org):
 def github(ctx):
     ctx.ensure_object(dict)
 
+    ebmdatalab_token = os.environ["GITHUB_EBMDATALAB_TOKEN"]
+    os_core_token = os.environ["GITHUB_OS_CORE_TOKEN"]
+
+    log.info("Working with org: %s", "ebmdatalab")
+    client = api.GitHubClient("ebmdatalab", ebmdatalab_token)
+    prs = list(api.iter_prs(client))
+    log.info("Backfilling with %s PRs for %s", len(prs), "ebmdatalab")
+    ebmdatalab_prs = old_prs(prs, "ebmdatalab", days_threshold=7)
+    ebmdatalab_throughput = pr_throughput(prs, "ebmdatalab")
+
+    log.info("Working with org: %s", "opensafely-core")
+    client = api.GitHubClient("opensafely-core", os_core_token)
+    prs = list(api.iter_prs(client))
+    log.info("Backfilling with %s PRs for %s", len(prs), "opensafely-core")
+    os_core_prs = old_prs(prs, "opensafely-core", days_threshold=7)
+    os_core_throughput = pr_throughput(prs, "opensafely-core")
+
     timescaledb.reset_table(timescaledb.GitHubPullRequests)
 
-    orgs = {
-        "ebmdatalab": os.environ["GITHUB_EBMDATALAB_TOKEN"],
-        "opensafely-core": os.environ["GITHUB_OS_CORE_TOKEN"],
-    }
+    timescaledb.write(timescaledb.GitHubPullRequests, ebmdatalab_prs)
+    timescaledb.write(timescaledb.GitHubPullRequests, ebmdatalab_throughput)
 
-    for org, token in orgs.items():
-        log.info("Working with org: %s", org)
-        client = api.GitHubClient(org, token)
-        prs = list(api.iter_prs(client))
-        log.info("Backfilling with %s PRs for %s", len(prs), org)
-
-        rows = itertools.chain(
-            old_prs(prs, org, days_threshold=7),
-            pr_throughput(prs, org),
-        )
-
-        timescaledb.write(timescaledb.GitHubPullRequests, rows)
+    timescaledb.write(timescaledb.GitHubPullRequests, os_core_prs)
+    timescaledb.write(timescaledb.GitHubPullRequests, os_core_throughput)
