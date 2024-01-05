@@ -1,5 +1,6 @@
-import json
 import os
+from dataclasses import dataclass
+from datetime import date, timedelta
 
 import structlog
 
@@ -11,24 +12,41 @@ from . import api
 log = structlog.get_logger()
 
 
-def get_vulnerabilities(client):
+def query_repos(client):
     query = """
-    query vulnerabilities($org: String!) {
+    query repos($cursor: String, $org: String!) {
       organization(login: $org) {
-        repositories(first: 100) {
+        repositories(first: 100, after: $cursor) {
           nodes {
             name
             archivedAt
-            vulnerabilityAlerts(first: 100) {
-              nodes {
-                number
-                createdAt
-                fixedAt
-                dismissedAt
-              }
-              pageInfo {
-                hasNextPage endCursor
-              }
+          }
+          pageInfo {
+              endCursor
+              hasNextPage
+          }
+        }
+      }
+    }
+    """
+    return client.get_query(query, path=["organization", "repositories"])
+
+
+def query_vulnerabilities(client, repo):
+    query = """
+    query vulnerabilities($cursor: String, $org: String!, $repo: String!) {
+      organization(login: $org) {
+        repository(name: $repo) {
+          name
+          vulnerabilityAlerts(first: 100, after: $cursor) {
+            nodes {
+              createdAt
+              fixedAt
+              dismissedAt
+            }
+            pageInfo {
+              endCursor
+              hasNextPage
             }
           }
         }
@@ -36,81 +54,93 @@ def get_vulnerabilities(client):
     }
     """
 
-    response = client.post(query, {})
-    if "data" not in response:
-        raise RuntimeError(json.dumps(response, indent=2))
-
-    return response["data"]["organization"]["repositories"]["nodes"]
-
-
-def date_before(date_string, target_date):
-    if not date_string:
-        return False
-
-    return dates.date_from_iso(date_string) <= target_date
+    return client.get_query(
+        query,
+        path=["organization", "repository", "vulnerabilityAlerts"],
+        org=client.org,
+        repo=repo["name"],
+    )
 
 
-def parse_vulnerabilities_for_date(vulns, repo, target_date, org):
-    closed_vulns = 0
-    open_vulns = 0
-    for row in vulns:
-        if date_before(row["fixedAt"], target_date) or date_before(
-            row["dismissedAt"], target_date
-        ):
-            closed_vulns += 1
-        elif date_before(row["createdAt"], target_date):
-            open_vulns += 1
+@dataclass
+class Vulnerability:
+    created_at: date
+    fixed_at: date | None
+    dismissed_at: date | None
 
-    return {
-        "date": target_date,
-        "closed": closed_vulns,
-        "open": open_vulns,
-        "organisation": org,
-        "repo": repo,
-    }
+    def is_open_at(self, target_date):
+        return self.created_at <= target_date and not self.is_closed_at(target_date)
+
+    def is_closed_at(self, target_date):
+        return (self.fixed_at is not None and self.fixed_at <= target_date) or (
+            self.dismissed_at is not None and self.dismissed_at <= target_date
+        )
+
+    @staticmethod
+    def from_dict(my_dict):
+        return Vulnerability(
+            dates.date_from_iso(my_dict["createdAt"]),
+            dates.date_from_iso(my_dict["fixedAt"]),
+            dates.date_from_iso(my_dict["dismissedAt"]),
+        )
 
 
-def parse_vulnerabilities(vulnerabilities, org):
-    results = []
+@dataclass
+class Repo:
+    name: str
+    org: str
+    vulnerabilities: list[Vulnerability]
 
-    for repo in vulnerabilities:
-        repo_name = repo["name"]
-        alerts = repo["vulnerabilityAlerts"]["nodes"]
+    def __post_init__(self):
+        self.vulnerabilities.sort(key=lambda v: v.created_at)
 
-        if repo["archivedAt"] or not alerts:
+    def earliest_date(self):
+        return self.vulnerabilities[0].created_at
+
+
+def get_repos(client):
+    for repo in query_repos(client):
+        if repo["archivedAt"]:
             continue
 
-        earliest_date = dates.date_from_iso(alerts[0]["createdAt"])
-        latest_date = dates.date_from_iso(alerts[-1]["createdAt"])
+        vulnerabilities = []
+        for vuln in query_vulnerabilities(client, repo):
+            vulnerabilities.append(Vulnerability.from_dict(vuln))
 
-        for day in dates.iter_days(earliest_date, latest_date):
-            results.append(parse_vulnerabilities_for_date(alerts, repo_name, day, org))
-
-    return results
+        if vulnerabilities:
+            yield Repo(repo["name"], client.org, vulnerabilities)
 
 
-def vulnerabilities(client):
-    vulns = parse_vulnerabilities(get_vulnerabilities(client), client.org)
+def vulnerabilities(client, to_date):
+    for repo in get_repos(client):
+        for day in dates.iter_days(repo.earliest_date(), to_date):
+            closed_vulns = sum(1 for v in repo.vulnerabilities if v.is_closed_at(day))
+            open_vulns = sum(1 for v in repo.vulnerabilities if v.is_open_at(day))
 
-    rows = []
-    for v in vulns:
-        date = v.pop("date")
-        rows.append({"time": date, "value": 0, **v})
-
-    timescaledb.write(timescaledb.GitHubVulnerabilities, rows)
+            yield {
+                "time": day,
+                "closed": closed_vulns,
+                "open": open_vulns,
+                "organisation": repo.org,
+                "repo": repo.name,
+                "value": 0,  # needed for the timescaledb
+            }
 
 
 if __name__ == "__main__":  # pragma: no cover
-    timescaledb.reset_table(timescaledb.GitHubVulnerabilities)
-
     GITHUB_TOKEN = os.environ.get("GITHUB_TOKEN")
     os_core_token = os.environ.get("GITHUB_OS_CORE_TOKEN", GITHUB_TOKEN)
     ebmdatalab_token = os.environ.get("GITHUB_EBMDATALAB_TOKEN", GITHUB_TOKEN)
+    yesterday = date.today() - timedelta(days=1)
 
     client = api.GitHubClient("ebmdatalab", ebmdatalab_token)
     log.info("Fetching vulnerabilities for %s", client.org)
-    vulnerabilities(client)
+    ebmdatalab_vulns = list(vulnerabilities(client, yesterday))
 
     client = api.GitHubClient("opensafely-core", os_core_token)
     log.info("Fetching vulnerabilities for %s", client.org)
-    vulnerabilities(client)
+    os_core_vulns = list(vulnerabilities(client, yesterday))
+
+    timescaledb.reset_table(timescaledb.GitHubVulnerabilities)
+    timescaledb.write(timescaledb.GitHubVulnerabilities, ebmdatalab_vulns)
+    timescaledb.write(timescaledb.GitHubVulnerabilities, os_core_vulns)
