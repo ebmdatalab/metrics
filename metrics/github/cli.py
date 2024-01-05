@@ -13,7 +13,7 @@ from .prs import drop_archived_prs, iter_prs
 log = structlog.get_logger()
 
 
-def old_prs(prs, org, days_threshold):
+def old_prs(prs, days_threshold):
     """
     Track "old" PRs
 
@@ -60,14 +60,13 @@ def old_prs(prs, org, days_threshold):
         yield from iter_prs(valid_prs, monday, name)
 
 
-def pr_throughput(prs, org):
+def pr_throughput(prs):
     """
     PRs closed each day from the earliest day to today
     """
     start = min([pr["created_at"] for pr in prs]).date()
-    days = list(iter_days(start, date.today()))
 
-    for day in days:
+    for day in iter_days(start, date.today()):
         valid_prs = drop_archived_prs(prs, day)
         merged_prs = [
             pr for pr in valid_prs if pr["merged_at"] and pr["merged_at"].date() == day
@@ -87,16 +86,16 @@ def github(ctx):
     log.info("Working with org: %s", "ebmdatalab")
     client = api.GitHubClient("ebmdatalab", ebmdatalab_token)
     prs = list(api.iter_prs(client))
-    log.info("Backfilling with %s PRs for %s", len(prs), "ebmdatalab")
-    ebmdatalab_prs = old_prs(prs, "ebmdatalab", days_threshold=7)
-    ebmdatalab_throughput = pr_throughput(prs, "ebmdatalab")
+    log.info("Fetched %s PRs for %s", len(prs), "ebmdatalab")
+    ebmdatalab_prs = old_prs(prs, days_threshold=7)
+    ebmdatalab_throughput = pr_throughput(prs)
 
     log.info("Working with org: %s", "opensafely-core")
     client = api.GitHubClient("opensafely-core", os_core_token)
     prs = list(api.iter_prs(client))
-    log.info("Backfilling with %s PRs for %s", len(prs), "opensafely-core")
-    os_core_prs = old_prs(prs, "opensafely-core", days_threshold=7)
-    os_core_throughput = pr_throughput(prs, "opensafely-core")
+    log.info("Fetched %s PRs for %s", len(prs), "opensafely-core")
+    os_core_prs = old_prs(prs, days_threshold=7)
+    os_core_throughput = pr_throughput(prs)
 
     timescaledb.reset_table(timescaledb.GitHubPullRequests)
 
