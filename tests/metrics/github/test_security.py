@@ -112,13 +112,13 @@ def test_vulnerability_open_at_same_day():
 def test_vulnerability_open_at_date_in_past():
     v = security.Vulnerability(date(2023, 10, 26), None, None)
 
-    assert v.is_open_at(date(2023, 10, 20)) is False
+    assert not v.is_open_at(date(2023, 10, 20))
 
 
 def test_vulnerability_open_has_been_closed():
     v = security.Vulnerability(date(2023, 10, 26), date(2023, 10, 28), None)
 
-    assert v.is_open_at(date(2023, 10, 30)) is False
+    assert not v.is_open_at(date(2023, 10, 30))
 
 
 def test_vulnerability_closed_at():
@@ -130,7 +130,7 @@ def test_vulnerability_closed_at():
 def test_vulnerability_closed_at_still_open():
     v = security.Vulnerability(date(2023, 10, 26), date(2023, 10, 28), None)
 
-    assert v.is_closed_at(date(2023, 10, 27)) is False
+    assert not v.is_closed_at(date(2023, 10, 27))
 
 
 def test_vulnerability_closed_at_is_closed():

@@ -65,8 +65,8 @@ def query_vulnerabilities(client, repo):
 @dataclass
 class Vulnerability:
     created_at: date
-    fixed_at: date
-    dismissed_at: date
+    fixed_at: date | None
+    dismissed_at: date | None
 
     def is_open_at(self, target_date):
         return self.created_at <= target_date and not self.is_closed_at(target_date)
@@ -92,7 +92,7 @@ class Repo:
     vulnerabilities: list[Vulnerability]
 
     def __post_init__(self):
-        self.vulnerabilities = sorted(self.vulnerabilities, key=lambda v: v.created_at)
+        self.vulnerabilities.sort(key=lambda v: v.created_at)
 
     def earliest_date(self):
         return self.vulnerabilities[0].created_at
@@ -114,8 +114,8 @@ def get_repos(client):
 def vulnerabilities(client, to_date):
     for repo in get_repos(client):
         for day in dates.iter_days(repo.earliest_date(), to_date):
-            closed_vulns = sum([1 for v in repo.vulnerabilities if v.is_closed_at(day)])
-            open_vulns = sum([1 for v in repo.vulnerabilities if v.is_open_at(day)])
+            closed_vulns = sum(1 for v in repo.vulnerabilities if v.is_closed_at(day))
+            open_vulns = sum(1 for v in repo.vulnerabilities if v.is_open_at(day))
 
             yield {
                 "time": day,
