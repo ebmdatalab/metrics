@@ -7,7 +7,6 @@ dokku$ dokku git:set metrics deploy-branch main
 
 ## Configure app
 ```bash
-dokku config:set metrics GITHUB_TOKEN'xxx'
 dokku config:set metrics GITHUB_EBMDATALAB_TOKEN='xxx'
 dokku config:set metrics GITHUB_OS_CORE_TOKEN='xxx'
 dokku config:set metrics SLACK_SIGNING_SECRET='xxx'

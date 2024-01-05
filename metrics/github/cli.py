@@ -92,12 +92,9 @@ def github(ctx):
 
     timescaledb.reset_table(timescaledb.GitHubPullRequests)
 
-    GITHUB_TOKEN = os.environ.get("GITHUB_TOKEN")
-    os_core_token = os.environ.get("GITHUB_OS_CORE_TOKEN", GITHUB_TOKEN)
-    ebmdatalab_token = os.environ.get("GITHUB_EBMDATALAB_TOKEN", GITHUB_TOKEN)
     orgs = {
-        "ebmdatalab": os_core_token,
-        "opensafely-core": ebmdatalab_token,
+        "ebmdatalab": os.environ["GITHUB_EBMDATALAB_TOKEN"],
+        "opensafely-core": os.environ["GITHUB_OS_CORE_TOKEN"],
     }
 
     for org, token in orgs.items():
