@@ -86,14 +86,12 @@ def github(ctx):
     log.info("Working with org: %s", "ebmdatalab")
     client = api.GitHubClient("ebmdatalab", ebmdatalab_token)
     prs = list(api.iter_prs(client))
-    log.info("Fetched %s PRs for %s", len(prs), "ebmdatalab")
     ebmdatalab_prs = old_prs(prs, days_threshold=7)
     ebmdatalab_throughput = pr_throughput(prs)
 
     log.info("Working with org: %s", "opensafely-core")
     client = api.GitHubClient("opensafely-core", os_core_token)
     prs = list(api.iter_prs(client))
-    log.info("Fetched %s PRs for %s", len(prs), "opensafely-core")
     os_core_prs = old_prs(prs, days_threshold=7)
     os_core_throughput = pr_throughput(prs)
 
