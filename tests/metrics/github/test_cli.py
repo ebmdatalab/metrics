@@ -4,7 +4,7 @@ from datetime import UTC, datetime, timedelta
 from click.testing import CliRunner
 
 from metrics.cli import cli
-from metrics.github.cli import old_prs, pr_throughput
+from metrics.github.prs import old_prs, pr_throughput
 
 
 def ts(name, author, time, value):
