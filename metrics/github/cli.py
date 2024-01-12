@@ -171,7 +171,7 @@ def tech_owned_repo(pr):
 
 def fetch_prs(client):
     for repo in query.repos(client):
-        yield from api.iter_repo_prs(client, repo)
+        yield from query.prs(client, repo)
 
 
 @click.command()
