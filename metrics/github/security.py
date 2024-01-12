@@ -12,36 +12,6 @@ from . import api, query
 log = structlog.get_logger()
 
 
-def query_vulnerabilities(client, repo):
-    query = """
-    query vulnerabilities($cursor: String, $org: String!, $repo: String!) {
-      organization(login: $org) {
-        repository(name: $repo) {
-          name
-          vulnerabilityAlerts(first: 100, after: $cursor) {
-            nodes {
-              createdAt
-              fixedAt
-              dismissedAt
-            }
-            pageInfo {
-              endCursor
-              hasNextPage
-            }
-          }
-        }
-      }
-    }
-    """
-
-    return client.get_query(
-        query,
-        path=["organization", "repository", "vulnerabilityAlerts"],
-        org=client.org,
-        repo=repo["name"],
-    )
-
-
 @dataclass
 class Vulnerability:
     created_at: date
@@ -84,7 +54,7 @@ def get_repos(client):
             continue
 
         vulnerabilities = []
-        for vuln in query_vulnerabilities(client, repo):
+        for vuln in query.vulnerabilities(client, repo):
             vulnerabilities.append(Vulnerability.from_dict(vuln))
 
         if vulnerabilities:
