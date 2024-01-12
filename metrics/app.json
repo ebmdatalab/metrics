@@ -1,15 +1,7 @@
 {
   "cron": [
     {
-      "command": "python -m metrics github",
-      "schedule": "@daily"
-    },
-    {
-      "command": "python -m metrics.github.security",
-      "schedule": "@daily"
-    },
-    {
-      "command": "python -m metrics slack tech-support",
+      "command": "python -m metrics.tasks",
       "schedule": "@daily"
     }
   ]
