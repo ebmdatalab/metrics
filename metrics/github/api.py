@@ -137,7 +137,6 @@ def iter_repo_prs(client, repo):
     for pr in client.get_query(
         query,
         path=["organization", "repository", "pullRequests"],
-        org=client.org,
         repo=repo["name"],
     ):
         yield {
