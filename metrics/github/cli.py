@@ -6,7 +6,7 @@ import structlog
 
 from .. import timescaledb
 from ..tools.dates import iter_days, previous_weekday
-from . import api, query
+from . import client, query
 from .prs import drop_archived_prs, iter_prs
 
 
@@ -88,11 +88,11 @@ def github(ctx):
     ebmdatalab_token = os.environ["GITHUB_EBMDATALAB_TOKEN"]
     os_core_token = os.environ["GITHUB_OS_CORE_TOKEN"]
 
-    client = api.GitHubClient("ebmdatalab", ebmdatalab_token)
+    client = client.GitHubClient("ebmdatalab", ebmdatalab_token)
     log.info("Working with org: %s", client.org)
     ebmdatalab_prs = list(fetch_prs(client))
 
-    client = api.GitHubClient("opensafely-core", os_core_token)
+    client = client.GitHubClient("opensafely-core", os_core_token)
     log.info("Working with org: %s", client.org)
     os_core_prs = list(fetch_prs(client))
 
