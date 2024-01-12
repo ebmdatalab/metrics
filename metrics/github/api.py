@@ -149,8 +149,3 @@ def iter_repo_prs(client, repo):
             "created_at": datetime_from_iso(pr["createdAt"]),
             "merged_at": datetime_from_iso(pr["mergedAt"]),
         }
-
-
-def iter_prs(client):
-    for repo in iter_repos(client):
-        yield from iter_repo_prs(client, repo)

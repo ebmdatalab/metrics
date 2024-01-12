@@ -75,6 +75,11 @@ def pr_throughput(prs):
         yield from iter_prs(merged_prs, day, name="prs_merged")
 
 
+def fetch_prs(client):
+    for repo in api.iter_repos(client):
+        yield from api.iter_repo_prs(client, repo)
+
+
 @click.command()
 @click.pass_context
 def github(ctx):
@@ -83,22 +88,22 @@ def github(ctx):
     ebmdatalab_token = os.environ["GITHUB_EBMDATALAB_TOKEN"]
     os_core_token = os.environ["GITHUB_OS_CORE_TOKEN"]
 
-    log.info("Working with org: %s", "ebmdatalab")
     client = api.GitHubClient("ebmdatalab", ebmdatalab_token)
-    prs = list(api.iter_prs(client))
-    ebmdatalab_prs = old_prs(prs, days_threshold=7)
-    ebmdatalab_throughput = pr_throughput(prs)
+    log.info("Working with org: %s", client.org)
+    ebmdatalab_prs = list(fetch_prs(client))
 
-    log.info("Working with org: %s", "opensafely-core")
     client = api.GitHubClient("opensafely-core", os_core_token)
-    prs = list(api.iter_prs(client))
-    os_core_prs = old_prs(prs, days_threshold=7)
-    os_core_throughput = pr_throughput(prs)
+    log.info("Working with org: %s", client.org)
+    os_core_prs = list(fetch_prs(client))
 
     timescaledb.reset_table(timescaledb.GitHubPullRequests)
 
-    timescaledb.write(timescaledb.GitHubPullRequests, ebmdatalab_prs)
-    timescaledb.write(timescaledb.GitHubPullRequests, ebmdatalab_throughput)
+    timescaledb.write(
+        timescaledb.GitHubPullRequests, old_prs(ebmdatalab_prs, days_threshold=7)
+    )
+    timescaledb.write(timescaledb.GitHubPullRequests, pr_throughput(ebmdatalab_prs))
 
-    timescaledb.write(timescaledb.GitHubPullRequests, os_core_prs)
-    timescaledb.write(timescaledb.GitHubPullRequests, os_core_throughput)
+    timescaledb.write(
+        timescaledb.GitHubPullRequests, old_prs(os_core_prs, days_threshold=7)
+    )
+    timescaledb.write(timescaledb.GitHubPullRequests, pr_throughput(os_core_prs))
