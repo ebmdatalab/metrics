@@ -4,11 +4,9 @@ from datetime import date, timedelta
 
 import structlog
 
-from metrics.github.query import query_repos
-
 from .. import timescaledb
 from ..tools import dates
-from . import api
+from . import api, query
 
 
 log = structlog.get_logger()
@@ -81,7 +79,7 @@ class Repo:
 
 
 def get_repos(client):
-    for repo in query_repos(client):
+    for repo in query.repos(client):
         if repo["archivedAt"]:
             continue
 

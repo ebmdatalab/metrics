@@ -62,7 +62,7 @@ def fake_vulnerabilities(client, repo):
 
 
 def test_get_repos():
-    security.query_repos = fake_repos
+    security.query.repos = fake_repos
     security.query_vulnerabilities = fake_vulnerabilities
     fake_client = lambda: None
     fake_client.org = "test-org"
@@ -77,7 +77,7 @@ def test_get_repos():
 
 
 def test_get_repos_when_no_vulnerabilities():
-    security.query_repos = fake_repos
+    security.query.repos = fake_repos
     security.query_vulnerabilities = lambda x, y: []
     fake_client = lambda: None
     fake_client.org = "test-org"

@@ -1,4 +1,4 @@
-def query_repos(client):
+def repos(client):
     query = """
     query repos($cursor: String, $org: String!) {
       organization(login: $org) {
