@@ -86,30 +86,6 @@ class GitHubClient:
             cursor = page["pageInfo"]["endCursor"]
 
 
-def iter_repos(client):
-    query = """
-    query repos($cursor: String, $org: String!) {
-      organization(login: $org) {
-        repositories(first: 100, after: $cursor) {
-          nodes {
-            name
-            archivedAt
-          }
-          pageInfo {
-              endCursor
-              hasNextPage
-          }
-        }
-      }
-    }
-    """
-    for repo in client.get_query(query, path=["organization", "repositories"]):
-        yield {
-            "name": repo["name"],
-            "archived_at": repo["archivedAt"],
-        }
-
-
 def iter_repo_prs(client, repo):
     query = """
     query prs($cursor: String, $org: String!, $repo: String!) {
@@ -142,7 +118,7 @@ def iter_repo_prs(client, repo):
         yield {
             "org": client.org,
             "repo": repo["name"],
-            "repo_archived_at": datetime_from_iso(repo["archived_at"]),
+            "repo_archived_at": datetime_from_iso(repo["archivedAt"]),
             "author": pr["author"]["login"],
             "closed_at": datetime_from_iso(pr["closedAt"]),
             "created_at": datetime_from_iso(pr["createdAt"]),

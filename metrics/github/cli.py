@@ -6,7 +6,7 @@ import structlog
 
 from .. import timescaledb
 from ..tools.dates import iter_days, previous_weekday
-from . import api
+from . import api, query
 from .prs import drop_archived_prs, iter_prs
 
 
@@ -170,7 +170,7 @@ def tech_owned_repo(pr):
 
 
 def fetch_prs(client):
-    for repo in api.iter_repos(client):
+    for repo in query.repos(client):
         yield from api.iter_repo_prs(client, repo)
 
 
