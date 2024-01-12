@@ -6,7 +6,8 @@ import structlog
 
 from .. import timescaledb
 from ..tools import dates
-from . import client, query
+from . import query
+from .client import GitHubClient
 
 
 log = structlog.get_logger()
@@ -82,11 +83,11 @@ if __name__ == "__main__":  # pragma: no cover
     ebmdatalab_token = os.environ["GITHUB_EBMDATALAB_TOKEN"]
     yesterday = date.today() - timedelta(days=1)
 
-    client = client.GitHubClient("ebmdatalab", ebmdatalab_token)
+    client = GitHubClient("ebmdatalab", ebmdatalab_token)
     log.info("Fetching vulnerabilities for %s", client.org)
     ebmdatalab_vulns = list(vulnerabilities(client, yesterday))
 
-    client = client.GitHubClient("opensafely-core", os_core_token)
+    client = GitHubClient("opensafely-core", os_core_token)
     log.info("Fetching vulnerabilities for %s", client.org)
     os_core_vulns = list(vulnerabilities(client, yesterday))
 
