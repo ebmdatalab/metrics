@@ -4,32 +4,14 @@ from datetime import date, timedelta
 
 import structlog
 
+from metrics.github.query import query_repos
+
 from .. import timescaledb
 from ..tools import dates
 from . import api
 
 
 log = structlog.get_logger()
-
-
-def query_repos(client):
-    query = """
-    query repos($cursor: String, $org: String!) {
-      organization(login: $org) {
-        repositories(first: 100, after: $cursor) {
-          nodes {
-            name
-            archivedAt
-          }
-          pageInfo {
-              endCursor
-              hasNextPage
-          }
-        }
-      }
-    }
-    """
-    return client.get_query(query, path=["organization", "repositories"])
 
 
 def query_vulnerabilities(client, repo):
