@@ -85,6 +85,47 @@ def pr_throughput(prs, org):
         yield from iter_prs(merged_prs, day, name="prs_merged")
 
 
+NON_TECH_REPOS = {
+    "ebmdatalab": [
+        "bennett-presentations",
+        "change_detection",
+        "clinicaltrials-act-converter",
+        "clinicaltrials-act-tracker",
+        "datalab-jupyter",
+        "dmd-hosp-only",
+        "euctr-tracker-code",
+        "ghost_branded_generics_paper",
+        "improvement_radar_prototype",
+        "jupyter-notebooks",
+        "kurtosis-pericyazine",
+        "nsaid-covid-codelist-notebook",
+        "opencorona-sandpit-for-fizz",
+        "open-nhs-hospital-use-data",
+        "opioids-change-detection-notebook",
+        "outliers",
+        "prescribing-queries",
+        "price-concessions-accuracy-notebook",
+        "priceshocks",
+        "publications",
+        "publications-copiloted",
+        "Rx-Quantity-for-LTCs-notebook",
+        "scmd-narcolepsy",
+        "seb-test-notebook",
+        "teaching_resource",
+        "vaccinations-covid-codelist-notebook",
+    ],
+    "opensafely-core": [
+        "matching",
+    ],
+}
+
+
+def tech_owned_repo(pr):
+    # We use a deny-list rather than an allow-list so that newly created repos are treated as
+    # Tech-owned by default, in the hopes of minimizing surprise.
+    return not (pr["org"] in NON_TECH_REPOS and pr["repo"] in NON_TECH_REPOS[pr["org"]])
+
+
 @click.command()
 @click.pass_context
 def github(ctx):
@@ -100,7 +141,10 @@ def github(ctx):
     for org, token in orgs.items():
         log.info("Working with org: %s", org)
         client = api.GitHubClient(org, token)
-        prs = list(api.iter_prs(client))
+
+        prs = api.iter_prs(client)
+        prs = list(filter(tech_owned_repo, prs))
+
         log.info("Backfilling with %s PRs for %s", len(prs), org)
 
         rows = itertools.chain(
