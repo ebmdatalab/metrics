@@ -3,7 +3,7 @@ import os
 import click
 import structlog
 
-from metrics.github.prs import fetch_prs, old_prs, pr_throughput, tech_owned_repo
+from metrics.github.prs import fetch_prs, old_prs, pr_throughput
 
 from .. import timescaledb
 from .client import GitHubClient
@@ -22,11 +22,11 @@ def github(ctx):
 
     client = GitHubClient("ebmdatalab", ebmdatalab_token)
     log.info("Working with org: %s", client.org)
-    ebmdatalab_prs = list(filter(tech_owned_repo, fetch_prs(client)))
+    ebmdatalab_prs = list(fetch_prs(client))
 
     client = GitHubClient("opensafely-core", os_core_token)
     log.info("Working with org: %s", client.org)
-    os_core_prs = list(filter(tech_owned_repo, fetch_prs(client)))
+    os_core_prs = list(fetch_prs(client))
 
     timescaledb.reset_table(timescaledb.GitHubPullRequests)
 

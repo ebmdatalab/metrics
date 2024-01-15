@@ -248,11 +248,9 @@ def test_pr_throughput():
 
 
 def test_filtering_of_tech_owned_repos():
-    assert tech_owned_repo({"org": "ebmdatalab", "repo": "metrics"})
-    assert not tech_owned_repo(
-        {"org": "ebmdatalab", "repo": "clinicaltrials-act-tracker"}
-    )
+    assert tech_owned_repo({"name": "metrics"}, "ebmdatalab")
+    assert not tech_owned_repo({"name": "clinicaltrials-act-tracker"}, "ebmdatalab")
 
 
 def test_dont_filter_out_repos_from_unknown_orgs():
-    assert tech_owned_repo({"org": "other", "repo": "any"})
+    assert tech_owned_repo({"name": "any"}, "other")
