@@ -4,7 +4,7 @@ from datetime import UTC, datetime, timedelta
 from click.testing import CliRunner
 
 from metrics.cli import cli
-from metrics.github.cli import old_prs, pr_throughput
+from metrics.github.cli import old_prs, pr_throughput, tech_owned_repo
 
 
 def ts(name, author, time, value):
@@ -181,3 +181,14 @@ def test_pr_throughput():
     )
 
     assert output == expected
+
+
+def test_filtering_of_tech_owned_repos():
+    assert tech_owned_repo({"org": "ebmdatalab", "repo": "metrics"})
+    assert not tech_owned_repo(
+        {"org": "ebmdatalab", "repo": "clinicaltrials-act-tracker"}
+    )
+
+
+def test_dont_filter_out_repos_from_unknown_orgs():
+    assert tech_owned_repo({"org": "other", "repo": "any"})
