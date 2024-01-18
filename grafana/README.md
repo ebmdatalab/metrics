@@ -16,7 +16,7 @@ dokku$ dokku domains:add grafana dashboards.opensafely.org
 ```bash
 # the grafana container runs as uid 472 (grafana)
 # the other dokku containers on dokku3 run as uid 1013 (dokku)
-# let's tell the container to run as 1013, then we can use the same file permissions 
+# let's tell the container to run as 1013, then we can use the same file permissions
 dokku$ dokku docker-options:add grafana deploy "--user 1013"
 dokku$ dokku docker-options:add grafana run "--user 1013"
 dokku$ dokku storage:ensure-directory grafana
@@ -64,7 +64,7 @@ GRANT CONNECT ON database jobserver TO grafanareader;
 * configure access as required:
 
 ```sql
-GRANT SELECT ON applications_application, applications_cmoprioritylistpage, applications_commercialinvolvementpage, applications_datasetspage, applications_legalbasispage, applications_previousehrexperiencepage, applications_recordleveldatapage, applications_referencespage, applications_researcherregistration, applications_sharingcodepage, applications_sponsordetailspage, applications_studydatapage, applications_studyfundingpage, applications_studyinformationpage, applications_studypurposepage, applications_teamdetailspage, applications_typeofstudypage, interactive_analysisrequest, jobserver_backend, jobserver_backendmembership, jobserver_job, jobserver_jobrequest, jobserver_org, jobserver_orgmembership, jobserver_project, jobserver_projectmembership, jobserver_publishrequest, jobserver_release, jobserver_releasefile, jobserver_releasefilereview, jobserver_repo, jobserver_report, jobserver_snapshot, jobserver_snapshot_files, jobserver_stats, jobserver_workspace, redirects_redirect TO grafanareader;
+GRANT SELECT ON applications_application, applications_cmoprioritylistpage, applications_commercialinvolvementpage, applications_datasetspage, applications_legalbasispage, applications_previousehrexperiencepage, applications_recordleveldatapage, applications_referencespage, applications_researcherregistration, applications_sharingcodepage, applications_sponsordetailspage, applications_studydatapage, applications_studyfundingpage, applications_studyinformationpage, applications_studypurposepage, applications_teamdetailspage, applications_typeofstudypage, interactive_analysisrequest, jobserver_backend, jobserver_backendmembership, jobserver_job, jobserver_jobrequest, jobserver_org, jobserver_orgmembership, jobserver_project, jobserver_projectcollaboration, jobserver_projectmembership, jobserver_publishrequest, jobserver_release, jobserver_releasefile, jobserver_releasefilereview, jobserver_repo, jobserver_report, jobserver_snapshot, jobserver_snapshot_files, jobserver_stats, jobserver_workspace, redirects_redirect TO grafanareader;
 CREATE VIEW jobserver_user_grafana AS SELECT id,last_login,is_superuser,username,is_staff,is_active,date_joined,fullname,created_by_id,login_token_expires_at,pat_expires_at,roles FROM jobserver_user;
 GRANT SELECT ON jobserver_user_grafana TO grafanareader;
 ```
@@ -80,7 +80,7 @@ Go to the DigitalOcean db cluster read-only node `Connection Details` & get some
 
 ### Missing datasource
 
-If you import a Dashboard from a JSON file, the visualisations may error with "Could not find datasource $UUID". It is sometimes possible to fix this by some combination of hitting "Run query" & "Refresh", otherwise you could recreate the visulation by copy-pasting SQL etc. 
+If you import a Dashboard from a JSON file, the visualisations may error with "Could not find datasource $UUID". It is sometimes possible to fix this by some combination of hitting "Run query" & "Refresh", otherwise you could recreate the visulation by copy-pasting SQL etc.
 
 ## Auto-update
 
