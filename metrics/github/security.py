@@ -6,60 +6,11 @@ import structlog
 
 from .. import timescaledb
 from ..tools import dates
-from . import api
+from . import query
+from .client import GitHubClient
 
 
 log = structlog.get_logger()
-
-
-def query_repos(client):
-    query = """
-    query repos($cursor: String, $org: String!) {
-      organization(login: $org) {
-        repositories(first: 100, after: $cursor) {
-          nodes {
-            name
-            archivedAt
-          }
-          pageInfo {
-              endCursor
-              hasNextPage
-          }
-        }
-      }
-    }
-    """
-    return client.get_query(query, path=["organization", "repositories"])
-
-
-def query_vulnerabilities(client, repo):
-    query = """
-    query vulnerabilities($cursor: String, $org: String!, $repo: String!) {
-      organization(login: $org) {
-        repository(name: $repo) {
-          name
-          vulnerabilityAlerts(first: 100, after: $cursor) {
-            nodes {
-              createdAt
-              fixedAt
-              dismissedAt
-            }
-            pageInfo {
-              endCursor
-              hasNextPage
-            }
-          }
-        }
-      }
-    }
-    """
-
-    return client.get_query(
-        query,
-        path=["organization", "repository", "vulnerabilityAlerts"],
-        org=client.org,
-        repo=repo["name"],
-    )
 
 
 @dataclass
@@ -99,12 +50,12 @@ class Repo:
 
 
 def get_repos(client):
-    for repo in query_repos(client):
-        if repo["archivedAt"]:
+    for repo in query.repos(client):
+        if repo["archived_at"]:
             continue
 
         vulnerabilities = []
-        for vuln in query_vulnerabilities(client, repo):
+        for vuln in query.vulnerabilities(client, repo):
             vulnerabilities.append(Vulnerability.from_dict(vuln))
 
         if vulnerabilities:
@@ -132,11 +83,11 @@ if __name__ == "__main__":  # pragma: no cover
     ebmdatalab_token = os.environ["GITHUB_EBMDATALAB_TOKEN"]
     yesterday = date.today() - timedelta(days=1)
 
-    client = api.GitHubClient("ebmdatalab", ebmdatalab_token)
+    client = GitHubClient("ebmdatalab", ebmdatalab_token)
     log.info("Fetching vulnerabilities for %s", client.org)
     ebmdatalab_vulns = list(vulnerabilities(client, yesterday))
 
-    client = api.GitHubClient("opensafely-core", os_core_token)
+    client = GitHubClient("opensafely-core", os_core_token)
     log.info("Fetching vulnerabilities for %s", client.org)
     os_core_vulns = list(vulnerabilities(client, yesterday))
 
