@@ -18,7 +18,12 @@ def repos(client):
       }
     }
     """
-    return client.get_query(query, path=["organization", "repositories"])
+    for repo in client.get_query(query, path=["organization", "repositories"]):
+        yield {
+            "org": client.org,
+            "name": repo["name"],
+            "archivedAt": repo["archivedAt"],
+        }
 
 
 def vulnerabilities(client, repo):

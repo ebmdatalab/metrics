@@ -210,13 +210,15 @@ NON_TECH_REPOS = {
 }
 
 
-def tech_owned_repo(repo, org):
+def tech_owned_repo(repo):
     # We use a deny-list rather than an allow-list so that newly created repos are treated as
     # Tech-owned by default, in the hopes of minimizing surprise.
-    return not (org in NON_TECH_REPOS and repo["name"] in NON_TECH_REPOS[org])
+    return not (
+        repo["org"] in NON_TECH_REPOS and repo["name"] in NON_TECH_REPOS[repo["org"]]
+    )
 
 
 def fetch_prs(client):
     for repo in query.repos(client):
-        if tech_owned_repo(repo, client.org):
+        if tech_owned_repo(repo):
             yield from query.prs(client, repo)
