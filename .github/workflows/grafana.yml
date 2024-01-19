@@ -9,9 +9,9 @@ env:
 
 on:
   workflow_dispatch:
-  push:
-    paths:
-      - 'grafana/*'
+  schedule:
+    # Run every Wednesday at 8am
+    - cron: "0 8 * * 3"
 
 jobs:
   lint-dockerfile:
@@ -34,7 +34,7 @@ jobs:
 
       - name: Build docker image
         run: |
-            just grafana/build 
+            just grafana/build
 
       - name: Run smoke test
         run: |
