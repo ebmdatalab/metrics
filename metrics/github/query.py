@@ -22,7 +22,7 @@ def repos(client):
         yield {
             "org": client.org,
             "name": repo["name"],
-            "archivedAt": repo["archivedAt"],
+            "archived_at": repo["archivedAt"],
         }
 
 
@@ -88,7 +88,7 @@ def prs(client, repo):
         yield {
             "org": client.org,
             "repo": repo["name"],
-            "repo_archived_at": datetime_from_iso(repo["archivedAt"]),
+            "repo_archived_at": datetime_from_iso(repo["archived_at"]),
             "author": pr["author"]["login"],
             "closed_at": datetime_from_iso(pr["closedAt"]),
             "created_at": datetime_from_iso(pr["createdAt"]),

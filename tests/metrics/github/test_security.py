@@ -7,15 +7,15 @@ def fake_repos(client):
     return [
         {
             "name": "opencodelists",
-            "archivedAt": None,
+            "archived_at": None,
         },
         {
             "name": "old-repo",
-            "archivedAt": "2023-04-20T18:22:11Z",
+            "archived_at": "2023-04-20T18:22:11Z",
         },
         {
             "name": "job-server",
-            "archivedAt": None,
+            "archived_at": None,
         },
     ]
 

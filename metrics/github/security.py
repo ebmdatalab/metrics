@@ -51,7 +51,7 @@ class Repo:
 
 def get_repos(client):
     for repo in query.repos(client):
-        if repo["archivedAt"]:
+        if repo["archived_at"]:
             continue
 
         vulnerabilities = []
