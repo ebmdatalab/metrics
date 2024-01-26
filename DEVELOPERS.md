@@ -26,17 +26,35 @@ Set up a local development environment with:
 just devenv
 ```
 
-## Running
+## Running Grafana
 Start the local docker stack with:
 ```
 just grafana
 ```
 
-This will spin up Grafana, it's own database, and a TimescaleDB instance.
-You can then run the metrics CLI with:
+This will spin up Grafana, its own database, and a TimescaleDB instance.
+
+## Running metrics tasks
+
+You'll need to have timescale db running in the backend, either by running `just grafana`, or alternatively, to start TimeScaleDB without starting Grafana by doing
+```
+docker compose up timescaledb
+```
+
+You can then run the metrics tasks with:
 ```
 just metrics
 ```
+
+Specify an individual task by passing in the module name
+```
+just metrics <module_name>
+```
+
+e.g `just metrics prs` to run metrics/tasks/prs.py
+
+All tasks are defined in `metrics/tasks` and must have a `main()` function that takes no arguments.
+
 
 ## Tests
 Run the tests with:
