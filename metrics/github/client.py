@@ -1,5 +1,7 @@
 import json
+import re
 import textwrap
+from urllib.parse import urljoin
 
 import requests
 import structlog
@@ -9,6 +11,40 @@ log = structlog.get_logger()
 
 
 session = requests.Session()
+
+
+class GitHubRestClient:
+    def __init__(self, org, token):
+        self.org = org
+        self.token = token
+
+    def get(self, path):
+        session.headers = {
+            "Authorization": f"bearer {self.token}",
+            "User-Agent": "Bennett Metrics",
+        }
+        base_url = "https://api.github.com"
+        full_url = urljoin(base_url, path)
+        response = self.session.get(full_url)
+
+        if not response.ok:
+            log.info(response.headers)
+            log.info(response.content)
+
+        response.raise_for_status()
+        return response
+
+    def get_paged_results(self, path, start_date="", per_page=100):
+        full_path = f"{path}?per_page={per_page}&since={start_date}"
+        while full_path:
+            response = self.get(full_path)
+            yield response.json()
+            full_path = self.get_next_page_url(response.headers)
+
+    def get_next_page_url(self, headers):
+        link_header = headers.get("Link", "")
+        next_link_match = re.search(r'<([^>]+)>;\s*rel="next"', link_header)
+        return next_link_match.group(1) if next_link_match else None
 
 
 class GitHubClient:
