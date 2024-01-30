@@ -25,7 +25,7 @@ class GitHubRestClient:
         }
         base_url = "https://api.github.com"
         full_url = urljoin(base_url, path)
-        response = self.session.get(full_url)
+        response = session.get(full_url)
 
         if not response.ok:
             log.info(response.headers)
