@@ -33,6 +33,7 @@ just grafana
 ```
 
 This will spin up Grafana, its own database, and a TimescaleDB instance.
+Log in with the default credentials `admin`/`admin`
 
 ## Running metrics tasks
 
