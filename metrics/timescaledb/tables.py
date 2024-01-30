@@ -34,3 +34,12 @@ SlackTechSupport = Table(
     Column("name", Text, primary_key=True),
     Column("value", Integer),
 )
+
+GenericCounter = Table(
+    "generic_counter",
+    metadata,
+    Column("id", Text, primary_key=True),
+    Column("time", TIMESTAMP(timezone=True), primary_key=True),
+    Column("name", Text),
+    Column("value", Integer),
+)
