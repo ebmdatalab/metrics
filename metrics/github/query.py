@@ -1,3 +1,4 @@
+from metrics.github.repos import tech_owned_repo
 from metrics.tools.dates import datetime_from_iso
 
 
@@ -18,12 +19,16 @@ def repos(client, org):
       }
     }
     """
-    for repo in client.get_query(query, path=["organization", "repositories"], org=org):
-        yield {
+    for raw_repo in client.get_query(
+        query, path=["organization", "repositories"], org=org
+    ):
+        repo = {
             "org": org,
-            "name": repo["name"],
-            "archived_at": datetime_from_iso(repo["archivedAt"]),
+            "name": raw_repo["name"],
+            "archived_at": datetime_from_iso(raw_repo["archivedAt"]),
         }
+        if tech_owned_repo(repo):
+            yield repo
 
 
 def vulnerabilities(client, repo):

@@ -1,8 +1,6 @@
 from dataclasses import dataclass
 from datetime import date
 
-from metrics.github.repos import tech_owned_repo
-
 from ..tools import dates
 from . import query
 
@@ -45,7 +43,7 @@ class Repo:
 
 def get_repos(client, org):
     for repo in query.repos(client, org):
-        if repo["archived_at"] or not tech_owned_repo(repo):
+        if repo["archived_at"]:
             continue
 
         vulnerabilities = []
