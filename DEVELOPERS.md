@@ -26,6 +26,8 @@ Set up a local development environment with:
 just devenv
 ```
 
+Populate the generated `.env` file with the GitHub PATs described in the [install instructions](INSTALL.md#configure-app).
+
 ## Running Grafana
 Start the local docker stack with:
 ```
