@@ -4,6 +4,8 @@ from datetime import date, timedelta
 
 import structlog
 
+from metrics.github.repos import tech_owned_repo
+
 from .. import timescaledb
 from ..tools import dates
 from . import query
@@ -51,7 +53,7 @@ class Repo:
 
 def get_repos(client):
     for repo in query.repos(client):
-        if repo["archived_at"]:
+        if repo["archived_at"] or not tech_owned_repo(repo):
             continue
 
         vulnerabilities = []

@@ -6,14 +6,17 @@ from metrics.github import security
 def fake_repos(client):
     return [
         {
+            "org": "test-org",
             "name": "opencodelists",
             "archived_at": None,
         },
         {
+            "org": "test-org",
             "name": "old-repo",
             "archived_at": "2023-04-20T18:22:11Z",
         },
         {
+            "org": "test-org",
             "name": "job-server",
             "archived_at": None,
         },
