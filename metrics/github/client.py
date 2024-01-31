@@ -52,7 +52,7 @@ class GitHubClient:
         # Handling things robustly is complex and query specific, so here we simply
         # take the absence of 'data' as an error, rather than the presence of
         # 'errors' key.
-        if "data" not in results:
+        if "data" not in results or not results["data"]:
             msg = textwrap.dedent(
                 f"""
                 graphql query failed
@@ -72,7 +72,10 @@ class GitHubClient:
         def extract(data):
             result = data
             for key in path:
-                result = result[key]
+                try:
+                    result = result[key]
+                except TypeError:
+                    raise Exception(f"Couldn't find {path} in {data}")
             return result
 
         more_pages = True
