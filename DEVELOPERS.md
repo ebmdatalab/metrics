@@ -36,6 +36,20 @@ just grafana
 
 This will spin up Grafana, its own database, and a TimescaleDB instance.
 
+Grafana is available at [http://localhost:3000](http://localhost:3000).
+The default credentials are `admin`/`admin`; Grafana asks you to change these when you first log in, but you can skip the change.
+
+Add a datasource in [Grafana's settings](http://localhost:3000/connections/datasources).
+Copy the details from [production](https://dashboards.opensafely.org/connections/datasources),
+with the exception of the connection details which copy by copied from [docker-compose.yaml](https://github.com/ebmdatalab/metrics/blob/a543e8817898278d663c08243fa26359cdb5230e/docker-compose.yaml#L32-L42)
+(the server address is the service name)
+
+To add a dashboard:
+1. Go to the [production dashboard](https://dashboards.opensafely.org/dashboards) that you want to copy.
+2. Go to the "share" icon on the top row and to the "Export" tab.
+3. Select "Export for sharing externally" and "Save to file".
+4. Go to your local Grafana and [import](https://dashboards.opensafely.org/dashboards) the dashboard (you need to explicitly set the datasource).
+
 ## Running metrics tasks
 
 You'll need to have timescale db running in the backend, either by running `just grafana`, or alternatively, to start TimeScaleDB without starting Grafana by doing
