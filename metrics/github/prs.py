@@ -1,7 +1,6 @@
 from datetime import UTC, date, datetime, time
 
 from metrics.github import query
-from metrics.github.repos import tech_owned_repo
 from metrics.tools.dates import iter_days, previous_weekday, timedelta
 
 
@@ -125,5 +124,4 @@ def pr_throughput(prs):
 
 def fetch_prs(client, org):
     for repo in query.repos(client, org):
-        if tech_owned_repo(repo):
-            yield from query.prs(client, repo)
+        yield from query.prs(client, repo)
