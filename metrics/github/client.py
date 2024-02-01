@@ -12,8 +12,7 @@ session = requests.Session()
 
 
 class GitHubClient:
-    def __init__(self, org, token):
-        self.org = org
+    def __init__(self, token):
         self.token = token
 
     def post(self, query, variables):
@@ -23,7 +22,7 @@ class GitHubClient:
         }
         response = session.post(
             "https://api.github.com/graphql",
-            json={"query": query, "variables": {"org": self.org, **variables}},
+            json={"query": query, "variables": variables},
         )
 
         if not response.ok:
