@@ -97,6 +97,7 @@ def old_prs(prs, days_threshold):
 
         return (closed - opened) >= threshold
 
+    results = []
     for monday in mondays:
         dt = datetime.combine(monday, time(), tzinfo=UTC)
         valid_prs = [pr for pr in prs if is_old(pr, dt)]
@@ -104,7 +105,8 @@ def old_prs(prs, days_threshold):
 
         name = f"queue_older_than_{days_threshold}_days"
 
-        yield from iter_prs(valid_prs, monday, name)
+        results.extend(iter_prs(valid_prs, monday, name))
+    return results
 
 
 def pr_throughput(prs):
@@ -113,15 +115,19 @@ def pr_throughput(prs):
     """
     start = min([pr["created_at"] for pr in prs]).date()
 
+    results = []
     for day in iter_days(start, date.today()):
         valid_prs = drop_archived_prs(prs, day)
         merged_prs = [
             pr for pr in valid_prs if pr["merged_at"] and pr["merged_at"].date() == day
         ]
 
-        yield from iter_prs(merged_prs, day, name="prs_merged")
+        results.extend(iter_prs(merged_prs, day, name="prs_merged"))
+    return results
 
 
 def fetch_prs(client, org):
+    prs = []
     for repo in query.repos(client, org):
-        yield from query.prs(client, repo)
+        prs.extend(query.prs(client, repo))
+    return prs
