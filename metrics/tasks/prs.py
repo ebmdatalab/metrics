@@ -15,24 +15,19 @@ def main():
     ebmdatalab_token = os.environ["GITHUB_EBMDATALAB_TOKEN"]
     os_core_token = os.environ["GITHUB_OS_CORE_TOKEN"]
 
-    client = GitHubClient(ebmdatalab_token)
-    log.info("Working with org: ebmdatalab")
-    ebmdatalab_prs = fetch_prs(client, "ebmdatalab")
-    ebmdatalab_old_prs = old_prs(ebmdatalab_prs, days_threshold=7)
-    ebmdatalab_throughput = pr_throughput(ebmdatalab_prs)
-    ebmdatalab_metrics = ebmdatalab_old_prs + ebmdatalab_throughput
-
-    client = GitHubClient(os_core_token)
-    log.info("Working with org: opensafely-core")
-    os_core_prs = fetch_prs(client, "opensafely-core")
-    os_core_old_prs = old_prs(os_core_prs, days_threshold=7)
-    os_core_throughput = pr_throughput(os_core_prs)
-    os_core_metrics = os_core_old_prs + os_core_throughput
-
+    ebmdatalab_metrics = get_metrics("ebmdatalab", ebmdatalab_token)
+    os_core_metrics = get_metrics("opensafely-core", os_core_token)
     metrics = ebmdatalab_metrics + os_core_metrics
 
     timescaledb.reset_table(timescaledb.GitHubPullRequests)
     timescaledb.write(timescaledb.GitHubPullRequests, metrics)
+
+
+def get_metrics(org, ebmdatalab_token):
+    client = GitHubClient(ebmdatalab_token)
+    log.info(f"Working with org: {org}")
+    prs = fetch_prs(client, org)
+    return old_prs(prs, days_threshold=7) + pr_throughput(prs)
 
 
 if __name__ == "__main__":
