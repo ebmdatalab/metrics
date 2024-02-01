@@ -43,8 +43,8 @@ class Repo:
         return self.vulnerabilities[0].created_at
 
 
-def get_repos(client):
-    for repo in query.repos(client):
+def get_repos(client, org):
+    for repo in query.repos(client, org):
         if repo["archived_at"] or not tech_owned_repo(repo):
             continue
 
@@ -53,11 +53,11 @@ def get_repos(client):
             vulnerabilities.append(Vulnerability.from_dict(vuln))
 
         if vulnerabilities:
-            yield Repo(repo["name"], client.org, vulnerabilities)
+            yield Repo(repo["name"], repo["org"], vulnerabilities)
 
 
-def vulnerabilities(client, to_date):
-    for repo in get_repos(client):
+def vulnerabilities(client, org, to_date):
+    for repo in get_repos(client, org):
         for day in dates.iter_days(repo.earliest_date(), to_date):
             closed_vulns = sum(1 for v in repo.vulnerabilities if v.is_closed_at(day))
             open_vulns = sum(1 for v in repo.vulnerabilities if v.is_open_at(day))

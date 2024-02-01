@@ -1,7 +1,7 @@
 from metrics.tools.dates import datetime_from_iso
 
 
-def repos(client):
+def repos(client, org):
     query = """
     query repos($cursor: String, $org: String!) {
       organization(login: $org) {
@@ -18,9 +18,9 @@ def repos(client):
       }
     }
     """
-    for repo in client.get_query(query, path=["organization", "repositories"]):
+    for repo in client.get_query(query, path=["organization", "repositories"], org=org):
         yield {
-            "org": client.org,
+            "org": org,
             "name": repo["name"],
             "archived_at": datetime_from_iso(repo["archivedAt"]),
         }
@@ -51,7 +51,7 @@ def vulnerabilities(client, repo):
     return client.get_query(
         query,
         path=["organization", "repository", "vulnerabilityAlerts"],
-        org=client.org,
+        org=repo["org"],
         repo=repo["name"],
     )
 
@@ -83,10 +83,11 @@ def prs(client, repo):
     for pr in client.get_query(
         query,
         path=["organization", "repository", "pullRequests"],
+        org=repo["org"],
         repo=repo["name"],
     ):
         yield {
-            "org": client.org,
+            "org": repo["org"],
             "repo": repo["name"],
             "repo_archived_at": repo["archived_at"],
             "author": pr["author"]["login"],

@@ -3,20 +3,20 @@ from datetime import date
 from metrics.github import security
 
 
-def fake_repos(client):
+def fake_repos(client, org):
     return [
         {
-            "org": "test-org",
+            "org": org,
             "name": "opencodelists",
             "archived_at": None,
         },
         {
-            "org": "test-org",
+            "org": org,
             "name": "old-repo",
             "archived_at": "2023-04-20T18:22:11Z",
         },
         {
-            "org": "test-org",
+            "org": org,
             "name": "job-server",
             "archived_at": None,
         },
@@ -67,10 +67,9 @@ def fake_vulnerabilities(client, repo):
 def test_get_repos(monkeypatch):
     monkeypatch.setattr(security.query, "repos", fake_repos)
     monkeypatch.setattr(security.query, "vulnerabilities", fake_vulnerabilities)
-    fake_client = lambda: None
-    fake_client.org = "test-org"
+    fake_client = lambda: None  # pragma: no cover
 
-    result = list(security.get_repos(fake_client))
+    result = list(security.get_repos(fake_client, "test-org"))
 
     assert len(result) == 2
     assert result[0].name == "opencodelists"
@@ -82,10 +81,9 @@ def test_get_repos(monkeypatch):
 def test_get_repos_when_no_vulnerabilities(monkeypatch):
     monkeypatch.setattr(security.query, "repos", fake_repos)
     monkeypatch.setattr(security.query, "vulnerabilities", lambda x, y: [])
-    fake_client = lambda: None
-    fake_client.org = "test-org"
+    fake_client = lambda: None  # pragma: no cover
 
-    result = list(security.get_repos(fake_client))
+    result = list(security.get_repos(fake_client, "test-org"))
 
     assert len(result) == 0
 
@@ -143,7 +141,7 @@ def test_vulnerability_closed_at_is_closed():
 
 
 def test_vulnerabilities(monkeypatch):
-    def fake_repos(client):
+    def fake_repos(client, org):
         vulnerabilities = [
             security.Vulnerability(date(2023, 10, 13), date(2023, 10, 20), None),
             security.Vulnerability(date(2023, 10, 13), None, date(2023, 10, 21)),
@@ -151,13 +149,13 @@ def test_vulnerabilities(monkeypatch):
             security.Vulnerability(date(2023, 10, 29), None, None),
         ]
         return [
-            security.Repo("test", "test-org", vulnerabilities),
-            security.Repo("test2", "test-org", vulnerabilities),
+            security.Repo("test", org, vulnerabilities),
+            security.Repo("test2", org, vulnerabilities),
         ]
 
     monkeypatch.setattr(security, "get_repos", fake_repos)
 
-    result = list(security.vulnerabilities({}, date(2023, 10, 29)))
+    result = list(security.vulnerabilities({}, "test-org", date(2023, 10, 29)))
 
     assert len(result) == 34
     assert result[0] == {

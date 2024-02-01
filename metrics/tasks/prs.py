@@ -15,13 +15,13 @@ def main():
     ebmdatalab_token = os.environ["GITHUB_EBMDATALAB_TOKEN"]
     os_core_token = os.environ["GITHUB_OS_CORE_TOKEN"]
 
-    client = GitHubClient("ebmdatalab", ebmdatalab_token)
-    log.info("Working with org: %s", client.org)
-    ebmdatalab_prs = list(fetch_prs(client))
+    client = GitHubClient(ebmdatalab_token)
+    log.info("Working with org: ebmdatalab")
+    ebmdatalab_prs = list(fetch_prs(client, "ebmdatalab"))
 
-    client = GitHubClient("opensafely-core", os_core_token)
-    log.info("Working with org: %s", client.org)
-    os_core_prs = list(fetch_prs(client))
+    client = GitHubClient(os_core_token)
+    log.info("Working with org: opensafely-core")
+    os_core_prs = list(fetch_prs(client, "opensafely-core"))
 
     timescaledb.reset_table(timescaledb.GitHubPullRequests)
 

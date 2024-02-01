@@ -123,7 +123,7 @@ def pr_throughput(prs):
         yield from iter_prs(merged_prs, day, name="prs_merged")
 
 
-def fetch_prs(client):
-    for repo in query.repos(client):
+def fetch_prs(client, org):
+    for repo in query.repos(client, org):
         if tech_owned_repo(repo):
             yield from query.prs(client, repo)
