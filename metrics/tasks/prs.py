@@ -20,20 +20,19 @@ def main():
     ebmdatalab_prs = fetch_prs(client, "ebmdatalab")
     ebmdatalab_old_prs = old_prs(ebmdatalab_prs, days_threshold=7)
     ebmdatalab_throughput = pr_throughput(ebmdatalab_prs)
+    ebmdatalab_metrics = ebmdatalab_old_prs + ebmdatalab_throughput
 
     client = GitHubClient(os_core_token)
     log.info("Working with org: opensafely-core")
     os_core_prs = fetch_prs(client, "opensafely-core")
     os_core_old_prs = old_prs(os_core_prs, days_threshold=7)
     os_core_throughput = pr_throughput(os_core_prs)
+    os_core_metrics = os_core_old_prs + os_core_throughput
+
+    metrics = ebmdatalab_metrics + os_core_metrics
 
     timescaledb.reset_table(timescaledb.GitHubPullRequests)
-
-    timescaledb.write(timescaledb.GitHubPullRequests, ebmdatalab_old_prs)
-    timescaledb.write(timescaledb.GitHubPullRequests, ebmdatalab_throughput)
-
-    timescaledb.write(timescaledb.GitHubPullRequests, os_core_old_prs)
-    timescaledb.write(timescaledb.GitHubPullRequests, os_core_throughput)
+    timescaledb.write(timescaledb.GitHubPullRequests, metrics)
 
 
 if __name__ == "__main__":
