@@ -131,3 +131,8 @@ def fetch_prs(client, org):
     for repo in query.repos(client, org):
         prs.extend(query.prs(client, repo))
     return prs
+
+
+def get_metrics(client, org):
+    prs = fetch_prs(client, org)
+    return old_prs(prs, days_threshold=7) + pr_throughput(prs)
