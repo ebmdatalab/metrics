@@ -12,7 +12,7 @@ from metrics.github.security import vulnerabilities
 log = structlog.get_logger()
 
 
-def main():  # pragma: no cover
+def main():
     os_core_token = os.environ["GITHUB_OS_CORE_TOKEN"]
     ebmdatalab_token = os.environ["GITHUB_EBMDATALAB_TOKEN"]
     yesterday = date.today() - timedelta(days=1)
@@ -30,5 +30,5 @@ def main():  # pragma: no cover
     timescaledb.write(timescaledb.GitHubVulnerabilities, os_core_vulns)
 
 
-if __name__ == "__main__":  # pragma: no cover
+if __name__ == "__main__":
     sys.exit(main())

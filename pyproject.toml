@@ -30,6 +30,7 @@ branch = true
 dynamic_context = "test_function"
 omit = [
   ".venv/*",
+  "metrics/tasks/*.py"  # not currently tested
 ]
 source = [
   "metrics",

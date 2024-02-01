@@ -11,7 +11,7 @@ from metrics.github.prs import fetch_prs, old_prs, pr_throughput
 log = structlog.get_logger()
 
 
-def main():  # pragma: no cover
+def main():
     ebmdatalab_token = os.environ["GITHUB_EBMDATALAB_TOKEN"]
     os_core_token = os.environ["GITHUB_OS_CORE_TOKEN"]
 
@@ -36,5 +36,5 @@ def main():  # pragma: no cover
     timescaledb.write(timescaledb.GitHubPullRequests, pr_throughput(os_core_prs))
 
 
-if __name__ == "__main__":  # pragma: no cover
+if __name__ == "__main__":
     sys.exit(main())
