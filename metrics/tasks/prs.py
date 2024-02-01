@@ -17,11 +17,11 @@ def main():
 
     client = GitHubClient(ebmdatalab_token)
     log.info("Working with org: ebmdatalab")
-    ebmdatalab_prs = list(fetch_prs(client, "ebmdatalab"))
+    ebmdatalab_prs = fetch_prs(client, "ebmdatalab")
 
     client = GitHubClient(os_core_token)
     log.info("Working with org: opensafely-core")
-    os_core_prs = list(fetch_prs(client, "opensafely-core"))
+    os_core_prs = fetch_prs(client, "opensafely-core")
 
     timescaledb.reset_table(timescaledb.GitHubPullRequests)
 
