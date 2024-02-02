@@ -1,12 +1,20 @@
 from collections import defaultdict
 from datetime import date, datetime, time, timedelta
 
+import structlog
+
 from metrics.github import query
 from metrics.tools.dates import iter_days, next_weekday
 
 
+log = structlog.get_logger()
+
+
 def get_metrics(client, orgs):
     prs = get_prs(client, orgs)
+    log.info(
+        f"Got {sum(len(ps) for ps in prs.values())} PRs from {len(prs.keys())} repos"
+    )
 
     old_counts = calculate_counts(prs, is_old)
     throughput_counts = calculate_counts(prs, was_merged_in_week_ending)
