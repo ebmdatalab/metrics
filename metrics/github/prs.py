@@ -5,23 +5,24 @@ from metrics.github import query
 from metrics.tools.dates import iter_days, next_weekday
 
 
-def get_metrics(client, org):
-    prs = get_prs(client, org)
+def get_metrics(client, orgs):
+    prs = get_prs(client, orgs)
 
     old_counts = calculate_counts(prs, is_old)
     throughput_counts = calculate_counts(prs, was_merged_in_week_ending)
 
-    count_metrics = convert_to_metrics(old_counts, org, "queue_older_than_7_days")
-    throughput_metrics = convert_to_metrics(throughput_counts, org, "prs_merged")
+    count_metrics = convert_to_metrics(old_counts, "queue_older_than_7_days")
+    throughput_metrics = convert_to_metrics(throughput_counts, "prs_merged")
 
     return count_metrics + throughput_metrics
 
 
-def get_prs(client, org):
-    prs_by_repo = {}
-    for repo in query.repos(client, org):
-        prs_by_repo[repo] = list(query.prs(client, repo))
-    return prs_by_repo
+def get_prs(client, orgs):
+    prs = {}
+    for org in orgs:
+        for repo in query.repos(client, org):
+            prs[repo] = list(query.prs(client, repo))
+    return prs
 
 
 def calculate_counts(prs_by_repo, predicate):
@@ -33,7 +34,7 @@ def calculate_counts(prs_by_repo, predicate):
         for pr in prs:
             for monday in iter_days(start, end, step=timedelta(weeks=1)):
                 if predicate(pr, monday):
-                    counts[(repo["name"], pr["author"], monday)] += 1
+                    counts[(repo["org"], repo["name"], pr["author"], monday)] += 1
     return dict(counts)
 
 
@@ -51,10 +52,10 @@ def was_merged_in_week_ending(pr, dt):
     return pr["merged_on"] and dt - timedelta(weeks=1) < pr["merged_on"] <= dt
 
 
-def convert_to_metrics(counts, org, name):
+def convert_to_metrics(counts, name):
     metrics = []
     for coord, count in counts.items():
-        repo, author, date_ = coord
+        org, repo, author, date_ = coord
         timestamp = datetime.combine(date_, time())
         metrics.append(
             {
