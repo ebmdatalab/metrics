@@ -12,13 +12,18 @@ log = structlog.get_logger()
 
 
 def main():
-    ebmdatalab_token = os.environ["GITHUB_EBMDATALAB_TOKEN"]
-    log.info("Working with org: ebmdatalab")
-    ebmdatalab_metrics = get_metrics(GitHubClient(ebmdatalab_token), "ebmdatalab")
+    client = GitHubClient(
+        tokens={
+            "ebmdatalab": os.environ["GITHUB_EBMDATALAB_TOKEN"],
+            "opensafely-core": os.environ["GITHUB_OS_CORE_TOKEN"],
+        }
+    )
 
-    os_core_token = os.environ["GITHUB_OS_CORE_TOKEN"]
+    log.info("Working with org: ebmdatalab")
+    ebmdatalab_metrics = get_metrics(client, "ebmdatalab")
+
     log.info("Working with org: opensafely-core")
-    os_core_metrics = get_metrics(GitHubClient(os_core_token), "opensafely-core")
+    os_core_metrics = get_metrics(client, "opensafely-core")
 
     metrics = ebmdatalab_metrics + os_core_metrics
 

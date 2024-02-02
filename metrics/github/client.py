@@ -12,12 +12,20 @@ session = requests.Session()
 
 
 class GitHubClient:
-    def __init__(self, token):
+    def __init__(self, token=None, tokens=None):
+        assert token or tokens
+        assert not (token and tokens)
         self.token = token
+        self.tokens = tokens
 
     def post(self, query, variables):
+        if self.token:
+            token = self.token
+        else:
+            token = self.tokens[variables["org"]]
+
         session.headers = {
-            "Authorization": f"bearer {self.token}",
+            "Authorization": f"bearer {token}",
             "User-Agent": "Bennett Metrics",
         }
         response = session.post(
