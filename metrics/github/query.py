@@ -2,6 +2,19 @@ from metrics.github.repos import tech_owned_repo
 from metrics.tools.dates import datetime_from_iso
 
 
+# We want to use some of these objects as keys in dicts. This is a pretty half-hearted
+# implementation, but it does as much as we need.
+class FrozenDict:
+    def __init__(self, dict_):
+        self._dict = dict_
+
+    def __getitem__(self, key):
+        return self._dict[key]
+
+    def __hash__(self):
+        return hash(tuple(self._dict.items()))
+
+
 def repos(client, org):
     query = """
     query repos($cursor: String, $org: String!) {
@@ -9,6 +22,7 @@ def repos(client, org):
         repositories(first: 100, after: $cursor) {
           nodes {
             name
+            createdAt
             archivedAt
           }
           pageInfo {
@@ -22,11 +36,14 @@ def repos(client, org):
     for raw_repo in client.get_query(
         query, path=["organization", "repositories"], org=org
     ):
-        repo = {
-            "org": org,
-            "name": raw_repo["name"],
-            "archived_at": datetime_from_iso(raw_repo["archivedAt"]),
-        }
+        repo = FrozenDict(
+            {
+                "org": org,
+                "name": raw_repo["name"],
+                "created_at": datetime_from_iso(raw_repo["createdAt"]),
+                "archived_at": datetime_from_iso(raw_repo["archivedAt"]),
+            }
+        )
         if tech_owned_repo(repo):
             yield repo
 
@@ -94,7 +111,6 @@ def prs(client, repo):
         yield {
             "org": repo["org"],
             "repo": repo["name"],
-            "repo_archived_at": repo["archived_at"],
             "author": pr["author"]["login"],
             "closed_at": datetime_from_iso(pr["closedAt"]),
             "created_at": datetime_from_iso(pr["createdAt"]),

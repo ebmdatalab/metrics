@@ -1,9 +1,6 @@
 from datetime import datetime, timedelta
 
 
-DELTA = timedelta(days=1)
-
-
 def date_from_iso(value):
     if value is None:
         return None
@@ -18,25 +15,24 @@ def datetime_from_iso(value):
     return datetime.fromisoformat(value)
 
 
-def iter_days(start, end, step=DELTA):
+def iter_days(start, end, step=timedelta(days=1)):
+    """
+    Days from start to end, inclusive. Single day steps by default.
+    """
     while start <= end:
         yield start
         start += step
 
 
-def previous_weekday(d, weekday):
+def next_weekday(date_, weekday):
     """
-    Get the date for a previous week day
+    Get the date of the next {Mon,Tue,Wed,Thu,Fri,Sat,Sun}day on or following the given date.
 
-    Starting at the given date, walk backwards through days until the given
-    weekday is found, returning the date for that weekday.
-
-    For example, when giving the date 2023-11-16 and asking for the previous
-    Sunday, the returned date would be 2023-11-12.
+    The weekday is an integer, Monday being 0.
     """
-    output = d
+    output = date_
 
     while output.weekday() != weekday:
-        output -= timedelta(days=1)
+        output += timedelta(days=1)
 
     return output

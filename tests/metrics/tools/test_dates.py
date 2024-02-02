@@ -6,7 +6,7 @@ from metrics.tools.dates import (
     date_from_iso,
     datetime_from_iso,
     iter_days,
-    previous_weekday,
+    next_weekday,
 )
 
 
@@ -69,15 +69,15 @@ def test_iter_days_with_empty_values():
 @pytest.mark.parametrize(
     "d,weekday,expected",
     [
-        (date(2023, 11, 16), MONDAY, date(2023, 11, 13)),
-        (date(2023, 11, 16), TUESDAY, date(2023, 11, 14)),
-        (date(2023, 11, 16), WEDNESDAY, date(2023, 11, 15)),
-        (date(2023, 11, 16), THURSDAY, date(2023, 11, 16)),
-        (date(2023, 11, 16), FRIDAY, date(2023, 11, 10)),
-        (date(2023, 11, 16), SATURDAY, date(2023, 11, 11)),
-        (date(2023, 11, 16), SUNDAY, date(2023, 11, 12)),
+        (date(2023, 11, 9), MONDAY, date(2023, 11, 13)),
+        (date(2023, 11, 9), TUESDAY, date(2023, 11, 14)),
+        (date(2023, 11, 9), WEDNESDAY, date(2023, 11, 15)),
+        (date(2023, 11, 9), THURSDAY, date(2023, 11, 9)),
+        (date(2023, 11, 9), FRIDAY, date(2023, 11, 10)),
+        (date(2023, 11, 9), SATURDAY, date(2023, 11, 11)),
+        (date(2023, 11, 9), SUNDAY, date(2023, 11, 12)),
     ],
     ids=["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"],
 )
-def test_previous_weekday(d, weekday, expected):
-    assert previous_weekday(d, weekday) == expected
+def test_next_weekday(d, weekday, expected):
+    assert next_weekday(d, weekday) == expected
