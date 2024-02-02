@@ -23,47 +23,53 @@ pytestmark = pytest.mark.freeze_time(TODAY)
 
 def test_makes_counts_for_mondays_between_repo_creation_and_now():
     prs = {
-        repo("a-repo", created_on=TODAY - TWO_WEEKS): [
+        repo("an-org", "a-repo", created_on=TODAY - TWO_WEEKS): [
             {"author": "an-author"},
         ]
     }
 
     counts = calculate_counts(prs, true)
     assert counts == {
-        ("a-repo", "an-author", LAST_MONDAY - ONE_WEEK): 1,
-        ("a-repo", "an-author", LAST_MONDAY): 1,
+        ("an-org", "a-repo", "an-author", LAST_MONDAY - ONE_WEEK): 1,
+        ("an-org", "a-repo", "an-author", LAST_MONDAY): 1,
     }
 
 
 def test_drops_repos_after_archiving():
+    repo_ = repo(
+        "an-org",
+        "a-repo",
+        created_on=TODAY - TWO_WEEKS,
+        archived_on=TODAY - ONE_WEEK,
+    )
     prs = {
-        repo("a-repo", created_on=TODAY - TWO_WEEKS, archived_on=TODAY - ONE_WEEK): [
+        repo_: [
             {"author": "an-author"},
         ]
     }
 
     counts = calculate_counts(prs, true)
     assert counts == {
-        ("a-repo", "an-author", LAST_MONDAY - ONE_WEEK): 1,
+        ("an-org", "a-repo", "an-author", LAST_MONDAY - ONE_WEEK): 1,
     }
 
 
 def test_includes_archive_date_itself():
     prs = {
-        repo("a-repo", archived_on=LAST_MONDAY): [
+        repo("an-org", "a-repo", archived_on=LAST_MONDAY): [
             {"author": "an-author"},
         ]
     }
 
     counts = calculate_counts(prs, true)
     assert counts == {
-        ("a-repo", "an-author", LAST_MONDAY): 1,
+        ("an-org", "a-repo", "an-author", LAST_MONDAY): 1,
     }
 
 
 def test_counts_prs():
     prs = {
-        repo("a-repo"): [
+        repo("an-org", "a-repo"): [
             {"author": "an-author"},
             {"author": "an-author"},
             {"author": "an-author"},
@@ -71,37 +77,50 @@ def test_counts_prs():
     }
 
     counts = calculate_counts(prs, true)
-    assert counts == {("a-repo", "an-author", LAST_MONDAY): 3}
+    assert counts == {("an-org", "a-repo", "an-author", LAST_MONDAY): 3}
 
 
 def test_counts_only_prs_matching_predicate():
     prs = {
-        repo("a-repo"): [
+        repo("an-org", "a-repo"): [
             {"author": "an-author", "merged_on": TODAY},
             {"author": "an-author", "merged_on": None},
         ]
     }
 
     counts = calculate_counts(prs, lambda pr, _date: pr["merged_on"] == TODAY)
-    assert counts == {("a-repo", "an-author", LAST_MONDAY): 1}
+    assert counts == {("an-org", "a-repo", "an-author", LAST_MONDAY): 1}
 
 
-def test_returns_counts_by_repo():
+def test_returns_counts_by_org():
     prs = {
-        repo("a-repo"): [{"author": "an-author"}],
-        repo("another-repo"): [{"author": "an-author"}],
+        repo("an-org", "a-repo"): [{"author": "an-author"}],
+        repo("another-org", "another-repo"): [{"author": "an-author"}],
     }
 
     counts = calculate_counts(prs, true)
     assert counts == {
-        ("a-repo", "an-author", LAST_MONDAY): 1,
-        ("another-repo", "an-author", LAST_MONDAY): 1,
+        ("an-org", "a-repo", "an-author", LAST_MONDAY): 1,
+        ("another-org", "another-repo", "an-author", LAST_MONDAY): 1,
+    }
+
+
+def test_returns_counts_by_repo():
+    prs = {
+        repo("an-org", "a-repo"): [{"author": "an-author"}],
+        repo("an-org", "another-repo"): [{"author": "an-author"}],
+    }
+
+    counts = calculate_counts(prs, true)
+    assert counts == {
+        ("an-org", "a-repo", "an-author", LAST_MONDAY): 1,
+        ("an-org", "another-repo", "an-author", LAST_MONDAY): 1,
     }
 
 
 def test_returns_counts_by_author():
     prs = {
-        repo("a-repo"): [
+        repo("an-org", "a-repo"): [
             {"author": "an-author"},
             {"author": "another-author"},
         ]
@@ -109,8 +128,8 @@ def test_returns_counts_by_author():
 
     counts = calculate_counts(prs, true)
     assert counts == {
-        ("a-repo", "an-author", LAST_MONDAY): 1,
-        ("a-repo", "another-author", LAST_MONDAY): 1,
+        ("an-org", "a-repo", "an-author", LAST_MONDAY): 1,
+        ("an-org", "a-repo", "another-author", LAST_MONDAY): 1,
     }
 
 
@@ -144,9 +163,10 @@ def test_was_merged_in_week_ending():
     assert not was_merged_in_week_ending(pr(merged_on=DISTANT_FUTURE), TODAY)
 
 
-def repo(name, created_on=RECENTLY, archived_on=None):
+def repo(org, name, created_on=RECENTLY, archived_on=None):
     return FrozenDict(
         {
+            "org": org,
             "name": name,
             "created_on": created_on,
             "archived_on": archived_on if archived_on else None,

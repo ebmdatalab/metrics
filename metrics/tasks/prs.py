@@ -1,14 +1,9 @@
 import os
 import sys
 
-import structlog
-
 from metrics import timescaledb
 from metrics.github.client import GitHubClient
 from metrics.github.prs import get_metrics
-
-
-log = structlog.get_logger()
 
 
 def main():
@@ -19,13 +14,7 @@ def main():
         }
     )
 
-    log.info("Working with org: ebmdatalab")
-    ebmdatalab_metrics = get_metrics(client, "ebmdatalab")
-
-    log.info("Working with org: opensafely-core")
-    os_core_metrics = get_metrics(client, "opensafely-core")
-
-    metrics = ebmdatalab_metrics + os_core_metrics
+    metrics = get_metrics(client, ["ebmdatalab", "opensafely-core"])
 
     timescaledb.reset_table(timescaledb.GitHubPullRequests)
     timescaledb.write(timescaledb.GitHubPullRequests, metrics)
