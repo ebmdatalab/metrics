@@ -8,17 +8,17 @@ def fake_repos(client, org):
         {
             "org": org,
             "name": "opencodelists",
-            "archived_at": None,
+            "archived_on": None,
         },
         {
             "org": org,
             "name": "old-repo",
-            "archived_at": "2023-04-20T18:22:11Z",
+            "archived_on": "2023-04-20T18:22:11Z",
         },
         {
             "org": org,
             "name": "job-server",
-            "archived_at": None,
+            "archived_on": None,
         },
     ]
 
@@ -98,46 +98,46 @@ def test_repo_earliest_date():
     assert repo.earliest_date() == date(2023, 10, 26)
 
 
-def test_vulnerability_open_at():
+def test_vulnerability_open_on():
     v = security.Vulnerability(date(2023, 10, 26), None, None)
 
-    assert v.is_open_at(date(2023, 10, 29))
+    assert v.is_open_on(date(2023, 10, 29))
 
 
-def test_vulnerability_open_at_same_day():
+def test_vulnerability_open_on_same_day():
     v = security.Vulnerability(date(2023, 10, 26), None, None)
 
-    assert v.is_open_at(date(2023, 10, 26))
+    assert v.is_open_on(date(2023, 10, 26))
 
 
-def test_vulnerability_open_at_date_in_past():
+def test_vulnerability_open_on_date_in_past():
     v = security.Vulnerability(date(2023, 10, 26), None, None)
 
-    assert not v.is_open_at(date(2023, 10, 20))
+    assert not v.is_open_on(date(2023, 10, 20))
 
 
 def test_vulnerability_open_has_been_closed():
     v = security.Vulnerability(date(2023, 10, 26), date(2023, 10, 28), None)
 
-    assert not v.is_open_at(date(2023, 10, 30))
+    assert not v.is_open_on(date(2023, 10, 30))
 
 
-def test_vulnerability_closed_at():
+def test_vulnerability_closed_on():
     v = security.Vulnerability(date(2023, 10, 26), date(2023, 10, 28), None)
 
-    assert v.is_closed_at(date(2023, 10, 29))
+    assert v.is_closed_on(date(2023, 10, 29))
 
 
-def test_vulnerability_closed_at_still_open():
+def test_vulnerability_closed_on_still_open():
     v = security.Vulnerability(date(2023, 10, 26), date(2023, 10, 28), None)
 
-    assert not v.is_closed_at(date(2023, 10, 27))
+    assert not v.is_closed_on(date(2023, 10, 27))
 
 
-def test_vulnerability_closed_at_is_closed():
+def test_vulnerability_closed_on_is_closed():
     v = security.Vulnerability(date(2023, 10, 26), date(2023, 10, 28), None)
 
-    assert v.is_closed_at(date(2023, 10, 29))
+    assert v.is_closed_on(date(2023, 10, 29))
 
 
 def test_vulnerabilities(monkeypatch):

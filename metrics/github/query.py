@@ -1,5 +1,5 @@
 from metrics.github.repos import tech_owned_repo
-from metrics.tools.dates import datetime_from_iso
+from metrics.tools.dates import date_from_iso
 
 
 # We want to use some of these objects as keys in dicts. This is a pretty half-hearted
@@ -40,8 +40,8 @@ def repos(client, org):
             {
                 "org": org,
                 "name": raw_repo["name"],
-                "created_at": datetime_from_iso(raw_repo["createdAt"]),
-                "archived_at": datetime_from_iso(raw_repo["archivedAt"]),
+                "created_on": date_from_iso(raw_repo["createdAt"]),
+                "archived_on": date_from_iso(raw_repo["archivedAt"]),
             }
         )
         if tech_owned_repo(repo):
@@ -112,7 +112,7 @@ def prs(client, repo):
             "org": repo["org"],
             "repo": repo["name"],
             "author": pr["author"]["login"],
-            "closed_at": datetime_from_iso(pr["closedAt"]),
-            "created_at": datetime_from_iso(pr["createdAt"]),
-            "merged_at": datetime_from_iso(pr["mergedAt"]),
+            "closed_on": date_from_iso(pr["closedAt"]),
+            "created_on": date_from_iso(pr["createdAt"]),
+            "merged_on": date_from_iso(pr["mergedAt"]),
         }

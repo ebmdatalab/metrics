@@ -27,8 +27,8 @@ def get_prs(client, org):
 def calculate_counts(prs_by_repo, predicate):
     counts = defaultdict(int)
     for repo, prs in prs_by_repo.items():
-        start = next_weekday(repo["created_at"].date(), 0)  # Monday
-        end = repo["archived_at"].date() if repo["archived_at"] else date.today()
+        start = next_weekday(repo["created_on"], 0)  # Monday
+        end = repo["archived_on"] if repo["archived_on"] else date.today()
 
         for pr in prs:
             for monday in iter_days(start, end, step=timedelta(weeks=1)):
@@ -38,8 +38,8 @@ def calculate_counts(prs_by_repo, predicate):
 
 
 def is_old(pr, dt):
-    opened = pr["created_at"].date()
-    closed = pr["closed_at"].date() if pr["closed_at"] else None
+    opened = pr["created_on"]
+    closed = pr["closed_on"] if pr["closed_on"] else None
 
     is_closed = closed and closed <= dt
     opened_more_than_a_week_ago = dt - opened >= timedelta(weeks=1)
@@ -48,7 +48,7 @@ def is_old(pr, dt):
 
 
 def was_merged_in_week_ending(pr, dt):
-    return pr["merged_at"] and dt - timedelta(weeks=1) < pr["merged_at"].date() <= dt
+    return pr["merged_on"] and dt - timedelta(weeks=1) < pr["merged_on"] <= dt
 
 
 def convert_to_metrics(counts, org, name):

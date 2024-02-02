@@ -5,14 +5,7 @@ def date_from_iso(value):
     if value is None:
         return None
 
-    return datetime_from_iso(value).date()
-
-
-def datetime_from_iso(value):
-    if value is None:
-        return None
-
-    return datetime.fromisoformat(value)
+    return datetime.fromisoformat(value).date()
 
 
 def iter_days(start, end, step=timedelta(days=1)):

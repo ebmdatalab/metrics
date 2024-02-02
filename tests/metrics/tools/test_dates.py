@@ -1,10 +1,9 @@
-from datetime import date, datetime
+from datetime import date
 
 import pytest
 
 from metrics.tools.dates import (
     date_from_iso,
-    datetime_from_iso,
     iter_days,
     next_weekday,
 )
@@ -31,18 +30,6 @@ SUNDAY = 6
 )
 def test_date_from_iso(value, expected):
     assert date_from_iso(value) == expected
-
-
-@pytest.mark.parametrize(
-    "value,expected",
-    [
-        (None, None),
-        ("2020-07-08", datetime(2020, 7, 8, 0, 0, 0)),
-        ("2020-07-08T09:12", datetime(2020, 7, 8, 9, 12, 0)),
-    ],
-)
-def test_datetime_from_iso(value, expected):
-    assert datetime_from_iso(value) == expected
 
 
 def test_iter_days():
