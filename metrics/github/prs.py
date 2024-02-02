@@ -1,138 +1,69 @@
-from datetime import UTC, date, datetime, time
+from collections import defaultdict
+from datetime import date, datetime, time, timedelta
 
 from metrics.github import query
-from metrics.tools.dates import iter_days, previous_weekday, timedelta
-
-
-def drop_archived_prs(prs, date):
-    """
-    Drop PRs where their repo's archival date happened before the given date
-
-    We expose a repo's archived date in both date and datetime format, so this
-    function will pick the relevant one based on the type of the given date.
-    """
-
-    def keep(pr, date):
-        if not pr["repo_archived_at"]:
-            # the repo hasn't been archived yet
-            return True
-
-        if date < pr["repo_archived_at"].date():
-            # the repo has not been archived by date
-            return True
-
-        return False
-
-    return [pr for pr in prs if keep(pr, date)]
-
-
-def iter_prs(prs, date, name):
-    """
-    Given a list of PRs, break them down in series for writing
-
-    We're storing counts of PRs for a given date based on (repo, author).  This
-    function does the breaking down and counting.
-    """
-    repos = {pr["repo"] for pr in prs}
-    for repo in repos:
-        authors = {pr["author"] for pr in prs if pr["repo"] == repo}
-        for author in authors:
-            prs_by_author_and_repo = [
-                pr for pr in prs if pr["repo"] == repo and pr["author"] == author
-            ]
-
-            orgs = {pr["org"] for pr in prs_by_author_and_repo}
-            if len(orgs) > 1:
-                # we expected the given PRs to be from the same org
-                raise ValueError(
-                    f"Expected 1 org, but found {len(orgs)} orgs, unsure how to proceed"
-                )
-
-            org = list(orgs)[0]
-
-            yield {
-                "time": datetime.combine(date, time()),
-                "value": len(prs_by_author_and_repo),
-                "name": name,
-                "author": author,
-                "organisation": org,
-                "repo": repo,
-            }
-
-
-def old_prs(prs, days_threshold):
-    """
-    Track "old" PRs
-
-    Defined as: How many PRs had been open for the given days threshold at a
-    given sample point?
-
-    We're using Monday morning here to match how the values in throughput are
-    bucketed with timeseriesdb's time_bucket() function
-
-    So we start with the Monday before the earliest PR, then iterate from that
-    Monday to todays date, filtering the list of PRs down to just those open on
-    the given Monday morning.
-    """
-    earliest = min([pr["created_at"] for pr in prs]).date()
-    start = previous_weekday(earliest, 0)  # Monday
-    mondays = list(iter_days(start, date.today(), step=timedelta(days=7)))
-
-    the_future = datetime(9999, 1, 1, tzinfo=UTC)
-    threshold = timedelta(days=days_threshold)
-
-    def is_old(pr, dt):
-        """
-        Filter function for PRs
-
-        Checks whether a PR was open at the given datetime, and if it has been
-        open long enough.
-        """
-        closed = pr["closed_at"] or the_future
-        opened = pr["created_at"]
-
-        open_now = opened < dt < closed
-        if not open_now:
-            return False
-
-        return (closed - opened) >= threshold
-
-    results = []
-    for monday in mondays:
-        dt = datetime.combine(monday, time(), tzinfo=UTC)
-        valid_prs = [pr for pr in prs if is_old(pr, dt)]
-        valid_prs = drop_archived_prs(valid_prs, monday)
-
-        name = f"queue_older_than_{days_threshold}_days"
-
-        results.extend(iter_prs(valid_prs, monday, name))
-    return results
-
-
-def pr_throughput(prs):
-    """
-    PRs closed each day from the earliest day to today
-    """
-    start = min([pr["created_at"] for pr in prs]).date()
-
-    results = []
-    for day in iter_days(start, date.today()):
-        valid_prs = drop_archived_prs(prs, day)
-        merged_prs = [
-            pr for pr in valid_prs if pr["merged_at"] and pr["merged_at"].date() == day
-        ]
-
-        results.extend(iter_prs(merged_prs, day, name="prs_merged"))
-    return results
-
-
-def fetch_prs(client, org):
-    prs = []
-    for repo in query.repos(client, org):
-        prs.extend(query.prs(client, repo))
-    return prs
+from metrics.tools.dates import iter_days, next_weekday
 
 
 def get_metrics(client, org):
-    prs = fetch_prs(client, org)
-    return old_prs(prs, days_threshold=7) + pr_throughput(prs)
+    prs = get_prs(client, org)
+
+    old_counts = calculate_counts(prs, is_old)
+    throughput_counts = calculate_counts(prs, was_merged_in_week_ending)
+
+    count_metrics = convert_to_metrics(old_counts, org, "queue_older_than_7_days")
+    throughput_metrics = convert_to_metrics(throughput_counts, org, "prs_merged")
+
+    return count_metrics + throughput_metrics
+
+
+def get_prs(client, org):
+    prs_by_repo = {}
+    for repo in query.repos(client, org):
+        prs_by_repo[repo] = list(query.prs(client, repo))
+    return prs_by_repo
+
+
+def calculate_counts(prs_by_repo, predicate):
+    counts = defaultdict(int)
+    for repo, prs in prs_by_repo.items():
+        start = next_weekday(repo["created_at"].date(), 0)  # Monday
+        end = repo["archived_at"].date() if repo["archived_at"] else date.today()
+
+        for pr in prs:
+            for monday in iter_days(start, end, step=timedelta(weeks=1)):
+                if predicate(pr, monday):
+                    counts[(repo["name"], pr["author"], monday)] += 1
+    return dict(counts)
+
+
+def is_old(pr, dt):
+    opened = pr["created_at"].date()
+    closed = pr["closed_at"].date() if pr["closed_at"] else None
+
+    is_closed = closed and closed <= dt
+    opened_more_than_a_week_ago = dt - opened >= timedelta(weeks=1)
+
+    return not is_closed and opened_more_than_a_week_ago
+
+
+def was_merged_in_week_ending(pr, dt):
+    return pr["merged_at"] and dt - timedelta(weeks=1) < pr["merged_at"].date() <= dt
+
+
+def convert_to_metrics(counts, org, name):
+    metrics = []
+    for coord, count in counts.items():
+        repo, author, date_ = coord
+        timestamp = datetime.combine(date_, time())
+        metrics.append(
+            {
+                "name": name,
+                "time": timestamp,
+                "organisation": org,
+                "repo": repo,
+                "author": author,
+                "value": count,
+            }
+        )
+    return metrics
