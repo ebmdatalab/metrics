@@ -7,16 +7,16 @@ from . import query
 
 @dataclass
 class Vulnerability:
-    created_at: date
-    fixed_at: date | None
-    dismissed_at: date | None
+    created_on: date
+    fixed_on: date | None
+    dismissed_on: date | None
 
-    def is_open_at(self, target_date):
-        return self.created_at <= target_date and not self.is_closed_at(target_date)
+    def is_open_on(self, target_date):
+        return self.created_on <= target_date and not self.is_closed_on(target_date)
 
-    def is_closed_at(self, target_date):
-        return (self.fixed_at is not None and self.fixed_at <= target_date) or (
-            self.dismissed_at is not None and self.dismissed_at <= target_date
+    def is_closed_on(self, target_date):
+        return (self.fixed_on is not None and self.fixed_on <= target_date) or (
+            self.dismissed_on is not None and self.dismissed_on <= target_date
         )
 
     @staticmethod
@@ -35,15 +35,15 @@ class Repo:
     vulnerabilities: list[Vulnerability]
 
     def __post_init__(self):
-        self.vulnerabilities.sort(key=lambda v: v.created_at)
+        self.vulnerabilities.sort(key=lambda v: v.created_on)
 
     def earliest_date(self):
-        return self.vulnerabilities[0].created_at
+        return self.vulnerabilities[0].created_on
 
 
 def get_repos(client, org):
     for repo in query.repos(client, org):
-        if repo["archived_at"]:
+        if repo["archived_on"]:
             continue
 
         vulnerabilities = []
@@ -57,8 +57,8 @@ def get_repos(client, org):
 def vulnerabilities(client, org, to_date):
     for repo in get_repos(client, org):
         for day in dates.iter_days(repo.earliest_date(), to_date):
-            closed_vulns = sum(1 for v in repo.vulnerabilities if v.is_closed_at(day))
-            open_vulns = sum(1 for v in repo.vulnerabilities if v.is_open_at(day))
+            closed_vulns = sum(1 for v in repo.vulnerabilities if v.is_closed_on(day))
+            open_vulns = sum(1 for v in repo.vulnerabilities if v.is_open_on(day))
 
             yield {
                 "time": day,
