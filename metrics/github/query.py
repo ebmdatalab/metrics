@@ -22,7 +22,6 @@ def repos(client, org):
         repositories(first: 100, after: $cursor) {
           nodes {
             name
-            createdAt
             archivedAt
           }
           pageInfo {
@@ -40,7 +39,6 @@ def repos(client, org):
             {
                 "org": org,
                 "name": raw_repo["name"],
-                "created_on": date_from_iso(raw_repo["createdAt"]),
                 "archived_on": date_from_iso(raw_repo["archivedAt"]),
             }
         )

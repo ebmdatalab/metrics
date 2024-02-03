@@ -19,10 +19,10 @@ ONE_WEEK = timedelta(weeks=1)
 pytestmark = pytest.mark.freeze_time(TODAY)
 
 
-def test_makes_counts_for_every_day_between_repo_creation_and_now():
+def test_makes_counts_for_every_day_between_pr_creation_and_now():
     prs = {
-        repo("an-org", "a-repo", created_on=TWO_DAYS_AGO): [
-            {"author": "an-author"},
+        repo("an-org", "a-repo"): [
+            pr(author="an-author", created_on=TWO_DAYS_AGO),
         ]
     }
 
@@ -38,12 +38,11 @@ def test_drops_repos_after_archiving():
     repo_ = repo(
         "an-org",
         "a-repo",
-        created_on=TWO_DAYS_AGO,
         archived_on=YESTERDAY,
     )
     prs = {
         repo_: [
-            {"author": "an-author"},
+            pr(author="an-author", created_on=TWO_DAYS_AGO),
         ]
     }
 
@@ -57,9 +56,9 @@ def test_drops_repos_after_archiving():
 def test_counts_prs():
     prs = {
         repo("an-org", "a-repo"): [
-            {"author": "an-author"},
-            {"author": "an-author"},
-            {"author": "an-author"},
+            pr(author="an-author"),
+            pr(author="an-author"),
+            pr(author="an-author"),
         ]
     }
 
@@ -70,8 +69,8 @@ def test_counts_prs():
 def test_counts_only_prs_matching_predicate():
     prs = {
         repo("an-org", "a-repo"): [
-            {"author": "an-author", "merged_on": TODAY},
-            {"author": "an-author", "merged_on": None},
+            pr(author="an-author", merged_on=TODAY),
+            pr(author="an-author", merged_on=None),
         ]
     }
 
@@ -81,8 +80,8 @@ def test_counts_only_prs_matching_predicate():
 
 def test_returns_counts_by_org():
     prs = {
-        repo("an-org", "a-repo"): [{"author": "an-author"}],
-        repo("another-org", "another-repo"): [{"author": "an-author"}],
+        repo("an-org", "a-repo"): [pr(author="an-author")],
+        repo("another-org", "another-repo"): [pr(author="an-author")],
     }
 
     counts = calculate_counts(prs, true)
@@ -94,8 +93,8 @@ def test_returns_counts_by_org():
 
 def test_returns_counts_by_repo():
     prs = {
-        repo("an-org", "a-repo"): [{"author": "an-author"}],
-        repo("an-org", "another-repo"): [{"author": "an-author"}],
+        repo("an-org", "a-repo"): [pr(author="an-author")],
+        repo("an-org", "another-repo"): [pr(author="an-author")],
     }
 
     counts = calculate_counts(prs, true)
@@ -108,8 +107,8 @@ def test_returns_counts_by_repo():
 def test_returns_counts_by_author():
     prs = {
         repo("an-org", "a-repo"): [
-            {"author": "an-author"},
-            {"author": "another-author"},
+            pr(author="an-author"),
+            pr(author="another-author"),
         ]
     }
 
@@ -145,22 +144,22 @@ def test_was_merged_in_on():
     assert not was_merged_on(pr(merged_on=TOMORROW), TODAY)
 
 
-def repo(org, name, created_on=TODAY, archived_on=None):
+def repo(org, name, archived_on=None):
     return FrozenDict(
         {
             "org": org,
             "name": name,
-            "created_on": created_on,
             "archived_on": archived_on if archived_on else None,
         }
     )
 
 
-def pr(created_on=None, closed_on=None, merged_on=None):
+def pr(created_on=TODAY, closed_on=None, merged_on=None, author=None):
     return {
-        "created_on": created_on if created_on else None,
-        "closed_on": closed_on if closed_on else None,
-        "merged_on": merged_on if merged_on else None,
+        "created_on": created_on,
+        "closed_on": closed_on,
+        "merged_on": merged_on,
+        "author": author,
     }
 
 
