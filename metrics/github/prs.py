@@ -4,7 +4,7 @@ from datetime import date, datetime, time, timedelta
 import structlog
 
 from metrics.github import query
-from metrics.tools.dates import iter_days, next_weekday
+from metrics.tools.dates import iter_days
 
 
 log = structlog.get_logger()
@@ -17,7 +17,7 @@ def get_metrics(client, orgs):
     )
 
     old_counts = calculate_counts(prs, is_old)
-    throughput_counts = calculate_counts(prs, was_merged_in_week_ending)
+    throughput_counts = calculate_counts(prs, was_merged_on)
 
     count_metrics = convert_to_metrics(old_counts, "queue_older_than_7_days")
     throughput_metrics = convert_to_metrics(throughput_counts, "prs_merged")
@@ -36,13 +36,13 @@ def get_prs(client, orgs):
 def calculate_counts(prs_by_repo, predicate):
     counts = defaultdict(int)
     for repo, prs in prs_by_repo.items():
-        start = next_weekday(repo["created_on"], 0)  # Monday
+        start = repo["created_on"]
         end = repo["archived_on"] if repo["archived_on"] else date.today()
 
         for pr in prs:
-            for monday in iter_days(start, end, step=timedelta(weeks=1)):
-                if predicate(pr, monday):
-                    counts[(repo["org"], repo["name"], pr["author"], monday)] += 1
+            for day in iter_days(start, end):
+                if predicate(pr, day):
+                    counts[(repo["org"], repo["name"], pr["author"], day)] += 1
     return dict(counts)
 
 
@@ -56,8 +56,8 @@ def is_old(pr, dt):
     return not is_closed and opened_more_than_a_week_ago
 
 
-def was_merged_in_week_ending(pr, dt):
-    return pr["merged_on"] and dt - timedelta(weeks=1) < pr["merged_on"] <= dt
+def was_merged_on(pr, dt):
+    return pr["merged_on"] and dt == pr["merged_on"]
 
 
 def convert_to_metrics(counts, name):
