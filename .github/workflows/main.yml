@@ -144,7 +144,7 @@ jobs:
 
       - name: Test image we imported from previous job works
         run: |
-            SKIP_BUILD=1 just docker-run prod python -m metrics
+            SKIP_BUILD=1 just docker-run prod python -m metrics.tasks.smoke_test
 
       - name: Publish image
         run: |
