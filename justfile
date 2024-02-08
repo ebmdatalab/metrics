@@ -137,8 +137,13 @@ grafana:
     docker compose up grafana
 
 
+# Run a metrics task (defaults to running all tasks)
 metrics *args: devenv
-    $BIN/python -m metrics {{ args }}
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    MODULE="metrics.tasks{{ if args == "" { "" } else { "." + args } }}"
+    $BIN/python -m $MODULE
 
 
 docker-build env="dev": _env

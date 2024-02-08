@@ -1,22 +1,17 @@
 import os
+import sys
 
-import click
 import structlog
 
+from metrics import timescaledb
+from metrics.github.client import GitHubClient
 from metrics.github.prs import fetch_prs, old_prs, pr_throughput
-
-from .. import timescaledb
-from .client import GitHubClient
 
 
 log = structlog.get_logger()
 
 
-@click.command()
-@click.pass_context
-def github(ctx):
-    ctx.ensure_object(dict)
-
+def main():  # pragma: no cover
     ebmdatalab_token = os.environ["GITHUB_EBMDATALAB_TOKEN"]
     os_core_token = os.environ["GITHUB_OS_CORE_TOKEN"]
 
@@ -39,3 +34,7 @@ def github(ctx):
         timescaledb.GitHubPullRequests, old_prs(os_core_prs, days_threshold=7)
     )
     timescaledb.write(timescaledb.GitHubPullRequests, pr_throughput(os_core_prs))
+
+
+if __name__ == "__main__":  # pragma: no cover
+    sys.exit(main())

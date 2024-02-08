@@ -1,18 +1,10 @@
-import os
 from dataclasses import dataclass
-from datetime import date, timedelta
-
-import structlog
+from datetime import date
 
 from metrics.github.repos import tech_owned_repo
 
-from .. import timescaledb
 from ..tools import dates
 from . import query
-from .client import GitHubClient
-
-
-log = structlog.get_logger()
 
 
 @dataclass
@@ -78,21 +70,3 @@ def vulnerabilities(client, to_date):
                 "repo": repo.name,
                 "value": 0,  # needed for the timescaledb
             }
-
-
-if __name__ == "__main__":  # pragma: no cover
-    os_core_token = os.environ["GITHUB_OS_CORE_TOKEN"]
-    ebmdatalab_token = os.environ["GITHUB_EBMDATALAB_TOKEN"]
-    yesterday = date.today() - timedelta(days=1)
-
-    client = GitHubClient("ebmdatalab", ebmdatalab_token)
-    log.info("Fetching vulnerabilities for %s", client.org)
-    ebmdatalab_vulns = list(vulnerabilities(client, yesterday))
-
-    client = GitHubClient("opensafely-core", os_core_token)
-    log.info("Fetching vulnerabilities for %s", client.org)
-    os_core_vulns = list(vulnerabilities(client, yesterday))
-
-    timescaledb.reset_table(timescaledb.GitHubVulnerabilities)
-    timescaledb.write(timescaledb.GitHubVulnerabilities, ebmdatalab_vulns)
-    timescaledb.write(timescaledb.GitHubVulnerabilities, os_core_vulns)
