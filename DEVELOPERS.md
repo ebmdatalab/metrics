@@ -71,6 +71,14 @@ e.g `just metrics prs` to run metrics/tasks/prs.py
 
 All tasks are defined in `metrics/tasks` and must have a `main()` function that takes no arguments.
 
+### Fast debug mode
+
+You can set a flag to trigger a fast mode which only retrieves and handful of PRs
+but allows the main code paths to be tested quickly.
+
+```
+DEBUG_FAST=t just metrics prs
+```
 
 ## Tests
 Run the tests with:

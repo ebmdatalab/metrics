@@ -1,3 +1,6 @@
+import itertools
+import os
+
 from metrics.github.repos import tech_owned_repo
 from metrics.tools.dates import date_from_iso
 
@@ -32,8 +35,8 @@ def repos(client, org):
       }
     }
     """
-    for raw_repo in client.get_query(
-        query, path=["organization", "repositories"], org=org
+    for raw_repo in maybe_truncate(
+        client.get_query(query, path=["organization", "repositories"], org=org)
     ):
         repo = FrozenDict(
             {
@@ -100,11 +103,13 @@ def prs(client, repo):
       }
     }
     """
-    for pr in client.get_query(
-        query,
-        path=["organization", "repository", "pullRequests"],
-        org=repo["org"],
-        repo=repo["name"],
+    for pr in maybe_truncate(
+        client.get_query(
+            query,
+            path=["organization", "repository", "pullRequests"],
+            org=repo["org"],
+            repo=repo["name"],
+        )
     ):
         yield {
             "org": repo["org"],
@@ -114,3 +119,9 @@ def prs(client, repo):
             "created_on": date_from_iso(pr["createdAt"]),
             "merged_on": date_from_iso(pr["mergedAt"]),
         }
+
+
+def maybe_truncate(it):
+    if "DEBUG_FAST" in os.environ:
+        return itertools.islice(it, 5)
+    return it
