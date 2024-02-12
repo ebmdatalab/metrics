@@ -91,7 +91,7 @@ WORKDIR /app
 
 # We set command rather than entrypoint, to make it easier to run different
 # things from the cli
-CMD ["/opt/venv/bin/python", "-m", "metrics"]
+CMD ["/opt/venv/bin/python", "-m", "metrics.tasks.smoke_test"]
 
 # This may not be necessary, but it probably doesn't hurt
 ENV PYTHONPATH=/app
