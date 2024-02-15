@@ -46,6 +46,10 @@ show_missing = true
 show_contexts = true
 
 [tool.pytest.ini_options]
+filterwarnings = [
+  "error",
+  "ignore:distutils Version classes are deprecated:DeprecationWarning:pytest_freezegun",
+]
 
 [tool.ruff]
 line-length = 88
