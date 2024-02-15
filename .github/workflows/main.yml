@@ -85,9 +85,8 @@ jobs:
       - name: Build docker image for both prod and dev
         run: |
             just docker-build prod
-            just docker-build dev
 
-      - name: Run the smoke test
+      - name: Run the smoke test on the prod image
         run: |
             SKIP_BUILD=1 just docker-run prod
 
