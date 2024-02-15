@@ -165,6 +165,6 @@ docker-build env="dev": _env
 
 
 # run command in dev|prod container
-docker-run env="dev" *args="bash": _env
+docker-run env="dev" *args="": _env
     {{ just_executable() }} docker-build {{ env }}
     docker compose run --rm metrics-{{ env }} {{ args }}
