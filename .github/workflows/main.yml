@@ -73,7 +73,26 @@ jobs:
         with:
           dockerfile: docker/Dockerfile
 
-  docker-test-and-build:
+  docker-test-dev:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: "opensafely-core/setup-action@v1"
+        with:
+          python-version: "3.12"
+          install-just: true
+
+      - name: Build docker image for dev
+        run: |
+            just docker-build dev
+
+      - name: Run the smoke test on the prod image
+        run: |
+            docker compose up -d timescaledb
+            SKIP_BUILD=1 just docker/test
+
+  docker-build-prod:
     runs-on: ubuntu-latest
 
     steps:
@@ -82,7 +101,7 @@ jobs:
         with:
           install-just: true
 
-      - name: Build docker image for both prod and dev
+      - name: Build docker image for prod
         run: |
             just docker-build prod
 
@@ -106,7 +125,8 @@ jobs:
     needs:
     - check
     - test
-    - docker-test-and-build
+    - docker-test-dev
+    - docker-build-prod
     - lint-dockerfile
 
     runs-on: Ubuntu-latest
