@@ -6,7 +6,7 @@ export VIRTUAL_ENV  := env_var_or_default("VIRTUAL_ENV", ".venv")
 export BIN := VIRTUAL_ENV + if os_family() == "unix" { "/bin" } else { "/Scripts" }
 export PIP := BIN + if os_family() == "unix" { "/python -m pip" } else { "/python.exe -m pip" }
 
-export DEFAULT_PYTHON := if os_family() == "unix" { "python3.11" } else { "python" }
+export DEFAULT_PYTHON := if os_family() == "unix" { "python3.12" } else { "python" }
 
 export DEV_USERID := `id -u`
 export DEV_GROUPID := `id -g`
@@ -165,6 +165,6 @@ docker-build env="dev": _env
 
 
 # run command in dev|prod container
-docker-run env="dev" *args="bash": _env
+docker-run env="dev" *args="": _env
     {{ just_executable() }} docker-build {{ env }}
     docker compose run --rm metrics-{{ env }} {{ args }}
