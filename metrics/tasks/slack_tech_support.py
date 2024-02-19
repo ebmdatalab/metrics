@@ -12,7 +12,7 @@ from metrics.slack.api import get_app, iter_messages
 log = structlog.get_logger()
 
 
-def main():  # pragma: no cover
+def main():
     slack_signing_secret = os.environ["SLACK_SIGNING_SECRET"]
     slack_token = os.environ["SLACK_TOKEN"]
     tech_support_channel_id = os.environ["SLACK_TECH_SUPPORT_CHANNEL_ID"]
@@ -36,5 +36,5 @@ def main():  # pragma: no cover
     timescaledb.write(timescaledb.SlackTechSupport, rows)
 
 
-if __name__ == "__main__":  # pragma: no cover
+if __name__ == "__main__":
     sys.exit(main())

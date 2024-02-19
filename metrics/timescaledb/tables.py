@@ -10,7 +10,7 @@ GitHubPullRequests = Table(
     Column("name", Text, primary_key=True),
     Column("value", Integer),
     Column("author", Text, primary_key=True),
-    Column("organisation", Text),
+    Column("organisation", Text, primary_key=True),
     Column("repo", Text, primary_key=True),
 )
 
@@ -22,7 +22,7 @@ GitHubVulnerabilities = Table(
     Column("value", Integer),
     Column("open", Integer),
     Column("closed", Integer),
-    Column("organisation", Text),
+    Column("organisation", Text, primary_key=True),
     Column("repo", Text, primary_key=True),
 )
 

@@ -12,18 +12,25 @@ session = requests.Session()
 
 
 class GitHubClient:
-    def __init__(self, org, token):
-        self.org = org
+    def __init__(self, token=None, tokens=None):
+        assert token or tokens
+        assert not (token and tokens)
         self.token = token
+        self.tokens = tokens
 
     def post(self, query, variables):
+        if self.token:
+            token = self.token
+        else:
+            token = self.tokens[variables["org"]]
+
         session.headers = {
-            "Authorization": f"bearer {self.token}",
+            "Authorization": f"bearer {token}",
             "User-Agent": "Bennett Metrics",
         }
         response = session.post(
             "https://api.github.com/graphql",
-            json={"query": query, "variables": {"org": self.org, **variables}},
+            json={"query": query, "variables": variables},
         )
 
         if not response.ok:
@@ -52,7 +59,7 @@ class GitHubClient:
         # Handling things robustly is complex and query specific, so here we simply
         # take the absence of 'data' as an error, rather than the presence of
         # 'errors' key.
-        if "data" not in results:
+        if "data" not in results or not results["data"]:
             msg = textwrap.dedent(
                 f"""
                 graphql query failed
@@ -72,7 +79,10 @@ class GitHubClient:
         def extract(data):
             result = data
             for key in path:
-                result = result[key]
+                try:
+                    result = result[key]
+                except TypeError:
+                    raise Exception(f"Couldn't find {path} in {data}")
             return result
 
         more_pages = True

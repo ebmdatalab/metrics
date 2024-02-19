@@ -1,7 +1,24 @@
-from metrics.tools.dates import datetime_from_iso
+import itertools
+import os
+
+from metrics.github.repos import tech_owned_repo
+from metrics.tools.dates import date_from_iso
 
 
-def repos(client):
+# We want to use some of these objects as keys in dicts. This is a pretty half-hearted
+# implementation, but it does as much as we need.
+class FrozenDict:
+    def __init__(self, dict_):
+        self._dict = dict_
+
+    def __getitem__(self, key):
+        return self._dict[key]
+
+    def __hash__(self):
+        return hash(tuple(self._dict.items()))
+
+
+def repos(client, org):
     query = """
     query repos($cursor: String, $org: String!) {
       organization(login: $org) {
@@ -18,12 +35,18 @@ def repos(client):
       }
     }
     """
-    for repo in client.get_query(query, path=["organization", "repositories"]):
-        yield {
-            "org": client.org,
-            "name": repo["name"],
-            "archived_at": repo["archivedAt"],
-        }
+    for raw_repo in maybe_truncate(
+        client.get_query(query, path=["organization", "repositories"], org=org)
+    ):
+        repo = FrozenDict(
+            {
+                "org": org,
+                "name": raw_repo["name"],
+                "archived_on": date_from_iso(raw_repo["archivedAt"]),
+            }
+        )
+        if tech_owned_repo(repo):
+            yield repo
 
 
 def vulnerabilities(client, repo):
@@ -51,7 +74,7 @@ def vulnerabilities(client, repo):
     return client.get_query(
         query,
         path=["organization", "repository", "vulnerabilityAlerts"],
-        org=client.org,
+        org=repo["org"],
         repo=repo["name"],
     )
 
@@ -80,17 +103,25 @@ def prs(client, repo):
       }
     }
     """
-    for pr in client.get_query(
-        query,
-        path=["organization", "repository", "pullRequests"],
-        repo=repo["name"],
+    for pr in maybe_truncate(
+        client.get_query(
+            query,
+            path=["organization", "repository", "pullRequests"],
+            org=repo["org"],
+            repo=repo["name"],
+        )
     ):
         yield {
-            "org": client.org,
+            "org": repo["org"],
             "repo": repo["name"],
-            "repo_archived_at": datetime_from_iso(repo["archived_at"]),
             "author": pr["author"]["login"],
-            "closed_at": datetime_from_iso(pr["closedAt"]),
-            "created_at": datetime_from_iso(pr["createdAt"]),
-            "merged_at": datetime_from_iso(pr["mergedAt"]),
+            "closed_on": date_from_iso(pr["closedAt"]),
+            "created_on": date_from_iso(pr["createdAt"]),
+            "merged_on": date_from_iso(pr["mergedAt"]),
         }
+
+
+def maybe_truncate(it):
+    if "DEBUG_FAST" in os.environ:
+        return itertools.islice(it, 5)
+    return it

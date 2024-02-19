@@ -90,6 +90,7 @@ def test_reset_table(engine):
                 "value": i,
                 "name": "test",
                 "author": "test",
+                "organisation": "test",
                 "repo": "test",
             }
         )
