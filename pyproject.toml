@@ -47,6 +47,7 @@ show_contexts = true
 
 [tool.pytest.ini_options]
 filterwarnings = [
+  "error",
   "ignore:distutils Version classes are deprecated:DeprecationWarning:pytest_freezegun",
 ]
 
