@@ -85,3 +85,22 @@ Run the tests with:
 ```
 just test <args>
 ```
+
+## Production
+
+### Deployment
+
+Changes merged to `main` are automatically deployed by GitHub actions.
+
+### Updating metrics
+
+Metrics that are populated by periodic tasks are automatically updated once a day by a Dokku cron job.
+This process can also be triggered out-of-schedule.
+
+```
+you@your-laptop:~$ ssh dokku3.ebmdatalab.net
+you@dokku3:~$ dokku cron:list metrics
+ID        Schedule  Command
+<the-id>  @daily    python -m metrics.tasks
+you@dokku3:~$ dokku cron:run metrics <the-id>
+```
