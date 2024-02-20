@@ -19,11 +19,11 @@ def main():
 
     client = GitHubClient(ebmdatalab_token)
     log.info("Fetching vulnerabilities for ebmdatalab")
-    ebmdatalab_vulns = list(vulnerabilities(client, "ebmdatalab", yesterday))
+    ebmdatalab_vulns = vulnerabilities(client, "ebmdatalab", yesterday)
 
     client = GitHubClient(os_core_token)
     log.info("Fetching vulnerabilities for opensafely-core")
-    os_core_vulns = list(vulnerabilities(client, "opensafely-core", yesterday))
+    os_core_vulns = vulnerabilities(client, "opensafely-core", yesterday)
 
     timescaledb.reset_table(timescaledb.GitHubVulnerabilities)
     timescaledb.write(timescaledb.GitHubVulnerabilities, ebmdatalab_vulns)

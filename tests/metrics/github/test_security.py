@@ -157,7 +157,7 @@ def test_vulnerabilities(monkeypatch):
 
     monkeypatch.setattr(security, "get_repos", fake_repos)
 
-    result = list(security.vulnerabilities({}, "test-org", date(2023, 10, 29)))
+    result = security.vulnerabilities({}, "test-org", date(2023, 10, 29))
 
     assert len(result) == 34
     assert result[0] == {

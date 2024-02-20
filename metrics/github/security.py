@@ -62,17 +62,21 @@ def get_repos(client, org):
 
 
 def vulnerabilities(client, org, to_date):
+    metrics = []
     for repo in get_repos(client, org):
         for day in dates.iter_days(repo.earliest_date(default=to_date), to_date):
             closed_vulns = sum(1 for v in repo.vulnerabilities if v.is_closed_on(day))
             open_vulns = sum(1 for v in repo.vulnerabilities if v.is_open_on(day))
 
-            yield {
-                "time": day,
-                "closed": closed_vulns,
-                "open": open_vulns,
-                "organisation": repo.org,
-                "repo": repo.name,
-                "has_alerts_enabled": repo.has_alerts_enabled,
-                "value": 0,  # needed for the timescaledb
-            }
+            metrics.append(
+                {
+                    "time": day,
+                    "closed": closed_vulns,
+                    "open": open_vulns,
+                    "organisation": repo.org,
+                    "repo": repo.name,
+                    "has_alerts_enabled": repo.has_alerts_enabled,
+                    "value": 0,  # needed for the timescaledb
+                }
+            )
+    return metrics
