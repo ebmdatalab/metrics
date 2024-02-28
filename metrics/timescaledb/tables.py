@@ -1,4 +1,4 @@
-from sqlalchemy import TIMESTAMP, Column, Integer, MetaData, Table, Text
+from sqlalchemy import TIMESTAMP, Boolean, Column, Integer, MetaData, Table, Text
 
 
 metadata = MetaData()
@@ -24,6 +24,7 @@ GitHubVulnerabilities = Table(
     Column("closed", Integer),
     Column("organisation", Text, primary_key=True),
     Column("repo", Text, primary_key=True),
+    Column("has_alerts_enabled", Boolean),
 )
 
 

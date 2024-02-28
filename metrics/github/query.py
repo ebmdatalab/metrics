@@ -26,6 +26,7 @@ def repos(client, org):
           nodes {
             name
             archivedAt
+            hasVulnerabilityAlertsEnabled
           }
           pageInfo {
               endCursor
@@ -43,6 +44,9 @@ def repos(client, org):
                 "org": org,
                 "name": raw_repo["name"],
                 "archived_on": date_from_iso(raw_repo["archivedAt"]),
+                "hasVulnerabilityAlertsEnabled": raw_repo[
+                    "hasVulnerabilityAlertsEnabled"
+                ],
             }
         )
         if tech_owned_repo(repo):
