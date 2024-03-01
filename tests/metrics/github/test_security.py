@@ -9,6 +9,7 @@ def fake_repos(client, org):
             "org": org,
             "name": "opencodelists",
             "archived_on": None,
+            "hasVulnerabilityAlertsEnabled": True,
         },
         {
             "org": org,
@@ -19,6 +20,7 @@ def fake_repos(client, org):
             "org": org,
             "name": "job-server",
             "archived_on": None,
+            "hasVulnerabilityAlertsEnabled": True,
         },
     ]
 
@@ -78,14 +80,14 @@ def test_get_repos(monkeypatch):
     assert len(result[1].vulnerabilities) == 7
 
 
-def test_get_repos_when_no_vulnerabilities(monkeypatch):
+def test_get_repos_when_no_vulnerabilities_returns_all_nonarchived_repos(monkeypatch):
     monkeypatch.setattr(security.query, "repos", fake_repos)
     monkeypatch.setattr(security.query, "vulnerabilities", lambda x, y: [])
     fake_client = lambda: None  # pragma: no cover
 
     result = list(security.get_repos(fake_client, "test-org"))
 
-    assert len(result) == 0
+    assert len(result) == 2
 
 
 def test_repo_earliest_date():
@@ -93,9 +95,9 @@ def test_repo_earliest_date():
         security.Vulnerability(date(2023, 10, 26), None, None),
         security.Vulnerability(date(2023, 10, 29), None, None),
     ]
-    repo = security.Repo("test", "test-org", vulnerabilities)
+    repo = security.Repo("test", "test-org", True, vulnerabilities)
 
-    assert repo.earliest_date() == date(2023, 10, 26)
+    assert repo.earliest_date(default=None) == date(2023, 10, 26)
 
 
 def test_vulnerability_open_on():
@@ -149,13 +151,13 @@ def test_vulnerabilities(monkeypatch):
             security.Vulnerability(date(2023, 10, 29), None, None),
         ]
         return [
-            security.Repo("test", org, vulnerabilities),
-            security.Repo("test2", org, vulnerabilities),
+            security.Repo("test", org, True, vulnerabilities),
+            security.Repo("test2", org, True, vulnerabilities),
         ]
 
     monkeypatch.setattr(security, "get_repos", fake_repos)
 
-    result = list(security.vulnerabilities({}, "test-org", date(2023, 10, 29)))
+    result = security.vulnerabilities({}, "test-org", date(2023, 10, 29))
 
     assert len(result) == 34
     assert result[0] == {
@@ -165,6 +167,7 @@ def test_vulnerabilities(monkeypatch):
         "open": 2,
         "organisation": "test-org",
         "repo": "test",
+        "has_alerts_enabled": True,
     }
     assert result[7] == {
         "time": date(2023, 10, 20),
@@ -173,6 +176,7 @@ def test_vulnerabilities(monkeypatch):
         "open": 1,
         "organisation": "test-org",
         "repo": "test",
+        "has_alerts_enabled": True,
     }
     assert result[33] == {
         "time": date(2023, 10, 29),
@@ -181,4 +185,5 @@ def test_vulnerabilities(monkeypatch):
         "open": 2,
         "organisation": "test-org",
         "repo": "test2",
+        "has_alerts_enabled": True,
     }
