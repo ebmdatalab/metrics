@@ -146,7 +146,11 @@ def test_was_merged_in_on():
 
 def repo(org, name, archived_on=None):
     return Repo(
-        org, name, archived_on=archived_on, has_vulnerability_alerts_enabled=False
+        org,
+        name,
+        created_on=date.min,
+        archived_on=archived_on,
+        has_vulnerability_alerts_enabled=False,
     )
 
 

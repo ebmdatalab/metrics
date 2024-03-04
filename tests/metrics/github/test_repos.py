@@ -1,3 +1,5 @@
+from datetime import date
+
 from metrics.github.query import Repo
 
 
@@ -14,5 +16,9 @@ def test_filtering_of_tech_owned_repos():
 
 def make_repo(org, name):
     return Repo(
-        org=org, name=name, archived_on=None, has_vulnerability_alerts_enabled=False
+        org=org,
+        name=name,
+        created_on=date.min,
+        archived_on=None,
+        has_vulnerability_alerts_enabled=False,
     )

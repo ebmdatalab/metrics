@@ -10,17 +10,23 @@ def fake_repos(client, org):
         Repo(
             org,
             "opencodelists",
+            created_on=date.min,
             archived_on=None,
             has_vulnerability_alerts_enabled=True,
         ),
         Repo(
             org,
             "old-repo",
+            created_on=date.min,
             archived_on=datetime.date.fromisoformat("2023-04-20"),
             has_vulnerability_alerts_enabled=False,
         ),
         Repo(
-            org, "job-server", archived_on=None, has_vulnerability_alerts_enabled=True
+            org,
+            "job-server",
+            created_on=date.min,
+            archived_on=None,
+            has_vulnerability_alerts_enabled=True,
         ),
     ]
 
@@ -90,16 +96,6 @@ def test_get_repos_when_no_vulnerabilities_returns_all_nonarchived_repos(monkeyp
     assert len(result) == 2
 
 
-def test_repo_earliest_date():
-    vulnerabilities = [
-        security.Vulnerability(date(2023, 10, 26), None, None),
-        security.Vulnerability(date(2023, 10, 29), None, None),
-    ]
-    repo = security.Repo("test", "test-org", True, vulnerabilities)
-
-    assert repo.earliest_date(default=None) == date(2023, 10, 26)
-
-
 def test_vulnerability_open_on():
     v = security.Vulnerability(date(2023, 10, 26), None, None)
 
@@ -151,8 +147,8 @@ def test_vulnerabilities(monkeypatch):
             security.Vulnerability(date(2023, 10, 29), None, None),
         ]
         return [
-            security.Repo("test", org, True, vulnerabilities),
-            security.Repo("test2", org, True, vulnerabilities),
+            security.Repo("test", org, date(2023, 10, 13), True, vulnerabilities),
+            security.Repo("test2", org, date(2023, 10, 13), True, vulnerabilities),
         ]
 
     monkeypatch.setattr(security, "get_repos", fake_repos)

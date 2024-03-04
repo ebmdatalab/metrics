@@ -32,16 +32,12 @@ class Vulnerability:
 class Repo:
     name: str
     org: str
+    created_on: date
     has_alerts_enabled: bool
     vulnerabilities: list[Vulnerability]
 
     def __post_init__(self):
         self.vulnerabilities.sort(key=lambda v: v.created_on)
-
-    def earliest_date(self, default):
-        if self.vulnerabilities:
-            return self.vulnerabilities[0].created_on
-        return default
 
 
 def get_repos(client, org):
@@ -56,6 +52,7 @@ def get_repos(client, org):
         yield Repo(
             name=repo.name,
             org=repo.org,
+            created_on=repo.created_on,
             has_alerts_enabled=repo.has_vulnerability_alerts_enabled,
             vulnerabilities=vulnerabilities,
         )
@@ -64,7 +61,7 @@ def get_repos(client, org):
 def vulnerabilities(client, org, to_date):
     metrics = []
     for repo in get_repos(client, org):
-        for day in dates.iter_days(repo.earliest_date(default=to_date), to_date):
+        for day in dates.iter_days(repo.created_on, to_date):
             closed_vulns = sum(1 for v in repo.vulnerabilities if v.is_closed_on(day))
             open_vulns = sum(1 for v in repo.vulnerabilities if v.is_open_on(day))
 

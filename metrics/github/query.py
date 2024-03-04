@@ -14,6 +14,7 @@ def repos(client, org):
         repositories(first: 100, after: $cursor) {
           nodes {
             name
+            createdAt
             archivedAt
             hasVulnerabilityAlertsEnabled
           }
@@ -31,6 +32,7 @@ def repos(client, org):
         repo = Repo(
             org,
             raw_repo["name"],
+            date_from_iso(raw_repo["createdAt"]),
             date_from_iso(raw_repo["archivedAt"]),
             raw_repo["hasVulnerabilityAlertsEnabled"],
         )
@@ -42,6 +44,7 @@ def repos(client, org):
 class Repo:
     org: str
     name: str
+    created_on: date
     archived_on: date | None
     has_vulnerability_alerts_enabled: bool
 

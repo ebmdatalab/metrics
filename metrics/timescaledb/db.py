@@ -152,9 +152,9 @@ def write(table, rows, engine=None):
     constraint = inspect(engine).get_pk_constraint(table.name)["name"]
 
     with engine.begin() as connection:
-        # batch our values (which are currently 5 item dicts) so we don't
+        # batch our values (which are currently up-to-7 item dicts) so we don't
         # hit the 65535 params limit
-        for values in batched(rows, 10_000):
+        for values in batched(rows, 9_000):
             stmt = insert(table).values(values)
 
             # use the constraint for this table to drive upserting where the
