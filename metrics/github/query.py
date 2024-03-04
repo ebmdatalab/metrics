@@ -46,7 +46,7 @@ class Repo:
     name: str
     created_on: date
     archived_on: date | None
-    has_vulnerability_alerts_enabled: bool
+    has_vulnerability_alerts_enabled: bool = False
 
     def is_tech_owned(self):
         # We use a deny-list rather than an allow-list so that newly created repos are treated as

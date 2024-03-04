@@ -28,42 +28,18 @@ class Vulnerability:
         )
 
 
-@dataclass
-class Repo:
-    name: str
-    org: str
-    created_on: date
-    has_alerts_enabled: bool
-    vulnerabilities: list[Vulnerability]
+def vulnerabilities(client, org, to_date):
+    metrics = []
 
-    def __post_init__(self):
-        self.vulnerabilities.sort(key=lambda v: v.created_on)
-
-
-def get_repos(client, org):
     for repo in query.repos(client, org):
         if repo.archived_on:
             continue
 
-        vulnerabilities = []
-        for vuln in query.vulnerabilities(client, repo):
-            vulnerabilities.append(Vulnerability.from_dict(vuln))
+        vulns = list(map(Vulnerability.from_dict, query.vulnerabilities(client, repo)))
 
-        yield Repo(
-            name=repo.name,
-            org=repo.org,
-            created_on=repo.created_on,
-            has_alerts_enabled=repo.has_vulnerability_alerts_enabled,
-            vulnerabilities=vulnerabilities,
-        )
-
-
-def vulnerabilities(client, org, to_date):
-    metrics = []
-    for repo in get_repos(client, org):
         for day in dates.iter_days(repo.created_on, to_date):
-            closed_vulns = sum(1 for v in repo.vulnerabilities if v.is_closed_on(day))
-            open_vulns = sum(1 for v in repo.vulnerabilities if v.is_open_on(day))
+            closed_vulns = sum(1 for v in vulns if v.is_closed_on(day))
+            open_vulns = sum(1 for v in vulns if v.is_open_on(day))
 
             metrics.append(
                 {
@@ -72,8 +48,9 @@ def vulnerabilities(client, org, to_date):
                     "open": open_vulns,
                     "organisation": repo.org,
                     "repo": repo.name,
-                    "has_alerts_enabled": repo.has_alerts_enabled,
+                    "has_alerts_enabled": repo.has_vulnerability_alerts_enabled,
                     "value": 0,  # needed for the timescaledb
                 }
             )
+
     return metrics
