@@ -1,27 +1,27 @@
+import datetime
 from datetime import date
 
 from metrics.github import security
+from metrics.github.query import Repo
 
 
 def fake_repos(client, org):
     return [
-        {
-            "org": org,
-            "name": "opencodelists",
-            "archived_on": None,
-            "hasVulnerabilityAlertsEnabled": True,
-        },
-        {
-            "org": org,
-            "name": "old-repo",
-            "archived_on": "2023-04-20T18:22:11Z",
-        },
-        {
-            "org": org,
-            "name": "job-server",
-            "archived_on": None,
-            "hasVulnerabilityAlertsEnabled": True,
-        },
+        Repo(
+            org,
+            "opencodelists",
+            archived_on=None,
+            has_vulnerability_alerts_enabled=True,
+        ),
+        Repo(
+            org,
+            "old-repo",
+            archived_on=datetime.date.fromisoformat("2023-04-20"),
+            has_vulnerability_alerts_enabled=False,
+        ),
+        Repo(
+            org, "job-server", archived_on=None, has_vulnerability_alerts_enabled=True
+        ),
     ]
 
 

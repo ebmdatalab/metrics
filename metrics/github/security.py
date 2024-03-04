@@ -46,7 +46,7 @@ class Repo:
 
 def get_repos(client, org):
     for repo in query.repos(client, org):
-        if repo["archived_on"]:
+        if repo.archived_on:
             continue
 
         vulnerabilities = []
@@ -54,9 +54,9 @@ def get_repos(client, org):
             vulnerabilities.append(Vulnerability.from_dict(vuln))
 
         yield Repo(
-            name=repo["name"],
-            org=repo["org"],
-            has_alerts_enabled=repo["hasVulnerabilityAlertsEnabled"],
+            name=repo.name,
+            org=repo.org,
+            has_alerts_enabled=repo.has_vulnerability_alerts_enabled,
             vulnerabilities=vulnerabilities,
         )
 

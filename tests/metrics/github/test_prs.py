@@ -3,7 +3,7 @@ from datetime import date, timedelta
 import pytest
 
 from metrics.github.prs import calculate_counts, is_old, was_merged_on
-from metrics.github.query import FrozenDict
+from metrics.github.query import Repo
 
 
 TODAY = date(year=2023, month=6, day=10)
@@ -145,12 +145,8 @@ def test_was_merged_in_on():
 
 
 def repo(org, name, archived_on=None):
-    return FrozenDict(
-        {
-            "org": org,
-            "name": name,
-            "archived_on": archived_on if archived_on else None,
-        }
+    return Repo(
+        org, name, archived_on=archived_on, has_vulnerability_alerts_enabled=False
     )
 
 

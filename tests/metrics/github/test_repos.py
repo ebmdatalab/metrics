@@ -1,12 +1,18 @@
-from metrics.github.repos import tech_owned_repo
+from metrics.github.query import Repo
 
 
 def test_dont_filter_out_repos_from_unknown_orgs():
-    assert tech_owned_repo({"name": "any", "org": "other"})
+    assert make_repo(org="other", name="any").is_tech_owned()
 
 
 def test_filtering_of_tech_owned_repos():
-    assert tech_owned_repo({"name": "metrics", "org": "ebmdatalab"})
-    assert not tech_owned_repo(
-        {"name": "clinicaltrials-act-tracker", "org": "ebmdatalab"}
+    assert make_repo(org="ebmdatalab", name="metrics").is_tech_owned()
+    assert not make_repo(
+        org="ebmdatalab", name="clinicaltrials-act-tracker"
+    ).is_tech_owned()
+
+
+def make_repo(org, name):
+    return Repo(
+        org=org, name=name, archived_on=None, has_vulnerability_alerts_enabled=False
     )
