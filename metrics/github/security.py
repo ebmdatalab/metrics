@@ -32,12 +32,10 @@ def vulnerabilities(client, org, to_date):
     metrics = []
 
     for repo in query.repos(client, org):
-        if repo.archived_on:
-            continue
-
         vulns = list(map(Vulnerability.from_dict, query.vulnerabilities(client, repo)))
 
-        for day in dates.iter_days(repo.created_on, to_date):
+        end = min(to_date, repo.archived_on) if repo.archived_on else to_date
+        for day in dates.iter_days(repo.created_on, end):
             closed_vulns = sum(1 for v in vulns if v.is_closed_on(day))
             open_vulns = sum(1 for v in vulns if v.is_open_on(day))
 
