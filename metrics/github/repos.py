@@ -1,4 +1,17 @@
-NON_TECH_REPOS = {
+from metrics.github import query
+
+
+def tech_repos(client, org):
+    return [r for r in query.repos(client, org) if _is_tech_owned(r)]
+
+
+def _is_tech_owned(repo):
+    # We use a deny-list rather than an allow-list so that newly created repos are treated as
+    # Tech-owned by default, in the hopes of minimizing surprise.
+    return not (repo.org in _NON_TECH_REPOS and repo.name in _NON_TECH_REPOS[repo.org])
+
+
+_NON_TECH_REPOS = {
     "ebmdatalab": [
         "bennett-presentations",
         "bnf-code-to-dmd",

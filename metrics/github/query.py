@@ -3,7 +3,6 @@ import os
 from dataclasses import dataclass
 from datetime import date
 
-from metrics.github.repos import NON_TECH_REPOS
 from metrics.tools.dates import date_from_iso
 
 
@@ -29,15 +28,13 @@ def repos(client, org):
     for raw_repo in maybe_truncate(
         client.get_query(query, path=["organization", "repositories"], org=org)
     ):
-        repo = Repo(
+        yield Repo(
             org,
             raw_repo["name"],
             date_from_iso(raw_repo["createdAt"]),
             date_from_iso(raw_repo["archivedAt"]),
             raw_repo["hasVulnerabilityAlertsEnabled"],
         )
-        if repo.is_tech_owned():
-            yield repo
 
 
 @dataclass(frozen=True)
@@ -47,13 +44,6 @@ class Repo:
     created_on: date
     archived_on: date | None
     has_vulnerability_alerts_enabled: bool = False
-
-    def is_tech_owned(self):
-        # We use a deny-list rather than an allow-list so that newly created repos are treated as
-        # Tech-owned by default, in the hopes of minimizing surprise.
-        return not (
-            self.org in NON_TECH_REPOS and self.name in NON_TECH_REPOS[self.org]
-        )
 
 
 def vulnerabilities(client, repo):
