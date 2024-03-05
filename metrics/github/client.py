@@ -60,12 +60,11 @@ class GitHubClient:
         check_response(response)
         results = response.json()
 
-        # In some cases graphql will return a 200 response when there are errors.
-        # https://sachee.medium.com/200-ok-error-handling-in-graphql-7ec869aec9bc
-        # Handling things robustly is complex and query specific, so here we simply
-        # take the absence of 'data' as an error, rather than the presence of
-        # 'errors' key.
-        if "data" not in results or not results["data"]:
+        if (
+            "data" not in results
+            or not results["data"]
+            or ("errors" in results and results["errors"])
+        ):
             msg = textwrap.dedent(
                 f"""
                 graphql query failed
