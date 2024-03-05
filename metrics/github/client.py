@@ -2,6 +2,7 @@ import json
 import textwrap
 
 import requests
+import requests.utils
 import structlog
 
 
@@ -37,6 +38,24 @@ class GitHubClient:
             yield from page["nodes"]
             more_pages = page["pageInfo"]["hasNextPage"]
             cursor = page["pageInfo"]["endCursor"]
+
+    def rest_query(self, path, **variables):
+        headers = self._get_headers(variables)
+
+        more_pages = True
+        url = f"https://api.github.com{path.format(**variables)}"
+
+        while more_pages:
+            response = requests.get(url, headers=headers)
+            check_response(response)
+
+            data = response.json()
+            if isinstance(data, list):
+                yield from data
+            else:
+                raise RuntimeError("Unexpected response format:", data)
+
+            more_pages, url = check_for_next_page(response)
 
     def graphql_query_page(self, query, cursor, **kwargs):
         """
@@ -97,3 +116,12 @@ def check_response(response):
         log.info(response.headers)
         log.info(response.content)
     response.raise_for_status()
+
+
+def check_for_next_page(response):
+    if "Link" in response.headers:
+        for link in requests.utils.parse_header_links(response.headers["Link"]):
+            if link["rel"] == "next":
+                return True, link["url"]
+
+    return False, None
