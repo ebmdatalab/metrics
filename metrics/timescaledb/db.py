@@ -29,7 +29,7 @@ def delete_rows(connection, name, n=10000):
     connection.execute(sql, {"limit": n})
 
 
-def drop_child_tables(connection, name, n=100):
+def drop_child_tables(connection, name):
     sql = text(
         f"""
         SELECT
