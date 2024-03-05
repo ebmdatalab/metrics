@@ -18,29 +18,27 @@ class GitHubClient:
         self.token = token
         self.tokens = tokens
 
-    def post(self, query, variables):
-        if self.token:
-            token = self.token
-        else:
-            token = self.tokens[variables["org"]]
+    def graphql_query(self, query, path, **kwargs):
+        def extract(data):
+            result = data
+            for key in path:
+                try:
+                    result = result[key]
+                except TypeError:
+                    raise Exception(f"Couldn't find {path} in {data}")
+            return result
 
-        session.headers = {
-            "Authorization": f"bearer {token}",
-            "User-Agent": "Bennett Metrics",
-        }
-        response = session.post(
-            "https://api.github.com/graphql",
-            json={"query": query, "variables": variables},
-        )
+        more_pages = True
+        cursor = None
+        while more_pages:
+            page = extract(
+                self.graphql_query_page(query=query, cursor=cursor, **kwargs)
+            )
+            yield from page["nodes"]
+            more_pages = page["pageInfo"]["hasNextPage"]
+            cursor = page["pageInfo"]["endCursor"]
 
-        if not response.ok:
-            log.info(response.headers)
-            log.info(response.content)
-
-        response.raise_for_status()
-        return response.json()
-
-    def get_query_page(self, query, cursor, **kwargs):
+    def graphql_query_page(self, query, cursor, **kwargs):
         """
         Get a page of the given query
 
@@ -52,7 +50,15 @@ class GitHubClient:
         [1]: https://graphql.org/learn/pagination/#end-of-list-counts-and-connections
         """
         variables = {"cursor": cursor, **kwargs}
-        results = self.post(query, variables)
+        headers = self._get_headers(variables)
+        response = session.post(
+            "https://api.github.com/graphql",
+            headers=headers,
+            json={"query": query, "variables": variables},
+        )
+
+        check_response(response)
+        results = response.json()
 
         # In some cases graphql will return a 200 response when there are errors.
         # https://sachee.medium.com/200-ok-error-handling-in-graphql-7ec869aec9bc
@@ -75,20 +81,20 @@ class GitHubClient:
 
         return results["data"]
 
-    def get_query(self, query, path, **kwargs):
-        def extract(data):
-            result = data
-            for key in path:
-                try:
-                    result = result[key]
-                except TypeError:
-                    raise Exception(f"Couldn't find {path} in {data}")
-            return result
+    def _get_headers(self, variables):
+        if self.token:
+            token = self.token
+        else:
+            token = self.tokens[variables["org"]]
+        headers = {
+            "Authorization": f"bearer {token}",
+            "User-Agent": "Bennett Metrics",
+        }
+        return headers
 
-        more_pages = True
-        cursor = None
-        while more_pages:
-            page = extract(self.get_query_page(query=query, cursor=cursor, **kwargs))
-            yield from page["nodes"]
-            more_pages = page["pageInfo"]["hasNextPage"]
-            cursor = page["pageInfo"]["endCursor"]
+
+def check_response(response):
+    if not response.ok:
+        log.info(response.headers)
+        log.info(response.content)
+    response.raise_for_status()

@@ -26,7 +26,7 @@ def repos(client, org):
     }
     """
     for raw_repo in maybe_truncate(
-        client.get_query(query, path=["organization", "repositories"], org=org)
+        client.graphql_query(query, path=["organization", "repositories"], org=org)
     ):
         yield Repo(
             org,
@@ -68,7 +68,7 @@ def vulnerabilities(client, repo):
     }
     """
 
-    return client.get_query(
+    return client.graphql_query(
         query,
         path=["organization", "repository", "vulnerabilityAlerts"],
         org=repo.org,
@@ -101,7 +101,7 @@ def prs(client, repo):
     }
     """
     for pr in maybe_truncate(
-        client.get_query(
+        client.graphql_query(
             query,
             path=["organization", "repository", "pullRequests"],
             org=repo.org,
