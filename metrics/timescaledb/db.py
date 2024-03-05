@@ -148,21 +148,9 @@ def write(table, rows, engine=None):
     if engine is None:
         engine = get_engine()
 
-    # get the primary key name from the given table
-    constraint = inspect(engine).get_pk_constraint(table.name)["name"]
-
     with engine.begin() as connection:
         # batch our values (which are currently up-to-7 item dicts) so we don't
         # hit the 65535 params limit
         for values in batched(rows, 9_000):
-            stmt = insert(table).values(values)
-
-            # use the constraint for this table to drive upserting where the
-            # new value (excluded.value) is used to update the row
-            do_update_stmt = stmt.on_conflict_do_update(
-                constraint=constraint,
-                set_={"value": stmt.excluded.value},
-            )
-
-            connection.execute(do_update_stmt)
+            connection.execute(insert(table).values(values))
             log.info("Inserted %s rows", len(values), table=table.name)
