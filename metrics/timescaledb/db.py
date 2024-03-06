@@ -11,10 +11,7 @@ from ..tools.iter import batched
 log = structlog.get_logger()
 
 
-def delete_rows(connection, name, n=10000):
-    """
-    Delete N rows from the given table
-    """
+def delete_rows(connection, name, batch_size=10000):
     sql = text(
         f"""
         DELETE FROM {name}
@@ -26,7 +23,7 @@ def delete_rows(connection, name, n=10000):
         )
         """
     )
-    connection.execute(sql, {"limit": n})
+    connection.execute(sql, {"limit": batch_size})
 
 
 def drop_child_tables(connection, name):
@@ -53,7 +50,7 @@ def drop_table(connection, name):
     connection.execute(text(f"DROP TABLE {name}"), {"table_name": name})
 
 
-def drop_hypertable(engine, table):
+def drop_hypertable(engine, table, batch_size):
     """
     Drop the given table
 
@@ -74,7 +71,7 @@ def drop_hypertable(engine, table):
             return
 
         while has_rows(connection, table):
-            delete_rows(connection, table)
+            delete_rows(connection, table, batch_size)
 
         log.debug("Removed all raw rows", table=table)
 
@@ -134,12 +131,12 @@ def has_rows(connection, name):
     return connection.scalar(sql) > 0
 
 
-def reset_table(table, engine=None):
+def reset_table(table, engine=None, batch_size=None):
     """Reset the given Table"""
     if engine is None:
         engine = get_engine()
 
-    drop_hypertable(engine, table)
+    drop_hypertable(engine, table, batch_size)
     ensure_table(engine, table)
     log.info("Reset table", table=table.name)
 

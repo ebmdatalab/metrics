@@ -75,9 +75,10 @@ def test_reset_table(engine):
 
     # put enough rows in the db to make sure we exercise the batch removal of
     # rows.  timescaledb's write() will ensure the table exists for us.
+    batch_size = 5
     rows = []
     start = date(2020, 4, 1)
-    for i in range(11_000):
+    for i in range(batch_size * 5):
         d = start + timedelta(days=i)
         rows.append(
             {
@@ -92,7 +93,7 @@ def test_reset_table(engine):
         assert has_table(connection, DummyTable.name)
         assert has_rows(connection, DummyTable.name)
 
-    timescaledb.reset_table(DummyTable, engine=engine)
+    timescaledb.reset_table(DummyTable, engine=engine, batch_size=batch_size)
 
     with engine.begin() as connection:
         assert has_table(connection, DummyTable.name)
