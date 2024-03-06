@@ -46,51 +46,42 @@ def drop_child_tables(connection, table):
         connection.execute(text(f"DROP TABLE IF EXISTS {tables}"))
 
 
-def drop_table(connection, name):
-    connection.execute(text(f"DROP TABLE {name}"), {"table_name": name})
-
-
-def drop_hypertable(engine, table, batch_size):
-    """
-    Drop the given table
-
-    We have limited shared memory in our hosted database, so we can't DROP or
-    TRUNCATE our hypertables.  Instead for each "raw" table we need to:
-     * empty the raw rows (from the named table) in batches
-     * drop the sharded "child" tables in batches
-     * drop the now empty raw table
-    """
+def drop_table(engine, table, batch_size):
     with engine.begin() as connection:
         log.debug("Removing table: %s", table.name)
 
         if not has_table(connection, table):
             return
 
-        while has_rows(connection, table):
-            delete_rows(connection, table, batch_size)
+        if _is_hypertable(table):
+            # We have limited shared memory in our hosted database, so we can't DROP or
+            # TRUNCATE our hypertables.  Instead for each "raw" table we need to:
+            #  * empty the raw rows (from the named table) in batches
+            #  * drop the sharded "child" tables in batches
+            #  * drop the now empty raw table
+            while has_rows(connection, table):
+                delete_rows(connection, table, batch_size)
 
-        log.debug("Removed all raw rows", table=table.name)
+            log.debug("Removed all raw rows", table=table.name)
 
-        drop_child_tables(connection, table)
-        log.debug("Removed all child tables", table=table.name)
+            drop_child_tables(connection, table)
+            log.debug("Removed all child tables", table=table.name)
 
-        drop_table(connection, table)
+        connection.execute(text(f"DROP TABLE {table.name}"))
+
         log.debug("Removed raw table", table=table.name)
 
 
 def ensure_table(engine, table):
-    """
-    Ensure both the table and hypertable config exist in the database
-    """
     with engine.begin() as connection:
         connection.execute(schema.CreateTable(table, if_not_exists=True))
 
-    with engine.begin() as connection:
-        connection.execute(
-            text(
-                f"SELECT create_hypertable('{table.name}', 'time', if_not_exists => TRUE);"
+        if _is_hypertable(table):
+            connection.execute(
+                text(
+                    f"SELECT create_hypertable('{table.name}', 'time', if_not_exists => TRUE);"
+                )
             )
-        )
 
 
 def get_engine():
@@ -130,7 +121,7 @@ def reset_table(table, engine=None, batch_size=None):
     if engine is None:
         engine = get_engine()
 
-    drop_hypertable(engine, table, batch_size)
+    drop_table(engine, table, batch_size)
     ensure_table(engine, table)
     log.info("Reset table", table=table.name)
 
@@ -146,3 +137,7 @@ def write(table, rows, engine=None):
         for values in batched(rows, batch_size):
             connection.execute(insert(table).values(values))
             log.info("Inserted %s rows", len(values), table=table.name)
+
+
+def _is_hypertable(table):
+    return "time" in table.columns
