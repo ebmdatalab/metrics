@@ -148,9 +148,10 @@ def write(table, rows, engine=None):
     if engine is None:
         engine = get_engine()
 
+    max_params = 65535  # limit for postgresql
+    batch_size = max_params // len(table.columns)
+
     with engine.begin() as connection:
-        # batch our values (which are currently up-to-7 item dicts) so we don't
-        # hit the 65535 params limit
-        for values in batched(rows, 9_000):
+        for values in batched(rows, batch_size):
             connection.execute(insert(table).values(values))
             log.info("Inserted %s rows", len(values), table=table.name)
