@@ -73,8 +73,7 @@ def test_get_url_with_prefix(monkeypatch):
 def test_reset_table(engine):
     ensure_table(engine, DummyTable)
 
-    # put enough rows in the db to make sure we exercise the batch removal of
-    # rows.  timescaledb's write() will ensure the table exists for us.
+    # put enough rows in the db to make sure we exercise the batch removal of rows
     batch_size = 5
     rows = []
     start = date(2020, 4, 1)
