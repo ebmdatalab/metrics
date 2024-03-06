@@ -1,6 +1,5 @@
 from datetime import UTC, date, datetime, timedelta
 
-import pytest
 from sqlalchemy import TIMESTAMP, Column, Integer, Table, select, text
 
 from metrics import timescaledb
@@ -32,29 +31,26 @@ def is_hypertable(engine, table):
     assert result[0] == 1, result
 
 
-@pytest.fixture(scope="module")
-def table():
-    """Dummy table with a time PK because we're testing with timescaledb"""
-    return Table(
-        "test_table_is_created",
-        metadata,
-        Column("time", TIMESTAMP(timezone=True), primary_key=True),
-        Column("value", Integer),
-    )
+DummyTable = Table(
+    "test_table",
+    metadata,
+    Column("time", TIMESTAMP(timezone=True), primary_key=True),
+    Column("value", Integer),
+)
 
 
-def test_ensure_table(engine, table):
+def test_ensure_table(engine):
     with engine.begin() as connection:
-        assert not has_table(connection, timescaledb.GitHubPullRequests.name)
+        assert not has_table(connection, DummyTable.name)
 
-    ensure_table(engine, timescaledb.GitHubPullRequests)
+    ensure_table(engine, DummyTable)
 
     with engine.begin() as connection:
-        assert has_table(connection, timescaledb.GitHubPullRequests.name)
+        assert has_table(connection, DummyTable.name)
 
     # check there are timescaledb child tables
     # https://stackoverflow.com/questions/1461722/how-to-find-child-tables-that-inherit-from-another-table-in-psql
-    is_hypertable(engine, timescaledb.GitHubPullRequests)
+    is_hypertable(engine, DummyTable)
 
 
 def test_get_url(monkeypatch):
@@ -75,7 +71,7 @@ def test_get_url_with_prefix(monkeypatch):
 
 
 def test_reset_table(engine):
-    ensure_table(engine, timescaledb.GitHubPullRequests)
+    ensure_table(engine, DummyTable)
 
     # put enough rows in the db to make sure we exercise the batch removal of
     # rows.  timescaledb's write() will ensure the table exists for us.
@@ -87,35 +83,31 @@ def test_reset_table(engine):
             {
                 "time": d,
                 "value": i,
-                "name": "test",
-                "author": "test",
-                "organisation": "test",
-                "repo": "test",
             }
         )
 
-    timescaledb.write(timescaledb.GitHubPullRequests, rows, engine=engine)
+    timescaledb.write(DummyTable, rows, engine=engine)
 
     with engine.begin() as connection:
-        assert has_table(connection, timescaledb.GitHubPullRequests.name)
-        assert has_rows(connection, timescaledb.GitHubPullRequests.name)
+        assert has_table(connection, DummyTable.name)
+        assert has_rows(connection, DummyTable.name)
 
-    timescaledb.reset_table(timescaledb.GitHubPullRequests, engine=engine)
+    timescaledb.reset_table(DummyTable, engine=engine)
 
     with engine.begin() as connection:
-        assert has_table(connection, timescaledb.GitHubPullRequests.name)
-        assert not has_rows(connection, timescaledb.GitHubPullRequests.name)
+        assert has_table(connection, DummyTable.name)
+        assert not has_rows(connection, DummyTable.name)
 
 
-def test_write(engine, table):
+def test_write(engine):
     # set up a table to write to
-    ensure_table(engine, table)
+    ensure_table(engine, DummyTable)
 
     rows = [
         {"time": datetime(2023, 11, i, tzinfo=UTC), "value": i} for i in range(1, 4)
     ]
-    timescaledb.write(table, rows, engine=engine)
+    timescaledb.write(DummyTable, rows, engine=engine)
 
     # check rows are in table
-    rows = get_rows(engine, table)
+    rows = get_rows(engine, DummyTable)
     assert len(rows) == 3
