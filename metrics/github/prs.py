@@ -39,12 +39,12 @@ def calculate_counts(prs_by_repo, predicate):
         for pr in prs:
             start = pr["created_on"]
             end = min(
-                repo["archived_on"] if repo["archived_on"] else date.today(),
+                repo.archived_on if repo.archived_on else date.today(),
                 pr["closed_on"] if pr["closed_on"] else date.today(),
             )
             for day in iter_days(start, end):
                 if predicate(pr, day):
-                    counts[(repo["org"], repo["name"], pr["author"], day)] += 1
+                    counts[(repo.org, repo.name, pr["author"], day)] += 1
     return dict(counts)
 
 

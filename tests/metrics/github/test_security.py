@@ -1,103 +1,7 @@
 from datetime import date
 
 from metrics.github import security
-
-
-def fake_repos(client, org):
-    return [
-        {
-            "org": org,
-            "name": "opencodelists",
-            "archived_on": None,
-            "hasVulnerabilityAlertsEnabled": True,
-        },
-        {
-            "org": org,
-            "name": "old-repo",
-            "archived_on": "2023-04-20T18:22:11Z",
-        },
-        {
-            "org": org,
-            "name": "job-server",
-            "archived_on": None,
-            "hasVulnerabilityAlertsEnabled": True,
-        },
-    ]
-
-
-def fake_vulnerabilities(client, repo):
-    response = [
-        {
-            "createdAt": "2022-02-10T01:36:54Z",
-            "fixedAt": None,
-            "dismissedAt": None,
-        },
-        {
-            "createdAt": "2022-10-18T17:20:30Z",
-            "fixedAt": "2022-10-24T14:27:29Z",
-            "dismissedAt": None,
-        },
-        {
-            "createdAt": "2022-10-18T21:08:22Z",
-            "fixedAt": "2022-11-09T13:01:04Z",
-            "dismissedAt": None,
-        },
-        {
-            "createdAt": "2022-11-01T17:52:53Z",
-            "fixedAt": "2022-11-07T15:14:37Z",
-            "dismissedAt": None,
-        },
-        {
-            "createdAt": "2023-08-30T04:44:56Z",
-            "fixedAt": None,
-            "dismissedAt": "2023-09-04T15:07:44Z",
-        },
-        {
-            "createdAt": "2023-10-03T02:46:00Z",
-            "fixedAt": None,
-            "dismissedAt": None,
-        },
-        {
-            "createdAt": "2023-10-26T15:02:17Z",
-            "fixedAt": None,
-            "dismissedAt": None,
-        },
-    ]
-    return response
-
-
-def test_get_repos(monkeypatch):
-    monkeypatch.setattr(security.query, "repos", fake_repos)
-    monkeypatch.setattr(security.query, "vulnerabilities", fake_vulnerabilities)
-    fake_client = lambda: None  # pragma: no cover
-
-    result = list(security.get_repos(fake_client, "test-org"))
-
-    assert len(result) == 2
-    assert result[0].name == "opencodelists"
-    assert len(result[0].vulnerabilities) == 7
-    assert result[1].name == "job-server"
-    assert len(result[1].vulnerabilities) == 7
-
-
-def test_get_repos_when_no_vulnerabilities_returns_all_nonarchived_repos(monkeypatch):
-    monkeypatch.setattr(security.query, "repos", fake_repos)
-    monkeypatch.setattr(security.query, "vulnerabilities", lambda x, y: [])
-    fake_client = lambda: None  # pragma: no cover
-
-    result = list(security.get_repos(fake_client, "test-org"))
-
-    assert len(result) == 2
-
-
-def test_repo_earliest_date():
-    vulnerabilities = [
-        security.Vulnerability(date(2023, 10, 26), None, None),
-        security.Vulnerability(date(2023, 10, 29), None, None),
-    ]
-    repo = security.Repo("test", "test-org", True, vulnerabilities)
-
-    assert repo.earliest_date(default=None) == date(2023, 10, 26)
+from metrics.github.query import Repo
 
 
 def test_vulnerability_open_on():
@@ -142,20 +46,56 @@ def test_vulnerability_closed_on_is_closed():
     assert v.is_closed_on(date(2023, 10, 29))
 
 
-def test_vulnerabilities(monkeypatch):
+def test_vulnerabilities_ignores_archived_repos_after_archive_date(monkeypatch):
+    archive_date = date(2022, 1, 3)
+
     def fake_repos(client, org):
-        vulnerabilities = [
-            security.Vulnerability(date(2023, 10, 13), date(2023, 10, 20), None),
-            security.Vulnerability(date(2023, 10, 13), None, date(2023, 10, 21)),
-            security.Vulnerability(date(2023, 10, 26), None, None),
-            security.Vulnerability(date(2023, 10, 29), None, None),
-        ]
         return [
-            security.Repo("test", org, True, vulnerabilities),
-            security.Repo("test2", org, True, vulnerabilities),
+            Repo(
+                "anything",
+                "anything",
+                created_on=date(2022, 1, 1),
+                archived_on=archive_date,
+            )
         ]
 
-    monkeypatch.setattr(security, "get_repos", fake_repos)
+    monkeypatch.setattr(security.query, "repos", fake_repos)
+
+    def fake_vulnerabilities(client, repo):
+        return []
+
+    monkeypatch.setattr(security.query, "vulnerabilities", fake_vulnerabilities)
+
+    result = security.vulnerabilities({}, "org", date(2022, 1, 10))
+    assert result[-1]["time"] == archive_date
+
+
+def test_vulnerabilities(monkeypatch):
+    def fake_repos(client, org):
+        return [
+            Repo(org, "test", date(2023, 10, 13), None, True),
+            Repo(org, "test2", date(2023, 10, 13), None, True),
+        ]
+
+    monkeypatch.setattr(security.query, "repos", fake_repos)
+
+    def fake_vulnerabilities(client, repo):
+        return [
+            dict(
+                createdAt="2023-10-13T00:00:00Z",
+                fixedAt="2023-10-20T00:00:00Z",
+                dismissedAt=None,
+            ),
+            dict(
+                createdAt="2023-10-13T00:00:00Z",
+                fixedAt=None,
+                dismissedAt="2023-10-21T00:00:00Z",
+            ),
+            dict(createdAt="2023-10-26T00:00:00Z", fixedAt=None, dismissedAt=None),
+            dict(createdAt="2023-10-29T00:00:00Z", fixedAt=None, dismissedAt=None),
+        ]
+
+    monkeypatch.setattr(security.query, "vulnerabilities", fake_vulnerabilities)
 
     result = security.vulnerabilities({}, "test-org", date(2023, 10, 29))
 

@@ -1,21 +1,10 @@
 import itertools
 import os
+from dataclasses import dataclass
+from datetime import date
 
-from metrics.github.repos import tech_owned_repo
+from metrics.github.repos import NON_TECH_REPOS
 from metrics.tools.dates import date_from_iso
-
-
-# We want to use some of these objects as keys in dicts. This is a pretty half-hearted
-# implementation, but it does as much as we need.
-class FrozenDict:
-    def __init__(self, dict_):
-        self._dict = dict_
-
-    def __getitem__(self, key):
-        return self._dict[key]
-
-    def __hash__(self):
-        return hash(tuple(self._dict.items()))
 
 
 def repos(client, org):
@@ -25,6 +14,7 @@ def repos(client, org):
         repositories(first: 100, after: $cursor) {
           nodes {
             name
+            createdAt
             archivedAt
             hasVulnerabilityAlertsEnabled
           }
@@ -39,18 +29,31 @@ def repos(client, org):
     for raw_repo in maybe_truncate(
         client.get_query(query, path=["organization", "repositories"], org=org)
     ):
-        repo = FrozenDict(
-            {
-                "org": org,
-                "name": raw_repo["name"],
-                "archived_on": date_from_iso(raw_repo["archivedAt"]),
-                "hasVulnerabilityAlertsEnabled": raw_repo[
-                    "hasVulnerabilityAlertsEnabled"
-                ],
-            }
+        repo = Repo(
+            org,
+            raw_repo["name"],
+            date_from_iso(raw_repo["createdAt"]),
+            date_from_iso(raw_repo["archivedAt"]),
+            raw_repo["hasVulnerabilityAlertsEnabled"],
         )
-        if tech_owned_repo(repo):
+        if repo.is_tech_owned():
             yield repo
+
+
+@dataclass(frozen=True)
+class Repo:
+    org: str
+    name: str
+    created_on: date
+    archived_on: date | None
+    has_vulnerability_alerts_enabled: bool = False
+
+    def is_tech_owned(self):
+        # We use a deny-list rather than an allow-list so that newly created repos are treated as
+        # Tech-owned by default, in the hopes of minimizing surprise.
+        return not (
+            self.org in NON_TECH_REPOS and self.name in NON_TECH_REPOS[self.org]
+        )
 
 
 def vulnerabilities(client, repo):
@@ -78,8 +81,8 @@ def vulnerabilities(client, repo):
     return client.get_query(
         query,
         path=["organization", "repository", "vulnerabilityAlerts"],
-        org=repo["org"],
-        repo=repo["name"],
+        org=repo.org,
+        repo=repo.name,
     )
 
 
@@ -111,13 +114,13 @@ def prs(client, repo):
         client.get_query(
             query,
             path=["organization", "repository", "pullRequests"],
-            org=repo["org"],
-            repo=repo["name"],
+            org=repo.org,
+            repo=repo.name,
         )
     ):
         yield {
-            "org": repo["org"],
-            "repo": repo["name"],
+            "org": repo.org,
+            "repo": repo.name,
             "author": pr["author"]["login"],
             "closed_on": date_from_iso(pr["closedAt"]),
             "created_on": date_from_iso(pr["createdAt"]),
