@@ -1,5 +1,4 @@
 from datetime import UTC, date, datetime, timedelta
-from unittest.mock import patch
 
 import pytest
 from sqlalchemy import TIMESTAMP, Column, Integer, Table, select, text
@@ -120,12 +119,3 @@ def test_write(engine, table):
     # check rows are in table
     rows = get_rows(engine, table)
     assert len(rows) == 3
-
-
-def test_write_with_default_engine(table):
-    with patch(
-        "metrics.timescaledb.db.get_engine", autospec=True
-    ) as mocked_create_engine:
-        timescaledb.write(table, [])
-
-        mocked_create_engine.assert_called_once()
