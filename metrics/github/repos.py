@@ -5,10 +5,41 @@ def tech_repos(client, org):
     return [r for r in query.repos(client, org) if _is_tech_owned(r)]
 
 
+def get_repo_ownership(client, orgs):
+    repo_owners = []
+
+    for org in orgs:
+        ownership = {}
+        for team in _TECH_TEAMS:
+            for repo in query.team_repos(client, org, team):
+                ownership[repo] = team
+
+        active_repos = [
+            repo for repo in query.repos(client, org) if not repo.is_archived()
+        ]
+
+        for repo in active_repos:
+            if repo.name in ownership:
+                team = ownership[repo.name]
+            else:
+                team = None
+            repo_owners.append({"organisation": org, "repo": repo.name, "owner": team})
+
+    return repo_owners
+
+
 def _is_tech_owned(repo):
+    # For now we are using a hard-coded list here because we don't have teams set up with repo
+    # lists for ebmdatalab. Later we can use the dynamically calculated repo ownership and get
+    # rid of this list.
+    #
     # We use a deny-list rather than an allow-list so that newly created repos are treated as
     # Tech-owned by default, in the hopes of minimizing surprise.
     return not (repo.org in _NON_TECH_REPOS and repo.name in _NON_TECH_REPOS[repo.org])
+
+
+# GitHub slugs for the teams we're interested in
+_TECH_TEAMS = ["team-rap", "team-rex"]
 
 
 _NON_TECH_REPOS = {

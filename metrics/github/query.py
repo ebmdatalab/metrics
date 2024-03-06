@@ -45,6 +45,18 @@ class Repo:
     archived_on: date | None
     has_vulnerability_alerts_enabled: bool = False
 
+    def is_archived(self):
+        return bool(self.archived_on)
+
+
+def team_repos(client, org, team):
+    """The API doesn't make it easy for us to get all the information we need about repos in
+    one place, so we just return a list of repos here and join that to the richer repo objects
+    in the caller."""
+    results = client.rest_query("/orgs/{org}/teams/{team}/repos", org=org, team=team)
+    for repo in results:
+        yield repo["name"]
+
 
 def vulnerabilities(client, repo):
     query = """

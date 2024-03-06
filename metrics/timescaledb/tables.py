@@ -3,6 +3,16 @@ from sqlalchemy import TIMESTAMP, Boolean, Column, Integer, MetaData, Table, Tex
 
 metadata = MetaData()
 
+
+GitHubRepos = Table(
+    "github_repos",
+    metadata,
+    Column("organisation", Text, primary_key=True),
+    Column("repo", Text, primary_key=True),
+    Column("owner", Text),
+)
+
+
 GitHubPullRequests = Table(
     "github_pull_requests",
     metadata,
