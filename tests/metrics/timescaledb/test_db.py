@@ -12,7 +12,7 @@ def get_rows(engine, table):
         return connection.execute(select(table)).all()
 
 
-def is_hypertable(engine, table):
+def assert_is_hypertable(engine, table):
     sql = """
     SELECT
       count(*)
@@ -50,7 +50,7 @@ def test_ensure_table(engine):
 
     # check there are timescaledb child tables
     # https://stackoverflow.com/questions/1461722/how-to-find-child-tables-that-inherit-from-another-table-in-psql
-    is_hypertable(engine, DummyTable)
+    assert_is_hypertable(engine, DummyTable)
 
 
 def test_get_url(monkeypatch):
