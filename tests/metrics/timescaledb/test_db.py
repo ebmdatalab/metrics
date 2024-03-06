@@ -41,12 +41,12 @@ DummyTable = Table(
 
 def test_ensure_table(engine):
     with engine.begin() as connection:
-        assert not has_table(connection, DummyTable.name)
+        assert not has_table(connection, DummyTable)
 
     ensure_table(engine, DummyTable)
 
     with engine.begin() as connection:
-        assert has_table(connection, DummyTable.name)
+        assert has_table(connection, DummyTable)
 
     # check there are timescaledb child tables
     # https://stackoverflow.com/questions/1461722/how-to-find-child-tables-that-inherit-from-another-table-in-psql
@@ -89,14 +89,14 @@ def test_reset_table(engine):
     timescaledb.write(DummyTable, rows, engine=engine)
 
     with engine.begin() as connection:
-        assert has_table(connection, DummyTable.name)
-        assert has_rows(connection, DummyTable.name)
+        assert has_table(connection, DummyTable)
+        assert has_rows(connection, DummyTable)
 
     timescaledb.reset_table(DummyTable, engine=engine, batch_size=batch_size)
 
     with engine.begin() as connection:
-        assert has_table(connection, DummyTable.name)
-        assert not has_rows(connection, DummyTable.name)
+        assert has_table(connection, DummyTable)
+        assert not has_rows(connection, DummyTable)
 
 
 def test_write(engine):

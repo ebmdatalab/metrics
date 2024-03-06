@@ -11,13 +11,13 @@ from ..tools.iter import batched
 log = structlog.get_logger()
 
 
-def delete_rows(connection, name, batch_size=10000):
+def delete_rows(connection, table, batch_size=10000):
     sql = text(
         f"""
-        DELETE FROM {name}
+        DELETE FROM {table.name}
         WHERE time IN (
             SELECT time
-            FROM {name}
+            FROM {table.name}
             ORDER BY time
             LIMIT :limit
         )
@@ -26,7 +26,7 @@ def delete_rows(connection, name, batch_size=10000):
     connection.execute(sql, {"limit": batch_size})
 
 
-def drop_child_tables(connection, name):
+def drop_child_tables(connection, table):
     sql = text(
         f"""
         SELECT
@@ -36,7 +36,7 @@ def drop_child_tables(connection, name):
           JOIN pg_class AS child ON (inhrelid = child.oid)
           JOIN pg_class AS parent ON (inhparent = parent.oid)
         WHERE
-          parent.relname = '{name}'
+          parent.relname = '{table.name}'
         """,
     )
     tables = connection.scalars(sql)
@@ -60,12 +60,8 @@ def drop_hypertable(engine, table, batch_size):
      * drop the sharded "child" tables in batches
      * drop the now empty raw table
     """
-    # we don't actually use the Table directly in any of the functions below,
-    # so we grab the name here to avoid calling .name everywhere
-    table = table.name
-
     with engine.begin() as connection:
-        log.debug("Removing table: %s", table)
+        log.debug("Removing table: %s", table.name)
 
         if not has_table(connection, table):
             return
@@ -73,13 +69,13 @@ def drop_hypertable(engine, table, batch_size):
         while has_rows(connection, table):
             delete_rows(connection, table, batch_size)
 
-        log.debug("Removed all raw rows", table=table)
+        log.debug("Removed all raw rows", table=table.name)
 
         drop_child_tables(connection, table)
-        log.debug("Removed all child tables", table=table)
+        log.debug("Removed all child tables", table=table.name)
 
         drop_table(connection, table)
-        log.debug("Removed raw table", table=table)
+        log.debug("Removed raw table", table=table.name)
 
 
 def ensure_table(engine, table):
@@ -122,11 +118,11 @@ def get_url(database_prefix=None):
 
 
 def has_table(engine, table):
-    return inspect(engine).has_table(table)
+    return inspect(engine).has_table(table.name)
 
 
-def has_rows(connection, name):
-    sql = text(f"SELECT COUNT(*) FROM {name}")
+def has_rows(connection, table):
+    sql = text(f"SELECT COUNT(*) FROM {table.name}")
     return connection.scalar(sql) > 0
 
 
