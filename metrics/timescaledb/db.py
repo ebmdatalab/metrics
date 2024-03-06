@@ -126,13 +126,11 @@ def has_table(engine, table):
 
 
 def has_rows(connection, name):
-    """Count the number of rows in the given table"""
     sql = text(f"SELECT COUNT(*) FROM {name}")
     return connection.scalar(sql) > 0
 
 
 def reset_table(table, engine=None, batch_size=None):
-    """Reset the given Table"""
     if engine is None:
         engine = get_engine()
 
