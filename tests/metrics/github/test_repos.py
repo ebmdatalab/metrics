@@ -77,7 +77,7 @@ def test_excludes_archived_repos(patch):
     patch(
         "repos",
         [
-            repo("opensafely-core", "other-repo", archived_on=date.min),
+            repo("opensafely-core", "other-repo", is_archived=True),
         ],
     )
     assert len(repos.tech_repos(None, "opensafely-core")) == 0
@@ -121,7 +121,7 @@ def test_looks_up_ownership_across_orgs(patch):
 
 
 def test_ignores_ownership_of_archived_repos(patch):
-    patch("repos", [repo("the_org", "the_repo", archived_on=date.min)])
+    patch("repos", [repo("the_org", "the_repo", is_archived=True)])
     patch(
         "team_repos",
         {"the_org": {"team-rex": ["the_repo"], "team-rap": [], "tech-shared": []}},
@@ -139,11 +139,11 @@ def test_returns_none_for_unknown_ownership(patch):
     ]
 
 
-def repo(org, name, archived_on=None):
+def repo(org, name, is_archived=False):
     return Repo(
         org=org,
         name=name,
         created_on=date.min,
-        archived_on=archived_on,
+        is_archived=is_archived,
         has_vulnerability_alerts_enabled=False,
     )

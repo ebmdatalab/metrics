@@ -29,7 +29,7 @@ def get_repo_ownership(client, orgs):
 
 
 def _active_repos(client, org):
-    return [repo for repo in query.repos(client, org) if not repo.is_archived()]
+    return [repo for repo in query.repos(client, org) if not repo.is_archived]
 
 
 # GitHub slugs for the teams we're interested in
