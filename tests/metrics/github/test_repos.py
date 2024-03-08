@@ -63,6 +63,26 @@ def test_excludes_non_tech_owned_repos(patch):
     assert len(repos.tech_repos(None, "opensafely-core")) == 0
 
 
+def test_excludes_archived_repos(patch):
+    patch(
+        "team_repos",
+        {
+            "opensafely-core": {
+                "team-rap": ["other-repo"],
+                "team-rex": [],
+                "tech-shared": [],
+            }
+        },
+    )
+    patch(
+        "repos",
+        [
+            repo("opensafely-core", "other-repo", archived_on=date.min),
+        ],
+    )
+    assert len(repos.tech_repos(None, "opensafely-core")) == 0
+
+
 def test_looks_up_ownership(patch):
     patch(
         "repos",

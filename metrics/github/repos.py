@@ -6,7 +6,7 @@ def tech_repos(client, org):
     for team in _TECH_TEAMS:
         repo_names.extend(query.team_repos(client, org, team))
 
-    return [r for r in query.repos(client, org) if r.name in repo_names]
+    return [r for r in _active_repos(client, org) if r.name in repo_names]
 
 
 def get_repo_ownership(client, orgs):
@@ -18,11 +18,7 @@ def get_repo_ownership(client, orgs):
             for repo in query.team_repos(client, org, team):
                 ownership[repo] = team
 
-        active_repos = [
-            repo for repo in query.repos(client, org) if not repo.is_archived()
-        ]
-
-        for repo in active_repos:
+        for repo in _active_repos(client, org):
             if repo.name in ownership:
                 team = ownership[repo.name]
             else:
@@ -30,6 +26,10 @@ def get_repo_ownership(client, orgs):
             repo_owners.append({"organisation": org, "repo": repo.name, "owner": team})
 
     return repo_owners
+
+
+def _active_repos(client, org):
+    return [repo for repo in query.repos(client, org) if not repo.is_archived()]
 
 
 # GitHub slugs for the teams we're interested in
