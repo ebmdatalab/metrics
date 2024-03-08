@@ -28,25 +28,39 @@ def patch(monkeypatch):
 
 def test_includes_tech_owned_repos(patch):
     patch(
-        "repos", [repo("ebmdatalab", "sysadmin"), repo("opensafely-core", "job-server")]
+        "team_repos",
+        {
+            "opensafely-core": {
+                "team-rap": ["ehrql", "cohort-extractor"],
+                "team-rex": ["job-server"],
+                "tech-shared": [".github"],
+            }
+        },
     )
-    assert len(repos.tech_repos(None, None)) == 2
+    patch(
+        "repos",
+        [
+            repo("opensafely-core", "ehrql"),
+            repo("opensafely-core", "cohort-extractor"),
+            repo("opensafely-core", "job-server"),
+            repo("opensafely-core", ".github"),
+        ],
+    )
+    assert len(repos.tech_repos(None, "opensafely-core")) == 4
 
 
 def test_excludes_non_tech_owned_repos(patch):
     patch(
+        "team_repos",
+        {"opensafely-core": {"team-rap": [], "team-rex": [], "tech-shared": []}},
+    )
+    patch(
         "repos",
         [
-            repo("ebmdatalab", "clinicaltrials-act-tracker"),
-            repo("opensafely-core", "matching"),
+            repo("opensafely-core", "other-repo"),
         ],
     )
-    assert len(repos.tech_repos(None, None)) == 0
-
-
-def test_dont_exclude_repos_from_unknown_orgs(patch):
-    patch("repos", [repo("other", "any")])
-    assert len(repos.tech_repos(None, None)) == 1
+    assert len(repos.tech_repos(None, "opensafely-core")) == 0
 
 
 def test_looks_up_ownership(patch):
