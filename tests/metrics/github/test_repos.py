@@ -50,11 +50,24 @@ def test_dont_exclude_repos_from_unknown_orgs(patch):
 
 
 def test_looks_up_ownership(patch):
-    patch("repos", [repo("the_org", "repo1"), repo("the_org", "repo2")])
-    patch("team_repos", {"the_org": {"team-rex": ["repo1"], "team-rap": ["repo2"]}})
+    patch(
+        "repos",
+        [repo("the_org", "repo1"), repo("the_org", "repo2"), repo("the_org", "repo3")],
+    )
+    patch(
+        "team_repos",
+        {
+            "the_org": {
+                "team-rex": ["repo1"],
+                "team-rap": ["repo2"],
+                "tech-shared": ["repo3"],
+            }
+        },
+    )
     assert repos.get_repo_ownership(None, ["the_org"]) == [
         {"organisation": "the_org", "repo": "repo1", "owner": "team-rex"},
         {"organisation": "the_org", "repo": "repo2", "owner": "team-rap"},
+        {"organisation": "the_org", "repo": "repo3", "owner": "tech-shared"},
     ]
 
 
@@ -63,8 +76,8 @@ def test_looks_up_ownership_across_orgs(patch):
     patch(
         "team_repos",
         {
-            "org1": {"team-rex": ["repo1"], "team-rap": []},
-            "org2": {"team-rex": [], "team-rap": ["repo2"]},
+            "org1": {"team-rex": ["repo1"], "team-rap": [], "tech-shared": []},
+            "org2": {"team-rex": [], "team-rap": ["repo2"], "tech-shared": []},
         },
     )
     assert repos.get_repo_ownership(None, ["org1", "org2"]) == [
@@ -75,13 +88,18 @@ def test_looks_up_ownership_across_orgs(patch):
 
 def test_ignores_ownership_of_archived_repos(patch):
     patch("repos", [repo("the_org", "the_repo", archived_on=date.min)])
-    patch("team_repos", {"the_org": {"team-rex": ["the_repo"], "team-rap": []}})
+    patch(
+        "team_repos",
+        {"the_org": {"team-rex": ["the_repo"], "team-rap": [], "tech-shared": []}},
+    )
     assert repos.get_repo_ownership(None, ["the_org"]) == []
 
 
 def test_returns_none_for_unknown_ownership(patch):
     patch("repos", [repo("the_org", "the_repo")])
-    patch("team_repos", {"the_org": {"team-rex": [], "team-rap": []}})
+    patch(
+        "team_repos", {"the_org": {"team-rex": [], "team-rap": [], "tech-shared": []}}
+    )
     assert repos.get_repo_ownership(None, ["the_org"]) == [
         {"organisation": "the_org", "repo": "the_repo", "owner": None}
     ]

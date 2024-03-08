@@ -39,7 +39,7 @@ def _is_tech_owned(repo):
 
 
 # GitHub slugs for the teams we're interested in
-_TECH_TEAMS = ["team-rap", "team-rex"]
+_TECH_TEAMS = ["team-rap", "team-rex", "tech-shared"]
 
 
 _NON_TECH_REPOS = {
