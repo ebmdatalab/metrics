@@ -59,8 +59,8 @@ def _drop_table(engine, table, batch_size):
         log.debug("Removed raw table", table=table.name)
 
 
-def _has_table(engine, table):
-    return inspect(engine).has_table(table.name)
+def _has_table(connection, table):
+    return inspect(connection).has_table(table.name)
 
 
 def _is_hypertable(table):
