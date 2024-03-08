@@ -1,11 +1,28 @@
 from datetime import date, timedelta
 
 import pytest
-from sqlalchemy import TIMESTAMP, Column, Table, Text, select, text
+from sqlalchemy import TIMESTAMP, Column, Table, Text, create_engine, select, text
+from sqlalchemy_utils import create_database, database_exists, drop_database
 
 from metrics import timescaledb
 from metrics.timescaledb.db import ensure_table, get_url, has_rows, has_table
 from metrics.timescaledb.tables import metadata
+
+
+@pytest.fixture(scope="module", autouse=True)
+def engine():
+    url = get_url(database_prefix="test")
+
+    # drop the database if it already exists so we start with a clean slate.
+    if database_exists(url):  # pragma: no cover
+        drop_database(url)
+
+    create_database(url)
+
+    yield create_engine(url)
+
+    # drop the database on test suite exit
+    drop_database(url)
 
 
 def get_rows(engine, table):
