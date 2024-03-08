@@ -13,16 +13,16 @@ log = structlog.get_logger()
 
 def reset_table(table, engine=None, batch_size=None):
     if engine is None:
-        engine = get_engine()
+        engine = _get_engine()
 
-    drop_table(engine, table, batch_size)
-    ensure_table(engine, table)
+    _drop_table(engine, table, batch_size)
+    _ensure_table(engine, table)
     log.info("Reset table", table=table.name)
 
 
 def write(table, rows, engine=None):
     if engine is None:
-        engine = get_engine()
+        engine = _get_engine()
 
     max_params = 65535  # limit for postgresql
     batch_size = max_params // len(table.columns)
@@ -33,11 +33,11 @@ def write(table, rows, engine=None):
             log.info("Inserted %s rows", len(values), table=table.name)
 
 
-def drop_table(engine, table, batch_size):
+def _drop_table(engine, table, batch_size):
     with engine.begin() as connection:
         log.debug("Removing table: %s", table.name)
 
-        if not has_table(connection, table):
+        if not _has_table(connection, table):
             return
 
         if _is_hypertable(table):
@@ -46,12 +46,12 @@ def drop_table(engine, table, batch_size):
             #  * empty the raw rows (from the named table) in batches
             #  * drop the sharded "child" tables in batches
             #  * drop the now empty raw table
-            while has_rows(connection, table):
-                delete_rows(connection, table, batch_size)
+            while _has_rows(connection, table):
+                _delete_rows(connection, table, batch_size)
 
             log.debug("Removed all raw rows", table=table.name)
 
-            drop_child_tables(connection, table)
+            _drop_child_tables(connection, table)
             log.debug("Removed all child tables", table=table.name)
 
         connection.execute(text(f"DROP TABLE {table.name}"))
@@ -59,7 +59,7 @@ def drop_table(engine, table, batch_size):
         log.debug("Removed raw table", table=table.name)
 
 
-def has_table(engine, table):
+def _has_table(engine, table):
     return inspect(engine).has_table(table.name)
 
 
@@ -67,12 +67,12 @@ def _is_hypertable(table):
     return "time" in table.columns
 
 
-def has_rows(connection, table):
+def _has_rows(connection, table):
     sql = text(f"SELECT COUNT(*) FROM {table.name}")
     return connection.scalar(sql) > 0
 
 
-def delete_rows(connection, table, batch_size=10000):
+def _delete_rows(connection, table, batch_size=10000):
     sql = text(
         f"""
         DELETE FROM {table.name}
@@ -87,7 +87,7 @@ def delete_rows(connection, table, batch_size=10000):
     connection.execute(sql, {"limit": batch_size})
 
 
-def drop_child_tables(connection, table):
+def _drop_child_tables(connection, table):
     sql = text(
         f"""
         SELECT
@@ -107,7 +107,7 @@ def drop_child_tables(connection, table):
         connection.execute(text(f"DROP TABLE IF EXISTS {tables}"))
 
 
-def ensure_table(engine, table):
+def _ensure_table(engine, table):
     with engine.begin() as connection:
         connection.execute(schema.CreateTable(table, if_not_exists=True))
 
@@ -119,11 +119,11 @@ def ensure_table(engine, table):
             )
 
 
-def get_engine():
-    return create_engine(get_url())
+def _get_engine():
+    return create_engine(_get_url())
 
 
-def get_url(database_prefix=None):
+def _get_url(database_prefix=None):
     """
     Get the final database connection URL
 
