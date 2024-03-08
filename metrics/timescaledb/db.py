@@ -11,6 +11,67 @@ from ..tools.iter import batched
 log = structlog.get_logger()
 
 
+def reset_table(table, engine=None, batch_size=None):
+    if engine is None:
+        engine = get_engine()
+
+    drop_table(engine, table, batch_size)
+    ensure_table(engine, table)
+    log.info("Reset table", table=table.name)
+
+
+def write(table, rows, engine=None):
+    if engine is None:
+        engine = get_engine()
+
+    max_params = 65535  # limit for postgresql
+    batch_size = max_params // len(table.columns)
+
+    with engine.begin() as connection:
+        for values in batched(rows, batch_size):
+            connection.execute(insert(table).values(values))
+            log.info("Inserted %s rows", len(values), table=table.name)
+
+
+def drop_table(engine, table, batch_size):
+    with engine.begin() as connection:
+        log.debug("Removing table: %s", table.name)
+
+        if not has_table(connection, table):
+            return
+
+        if _is_hypertable(table):
+            # We have limited shared memory in our hosted database, so we can't DROP or
+            # TRUNCATE our hypertables.  Instead for each "raw" table we need to:
+            #  * empty the raw rows (from the named table) in batches
+            #  * drop the sharded "child" tables in batches
+            #  * drop the now empty raw table
+            while has_rows(connection, table):
+                delete_rows(connection, table, batch_size)
+
+            log.debug("Removed all raw rows", table=table.name)
+
+            drop_child_tables(connection, table)
+            log.debug("Removed all child tables", table=table.name)
+
+        connection.execute(text(f"DROP TABLE {table.name}"))
+
+        log.debug("Removed raw table", table=table.name)
+
+
+def has_table(engine, table):
+    return inspect(engine).has_table(table.name)
+
+
+def _is_hypertable(table):
+    return "time" in table.columns
+
+
+def has_rows(connection, table):
+    sql = text(f"SELECT COUNT(*) FROM {table.name}")
+    return connection.scalar(sql) > 0
+
+
 def delete_rows(connection, table, batch_size=10000):
     sql = text(
         f"""
@@ -44,32 +105,6 @@ def drop_child_tables(connection, table):
     for batch in batched(tables, 100):
         tables = ", ".join(batch)
         connection.execute(text(f"DROP TABLE IF EXISTS {tables}"))
-
-
-def drop_table(engine, table, batch_size):
-    with engine.begin() as connection:
-        log.debug("Removing table: %s", table.name)
-
-        if not has_table(connection, table):
-            return
-
-        if _is_hypertable(table):
-            # We have limited shared memory in our hosted database, so we can't DROP or
-            # TRUNCATE our hypertables.  Instead for each "raw" table we need to:
-            #  * empty the raw rows (from the named table) in batches
-            #  * drop the sharded "child" tables in batches
-            #  * drop the now empty raw table
-            while has_rows(connection, table):
-                delete_rows(connection, table, batch_size)
-
-            log.debug("Removed all raw rows", table=table.name)
-
-            drop_child_tables(connection, table)
-            log.debug("Removed all child tables", table=table.name)
-
-        connection.execute(text(f"DROP TABLE {table.name}"))
-
-        log.debug("Removed raw table", table=table.name)
 
 
 def ensure_table(engine, table):
@@ -106,38 +141,3 @@ def get_url(database_prefix=None):
         url = url.set(database=f"{database_prefix}_{url.database}")
 
     return url
-
-
-def has_table(engine, table):
-    return inspect(engine).has_table(table.name)
-
-
-def has_rows(connection, table):
-    sql = text(f"SELECT COUNT(*) FROM {table.name}")
-    return connection.scalar(sql) > 0
-
-
-def reset_table(table, engine=None, batch_size=None):
-    if engine is None:
-        engine = get_engine()
-
-    drop_table(engine, table, batch_size)
-    ensure_table(engine, table)
-    log.info("Reset table", table=table.name)
-
-
-def write(table, rows, engine=None):
-    if engine is None:
-        engine = get_engine()
-
-    max_params = 65535  # limit for postgresql
-    batch_size = max_params // len(table.columns)
-
-    with engine.begin() as connection:
-        for values in batched(rows, batch_size):
-            connection.execute(insert(table).values(values))
-            log.info("Inserted %s rows", len(values), table=table.name)
-
-
-def _is_hypertable(table):
-    return "time" in table.columns
