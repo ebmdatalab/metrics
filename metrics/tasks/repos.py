@@ -3,9 +3,9 @@ import sys
 
 import structlog
 
-from metrics import timescaledb
 from metrics.github.client import GitHubClient
 from metrics.github.repos import get_repo_ownership
+from metrics.timescaledb import db, tables
 
 
 log = structlog.get_logger()
@@ -24,8 +24,8 @@ def main():
     log.info("Got repos")
 
     log.info("Writing data")
-    timescaledb.reset_table(timescaledb.GitHubRepos)
-    timescaledb.write(timescaledb.GitHubRepos, repos)
+    db.reset_table(tables.GitHubRepos)
+    db.write(tables.GitHubRepos, repos)
     log.info("Written data")
 
 

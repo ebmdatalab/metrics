@@ -3,9 +3,9 @@ import sys
 
 import structlog
 
-from metrics import timescaledb
 from metrics.github.client import GitHubClient
 from metrics.github.prs import get_metrics
+from metrics.timescaledb import db, tables
 
 
 log = structlog.get_logger()
@@ -24,8 +24,8 @@ def main():
     log.info("Got metrics")
 
     log.info("Writing data")
-    timescaledb.reset_table(timescaledb.GitHubPullRequests)
-    timescaledb.write(timescaledb.GitHubPullRequests, metrics)
+    db.reset_table(tables.GitHubPullRequests)
+    db.write(tables.GitHubPullRequests, metrics)
     log.info("Written data")
 
 
