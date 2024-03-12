@@ -59,7 +59,7 @@ def test_vulnerabilities_ignores_archived_repos_after_archive_date(monkeypatch):
             )
         ]
 
-    monkeypatch.setattr(security.query, "repos", fake_repos)
+    monkeypatch.setattr(security.repos, "tech_repos", fake_repos)
 
     def fake_vulnerabilities(client, repo):
         return []
@@ -77,7 +77,7 @@ def test_vulnerabilities(monkeypatch):
             Repo(org, "test2", date(2023, 10, 13), None, True),
         ]
 
-    monkeypatch.setattr(security.query, "repos", fake_repos)
+    monkeypatch.setattr(security.repos, "tech_repos", fake_repos)
 
     def fake_vulnerabilities(client, repo):
         return [

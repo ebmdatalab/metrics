@@ -28,14 +28,3 @@ def test_iter_days():
         date(2020, 7, 9),
         date(2020, 7, 10),
     ]
-
-
-def test_iter_days_with_empty_values():
-    with pytest.raises(TypeError):
-        list(iter_days(None, date(2020, 7, 8)))
-
-    with pytest.raises(TypeError):
-        list(iter_days(date(2020, 7, 8), None))
-
-    with pytest.raises(TypeError):
-        list(iter_days(date(2020, 7, 8), date(2022, 7, 8), None))

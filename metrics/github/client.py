@@ -2,6 +2,7 @@ import json
 import textwrap
 
 import requests
+import requests.utils
 import structlog
 
 
@@ -18,29 +19,45 @@ class GitHubClient:
         self.token = token
         self.tokens = tokens
 
-    def post(self, query, variables):
-        if self.token:
-            token = self.token
-        else:
-            token = self.tokens[variables["org"]]
+    def graphql_query(self, query, path, **kwargs):
+        def extract(data):
+            result = data
+            for key in path:
+                try:
+                    result = result[key]
+                except TypeError:
+                    raise Exception(f"Couldn't find {path} in {data}")
+            return result
 
-        session.headers = {
-            "Authorization": f"bearer {token}",
-            "User-Agent": "Bennett Metrics",
-        }
-        response = session.post(
-            "https://api.github.com/graphql",
-            json={"query": query, "variables": variables},
-        )
+        more_pages = True
+        cursor = None
+        while more_pages:
+            page = extract(
+                self.graphql_query_page(query=query, cursor=cursor, **kwargs)
+            )
+            yield from page["nodes"]
+            more_pages = page["pageInfo"]["hasNextPage"]
+            cursor = page["pageInfo"]["endCursor"]
 
-        if not response.ok:
-            log.info(response.headers)
-            log.info(response.content)
+    def rest_query(self, path, **variables):
+        headers = self._get_headers(variables)
 
-        response.raise_for_status()
-        return response.json()
+        more_pages = True
+        url = f"https://api.github.com{path.format(**variables)}"
 
-    def get_query_page(self, query, cursor, **kwargs):
+        while more_pages:
+            response = requests.get(url, headers=headers)
+            check_response(response)
+
+            data = response.json()
+            if isinstance(data, list):
+                yield from data
+            else:
+                raise RuntimeError("Unexpected response format:", data)
+
+            more_pages, url = check_for_next_page(response)
+
+    def graphql_query_page(self, query, cursor, **kwargs):
         """
         Get a page of the given query
 
@@ -52,14 +69,21 @@ class GitHubClient:
         [1]: https://graphql.org/learn/pagination/#end-of-list-counts-and-connections
         """
         variables = {"cursor": cursor, **kwargs}
-        results = self.post(query, variables)
+        headers = self._get_headers(variables)
+        response = session.post(
+            "https://api.github.com/graphql",
+            headers=headers,
+            json={"query": query, "variables": variables},
+        )
 
-        # In some cases graphql will return a 200 response when there are errors.
-        # https://sachee.medium.com/200-ok-error-handling-in-graphql-7ec869aec9bc
-        # Handling things robustly is complex and query specific, so here we simply
-        # take the absence of 'data' as an error, rather than the presence of
-        # 'errors' key.
-        if "data" not in results or not results["data"]:
+        check_response(response)
+        results = response.json()
+
+        if (
+            "data" not in results
+            or not results["data"]
+            or ("errors" in results and results["errors"])
+        ):
             msg = textwrap.dedent(
                 f"""
                 graphql query failed
@@ -75,20 +99,29 @@ class GitHubClient:
 
         return results["data"]
 
-    def get_query(self, query, path, **kwargs):
-        def extract(data):
-            result = data
-            for key in path:
-                try:
-                    result = result[key]
-                except TypeError:
-                    raise Exception(f"Couldn't find {path} in {data}")
-            return result
+    def _get_headers(self, variables):
+        if self.token:
+            token = self.token
+        else:
+            token = self.tokens[variables["org"]]
+        headers = {
+            "Authorization": f"bearer {token}",
+            "User-Agent": "Bennett Metrics",
+        }
+        return headers
 
-        more_pages = True
-        cursor = None
-        while more_pages:
-            page = extract(self.get_query_page(query=query, cursor=cursor, **kwargs))
-            yield from page["nodes"]
-            more_pages = page["pageInfo"]["hasNextPage"]
-            cursor = page["pageInfo"]["endCursor"]
+
+def check_response(response):
+    if not response.ok:
+        log.info(response.headers)
+        log.info(response.content)
+    response.raise_for_status()
+
+
+def check_for_next_page(response):
+    if "Link" in response.headers:
+        for link in requests.utils.parse_header_links(response.headers["Link"]):
+            if link["rel"] == "next":
+                return True, link["url"]
+
+    return False, None

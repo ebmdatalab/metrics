@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from datetime import date
 
 from ..tools import dates
-from . import query
+from . import query, repos
 
 
 @dataclass
@@ -31,7 +31,7 @@ class Vulnerability:
 def vulnerabilities(client, org, to_date):
     metrics = []
 
-    for repo in query.repos(client, org):
+    for repo in repos.tech_repos(client, org):
         vulns = list(map(Vulnerability.from_dict, query.vulnerabilities(client, repo)))
 
         end = min(to_date, repo.archived_on) if repo.archived_on else to_date

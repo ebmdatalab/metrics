@@ -3,7 +3,7 @@ from datetime import date, datetime, time, timedelta
 
 import structlog
 
-from metrics.github import query
+from metrics.github import query, repos
 from metrics.tools.dates import iter_days
 
 
@@ -28,7 +28,7 @@ def get_metrics(client, orgs):
 def get_prs(client, orgs):
     prs = {}
     for org in orgs:
-        for repo in query.repos(client, org):
+        for repo in repos.tech_repos(client, org):
             prs[repo] = list(query.prs(client, repo))
     return prs
 
