@@ -7,8 +7,8 @@ from sqlalchemy_utils import create_database, database_exists, drop_database
 from metrics.timescaledb import db, tables
 
 
-@pytest.fixture(scope="module", autouse=True)
-def engine():
+@pytest.fixture(scope="module")
+def module_scoped_engine():
     url = db._get_url(database_prefix="test")
 
     # drop the database if it already exists so we start with a clean slate.
@@ -21,6 +21,12 @@ def engine():
 
     # drop the database on test suite exit
     drop_database(url)
+
+
+@pytest.fixture
+def engine(module_scoped_engine, monkeypatch):
+    monkeypatch.setattr(db, "_get_engine", lambda: module_scoped_engine)
+    yield module_scoped_engine
 
 
 def get_rows(engine, table):
@@ -70,7 +76,7 @@ def test_ensure_table(engine, table):
     with engine.begin() as connection:
         assert not db._has_table(connection, table)
 
-    db._ensure_table(engine, table)
+    db._ensure_table(table)
 
     with engine.begin() as connection:
         assert db._has_table(connection, table)
@@ -80,7 +86,7 @@ def test_ensure_hypertable(engine, hypertable):
     with engine.begin() as connection:
         assert not db._has_table(connection, hypertable)
 
-    db._ensure_table(engine, hypertable)
+    db._ensure_table(hypertable)
 
     with engine.begin() as connection:
         assert db._has_table(connection, hypertable)
@@ -108,7 +114,7 @@ def test_get_url_with_prefix(monkeypatch):
 
 
 def test_reset_table(engine, table):
-    db._ensure_table(engine, table)
+    db._ensure_table(table)
 
     # put enough rows in the db to make sure we exercise the batch removal of rows
     batch_size = 5
@@ -120,7 +126,7 @@ def test_reset_table(engine, table):
 
 
 def test_reset_hypertable(engine, hypertable):
-    db._ensure_table(engine, hypertable)
+    db._ensure_table(hypertable)
 
     # put enough rows in the db to make sure we exercise the batch removal of rows
     batch_size = 5
@@ -133,13 +139,13 @@ def test_reset_hypertable(engine, hypertable):
 
 
 def check_reset(batch_size, engine, rows, table):
-    db.write(table, rows, engine=engine)
+    db.write(table, rows)
 
     with engine.begin() as connection:
         assert db._has_table(connection, table)
         assert db._has_rows(connection, table)
 
-    db.reset_table(table, engine=engine, batch_size=batch_size)
+    db.reset_table(table, batch_size=batch_size)
 
     with engine.begin() as connection:
         assert db._has_table(connection, table)
@@ -148,10 +154,10 @@ def check_reset(batch_size, engine, rows, table):
 
 def test_write(engine, table):
     # set up a table to write to
-    db._ensure_table(engine, table)
+    db._ensure_table(table)
 
     rows = [{"value": "write" + str(i)} for i in range(1, 4)]
-    db.write(table, rows, engine=engine)
+    db.write(table, rows)
 
     # check rows are in table
     rows = get_rows(engine, table)

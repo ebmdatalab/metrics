@@ -1,3 +1,4 @@
+import functools
 import os
 
 import structlog
@@ -11,30 +12,24 @@ from ..tools.iter import batched
 log = structlog.get_logger()
 
 
-def reset_table(table, engine=None, batch_size=None):
-    if engine is None:
-        engine = _get_engine()
-
-    _drop_table(engine, table, batch_size)
-    _ensure_table(engine, table)
+def reset_table(table, batch_size=None):
+    _drop_table(table, batch_size)
+    _ensure_table(table)
     log.info("Reset table", table=table.name)
 
 
-def write(table, rows, engine=None):
-    if engine is None:
-        engine = _get_engine()
-
+def write(table, rows):
     max_params = 65535  # limit for postgresql
     batch_size = max_params // len(table.columns)
 
-    with engine.begin() as connection:
+    with _get_engine().begin() as connection:
         for values in batched(rows, batch_size):
             connection.execute(insert(table).values(values))
             log.info("Inserted %s rows", len(values), table=table.name)
 
 
-def _drop_table(engine, table, batch_size):
-    with engine.begin() as connection:
+def _drop_table(table, batch_size):
+    with _get_engine().begin() as connection:
         log.debug("Removing table: %s", table.name)
 
         if not _has_table(connection, table):
@@ -107,8 +102,8 @@ def _drop_child_tables(connection, table):
         connection.execute(text(f"DROP TABLE IF EXISTS {tables}"))
 
 
-def _ensure_table(engine, table):
-    with engine.begin() as connection:
+def _ensure_table(table):
+    with _get_engine().begin() as connection:
         connection.execute(schema.CreateTable(table, if_not_exists=True))
 
         if _is_hypertable(table):
@@ -119,6 +114,7 @@ def _ensure_table(engine, table):
             )
 
 
+@functools.cache
 def _get_engine():
     return create_engine(_get_url())
 
