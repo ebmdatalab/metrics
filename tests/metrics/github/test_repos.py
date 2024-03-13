@@ -28,33 +28,80 @@ def patch(monkeypatch):
 
 def test_includes_tech_owned_repos(patch):
     patch(
-        "repos", [repo("ebmdatalab", "sysadmin"), repo("opensafely-core", "job-server")]
+        "team_repos",
+        {
+            "opensafely-core": {
+                "team-rap": ["ehrql", "cohort-extractor"],
+                "team-rex": ["job-server"],
+                "tech-shared": [".github"],
+            }
+        },
     )
-    assert len(repos.tech_repos(None, None)) == 2
+    patch(
+        "repos",
+        [
+            repo("opensafely-core", "ehrql"),
+            repo("opensafely-core", "cohort-extractor"),
+            repo("opensafely-core", "job-server"),
+            repo("opensafely-core", ".github"),
+        ],
+    )
+    assert len(repos.tech_repos(None, "opensafely-core")) == 4
 
 
 def test_excludes_non_tech_owned_repos(patch):
     patch(
+        "team_repos",
+        {"opensafely-core": {"team-rap": [], "team-rex": [], "tech-shared": []}},
+    )
+    patch(
         "repos",
         [
-            repo("ebmdatalab", "clinicaltrials-act-tracker"),
-            repo("opensafely-core", "matching"),
+            repo("opensafely-core", "other-repo"),
         ],
     )
-    assert len(repos.tech_repos(None, None)) == 0
+    assert len(repos.tech_repos(None, "opensafely-core")) == 0
 
 
-def test_dont_exclude_repos_from_unknown_orgs(patch):
-    patch("repos", [repo("other", "any")])
-    assert len(repos.tech_repos(None, None)) == 1
+def test_excludes_archived_repos(patch):
+    patch(
+        "team_repos",
+        {
+            "opensafely-core": {
+                "team-rap": ["other-repo"],
+                "team-rex": [],
+                "tech-shared": [],
+            }
+        },
+    )
+    patch(
+        "repos",
+        [
+            repo("opensafely-core", "other-repo", is_archived=True),
+        ],
+    )
+    assert len(repos.tech_repos(None, "opensafely-core")) == 0
 
 
 def test_looks_up_ownership(patch):
-    patch("repos", [repo("the_org", "repo1"), repo("the_org", "repo2")])
-    patch("team_repos", {"the_org": {"team-rex": ["repo1"], "team-rap": ["repo2"]}})
+    patch(
+        "repos",
+        [repo("the_org", "repo1"), repo("the_org", "repo2"), repo("the_org", "repo3")],
+    )
+    patch(
+        "team_repos",
+        {
+            "the_org": {
+                "team-rex": ["repo1"],
+                "team-rap": ["repo2"],
+                "tech-shared": ["repo3"],
+            }
+        },
+    )
     assert repos.get_repo_ownership(None, ["the_org"]) == [
         {"organisation": "the_org", "repo": "repo1", "owner": "team-rex"},
         {"organisation": "the_org", "repo": "repo2", "owner": "team-rap"},
+        {"organisation": "the_org", "repo": "repo3", "owner": "tech-shared"},
     ]
 
 
@@ -63,8 +110,8 @@ def test_looks_up_ownership_across_orgs(patch):
     patch(
         "team_repos",
         {
-            "org1": {"team-rex": ["repo1"], "team-rap": []},
-            "org2": {"team-rex": [], "team-rap": ["repo2"]},
+            "org1": {"team-rex": ["repo1"], "team-rap": [], "tech-shared": []},
+            "org2": {"team-rex": [], "team-rap": ["repo2"], "tech-shared": []},
         },
     )
     assert repos.get_repo_ownership(None, ["org1", "org2"]) == [
@@ -74,24 +121,29 @@ def test_looks_up_ownership_across_orgs(patch):
 
 
 def test_ignores_ownership_of_archived_repos(patch):
-    patch("repos", [repo("the_org", "the_repo", archived_on=date.min)])
-    patch("team_repos", {"the_org": {"team-rex": ["the_repo"], "team-rap": []}})
+    patch("repos", [repo("the_org", "the_repo", is_archived=True)])
+    patch(
+        "team_repos",
+        {"the_org": {"team-rex": ["the_repo"], "team-rap": [], "tech-shared": []}},
+    )
     assert repos.get_repo_ownership(None, ["the_org"]) == []
 
 
 def test_returns_none_for_unknown_ownership(patch):
     patch("repos", [repo("the_org", "the_repo")])
-    patch("team_repos", {"the_org": {"team-rex": [], "team-rap": []}})
+    patch(
+        "team_repos", {"the_org": {"team-rex": [], "team-rap": [], "tech-shared": []}}
+    )
     assert repos.get_repo_ownership(None, ["the_org"]) == [
         {"organisation": "the_org", "repo": "the_repo", "owner": None}
     ]
 
 
-def repo(org, name, archived_on=None):
+def repo(org, name, is_archived=False):
     return Repo(
         org=org,
         name=name,
         created_on=date.min,
-        archived_on=archived_on,
+        is_archived=is_archived,
         has_vulnerability_alerts_enabled=False,
     )

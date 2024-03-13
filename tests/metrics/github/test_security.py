@@ -46,35 +46,11 @@ def test_vulnerability_closed_on_is_closed():
     assert v.is_closed_on(date(2023, 10, 29))
 
 
-def test_vulnerabilities_ignores_archived_repos_after_archive_date(monkeypatch):
-    archive_date = date(2022, 1, 3)
-
-    def fake_repos(client, org):
-        return [
-            Repo(
-                "anything",
-                "anything",
-                created_on=date(2022, 1, 1),
-                archived_on=archive_date,
-            )
-        ]
-
-    monkeypatch.setattr(security.repos, "tech_repos", fake_repos)
-
-    def fake_vulnerabilities(client, repo):
-        return []
-
-    monkeypatch.setattr(security.query, "vulnerabilities", fake_vulnerabilities)
-
-    result = security.vulnerabilities({}, "org", date(2022, 1, 10))
-    assert result[-1]["time"] == archive_date
-
-
 def test_vulnerabilities(monkeypatch):
     def fake_repos(client, org):
         return [
-            Repo(org, "test", date(2023, 10, 13), None, True),
-            Repo(org, "test2", date(2023, 10, 13), None, True),
+            Repo(org, "test", date(2023, 10, 13), False, True),
+            Repo(org, "test2", date(2023, 10, 13), False, True),
         ]
 
     monkeypatch.setattr(security.repos, "tech_repos", fake_repos)

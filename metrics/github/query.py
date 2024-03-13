@@ -32,7 +32,7 @@ def repos(client, org):
             org,
             raw_repo["name"],
             date_from_iso(raw_repo["createdAt"]),
-            date_from_iso(raw_repo["archivedAt"]),
+            raw_repo["archivedAt"] is not None,
             raw_repo["hasVulnerabilityAlertsEnabled"],
         )
 
@@ -42,11 +42,8 @@ class Repo:
     org: str
     name: str
     created_on: date
-    archived_on: date | None
+    is_archived: bool = False
     has_vulnerability_alerts_enabled: bool = False
-
-    def is_archived(self):
-        return bool(self.archived_on)
 
 
 def team_repos(client, org, team):

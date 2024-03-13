@@ -34,25 +34,6 @@ def test_makes_counts_for_every_day_between_pr_creation_and_now():
     }
 
 
-def test_drops_repos_after_archiving():
-    repo_ = repo(
-        "an-org",
-        "a-repo",
-        archived_on=YESTERDAY,
-    )
-    prs = {
-        repo_: [
-            pr(author="an-author", created_on=TWO_DAYS_AGO),
-        ]
-    }
-
-    counts = calculate_counts(prs, true)
-    assert counts == {
-        ("an-org", "a-repo", "an-author", TWO_DAYS_AGO): 1,
-        ("an-org", "a-repo", "an-author", YESTERDAY): 1,
-    }
-
-
 def test_counts_prs():
     prs = {
         repo("an-org", "a-repo"): [
@@ -144,12 +125,12 @@ def test_was_merged_in_on():
     assert not was_merged_on(pr(merged_on=TOMORROW), TODAY)
 
 
-def repo(org, name, archived_on=None):
+def repo(org, name, is_archived=False):
     return Repo(
         org,
         name,
         created_on=date.min,
-        archived_on=archived_on,
+        is_archived=is_archived,
         has_vulnerability_alerts_enabled=False,
     )
 
