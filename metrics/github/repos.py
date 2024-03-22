@@ -27,25 +27,17 @@ class Repo:
 
 
 def tech_repos(client, org):
-    repo_names = []
-    for team in _TECH_TEAMS:
-        repo_names.extend(query.team_repos(client, org, team))
-
-    return [r for r in _active_repos(client, org) if r.name in repo_names]
+    return [r for r in _active_repos(client, org) if r.team in _TECH_TEAMS]
 
 
 def get_repo_ownership(client, orgs):
     repo_owners = []
 
     for org in orgs:
-        ownership = _repo_owners(client, org)
-
         for repo in _active_repos(client, org):
-            if repo.name in ownership:
-                team = ownership[repo.name]
-            else:
-                team = None
-            repo_owners.append({"organisation": org, "repo": repo.name, "owner": team})
+            repo_owners.append(
+                {"organisation": repo.org, "repo": repo.name, "owner": repo.team}
+            )
 
     return repo_owners
 
