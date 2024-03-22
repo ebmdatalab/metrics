@@ -34,6 +34,10 @@ def tech_repos(client, org):
     return [r for r in _active_repos(client, org) if r.is_tech_owned]
 
 
+def all_repos(client, org):
+    return _active_repos(client, org)
+
+
 def get_repo_ownership(client, orgs):
     repo_owners = []
 
@@ -47,10 +51,10 @@ def get_repo_ownership(client, orgs):
 
 
 def _active_repos(client, org):
-    return [repo for repo in _all_repos(client, org) if not repo.is_archived]
+    return [repo for repo in _get_repos(client, org) if not repo.is_archived]
 
 
-def _all_repos(client, org):
+def _get_repos(client, org):
     ownership = _repo_owners(client, org)
     repos = []
     for repo in query.repos(client, org):
