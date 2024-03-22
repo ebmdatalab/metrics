@@ -9,15 +9,17 @@ from metrics.tools.dates import date_from_iso
 class Repo:
     org: str
     name: str
+    team: str
     created_on: date
     is_archived: bool = False
     has_vulnerability_alerts_enabled: bool = False
 
     @classmethod
-    def from_dict(cls, data, org):
+    def from_dict(cls, data, org, team):
         return cls(
             org,
             data["name"],
+            team,
             date_from_iso(data["createdAt"]),
             data["archivedAt"] is not None,
             data["hasVulnerabilityAlertsEnabled"],
@@ -36,10 +38,7 @@ def get_repo_ownership(client, orgs):
     repo_owners = []
 
     for org in orgs:
-        ownership = {}
-        for team in _TECH_TEAMS:
-            for repo in query.team_repos(client, org, team):
-                ownership[repo] = team
+        ownership = _repo_owners(client, org)
 
         for repo in _active_repos(client, org):
             if repo.name in ownership:
@@ -56,8 +55,20 @@ def _active_repos(client, org):
 
 
 def _all_repos(client, org):
-    repos = query.repos(client, org)
-    return [Repo.from_dict(r, org) for r in repos]
+    ownership = _repo_owners(client, org)
+    repos = []
+    for repo in query.repos(client, org):
+        owner = ownership.get(repo["name"])
+        repos.append(Repo.from_dict(repo, org, owner))
+    return repos
+
+
+def _repo_owners(client, org):
+    ownership = {}
+    for team in _TECH_TEAMS:
+        for repo in query.team_repos(client, org, team):
+            ownership[repo] = team
+    return ownership
 
 
 # GitHub slugs for the teams we're interested in

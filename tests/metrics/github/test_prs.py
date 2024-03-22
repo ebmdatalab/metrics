@@ -129,6 +129,7 @@ def repo(org, name, is_archived=False):
     return Repo(
         org,
         name,
+        "a-team",
         created_on=date.min,
         is_archived=is_archived,
         has_vulnerability_alerts_enabled=False,

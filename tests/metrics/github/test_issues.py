@@ -13,7 +13,7 @@ TWO_DAYS_AGO = date(year=2023, month=6, day=8)
 
 pytestmark = pytest.mark.freeze_time(TODAY)
 
-REPO = Repo("the-org", "the-repo", created_on=date.min)
+REPO = Repo("the-org", "the-repo", "the-team", created_on=date.min)
 AUTHOR = "author"
 
 
@@ -103,6 +103,7 @@ def repo(org, name, is_archived=False):
     return Repo(
         org,
         name,
+        "a-team",
         created_on=date.min,
         is_archived=is_archived,
         has_vulnerability_alerts_enabled=False,

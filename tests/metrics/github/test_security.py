@@ -49,8 +49,8 @@ def test_vulnerability_closed_on_is_closed():
 def test_vulnerabilities(monkeypatch):
     def fake_repos(client, org):
         return [
-            Repo(org, "test", date(2023, 10, 13), False, True),
-            Repo(org, "test2", date(2023, 10, 13), False, True),
+            Repo(org, "test", "a-team", date(2023, 10, 13), False, True),
+            Repo(org, "test2", "a-team", date(2023, 10, 13), False, True),
         ]
 
     monkeypatch.setattr(security.repos, "tech_repos", fake_repos)
