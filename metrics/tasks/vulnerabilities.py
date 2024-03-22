@@ -4,9 +4,9 @@ from datetime import date, timedelta
 
 import structlog
 
-from metrics import timescaledb
 from metrics.github.client import GitHubClient
 from metrics.github.security import vulnerabilities
+from metrics.timescaledb import db, tables
 
 
 log = structlog.get_logger()
@@ -25,9 +25,9 @@ def main():
     log.info("Fetching vulnerabilities for opensafely-core")
     os_core_vulns = vulnerabilities(client, "opensafely-core", yesterday)
 
-    timescaledb.reset_table(timescaledb.GitHubVulnerabilities)
-    timescaledb.write(timescaledb.GitHubVulnerabilities, ebmdatalab_vulns)
-    timescaledb.write(timescaledb.GitHubVulnerabilities, os_core_vulns)
+    db.reset_table(tables.GitHubVulnerabilities)
+    db.write(tables.GitHubVulnerabilities, ebmdatalab_vulns)
+    db.write(tables.GitHubVulnerabilities, os_core_vulns)
 
 
 if __name__ == "__main__":

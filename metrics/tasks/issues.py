@@ -3,8 +3,8 @@ import sys
 
 import structlog
 
+from metrics.github import issues
 from metrics.github.client import GitHubClient
-from metrics.github.prs import get_metrics
 from metrics.timescaledb import db, tables
 
 
@@ -20,12 +20,12 @@ def main():
     )
 
     log.info("Getting metrics")
-    metrics = get_metrics(client, ["ebmdatalab", "opensafely-core"])
+    metrics = issues.get_metrics(client, ["ebmdatalab", "opensafely-core"])
     log.info("Got metrics")
 
     log.info("Writing data")
-    db.reset_table(tables.GitHubPullRequests)
-    db.write(tables.GitHubPullRequests, metrics)
+    db.reset_table(tables.GitHubIssues)
+    db.write(tables.GitHubIssues, metrics)
     log.info("Written data")
 
 

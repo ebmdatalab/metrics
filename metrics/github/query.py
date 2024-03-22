@@ -127,6 +127,52 @@ def prs(client, repo):
         }
 
 
+def issues(client, repo):
+    query = """
+    query issues($cursor: String, $org: String!, $repo: String!) {
+      organization(login: $org) {
+        repository(name: $repo) {
+          issues(first: 100, after: $cursor) {
+            nodes {
+              author {
+                login
+              }
+              createdAt
+              closedAt
+            }
+            pageInfo {
+              endCursor
+              hasNextPage
+            }
+          }
+        }
+      }
+    }
+    """
+    for issue in maybe_truncate(
+        client.graphql_query(
+            query,
+            path=["organization", "repository", "issues"],
+            org=repo.org,
+            repo=repo.name,
+        )
+    ):
+        yield Issue(
+            repo,
+            issue["author"]["login"],
+            date_from_iso(issue["createdAt"]),
+            date_from_iso(issue["closedAt"]),
+        )
+
+
+@dataclass(frozen=True)
+class Issue:
+    repo: Repo
+    author: str
+    created_on: date
+    closed_on: date
+
+
 def maybe_truncate(it):
     if "DEBUG_FAST" in os.environ:
         return itertools.islice(it, 5)

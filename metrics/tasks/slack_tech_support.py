@@ -5,8 +5,8 @@ from datetime import datetime, time
 
 import structlog
 
-from metrics import timescaledb
 from metrics.slack.api import get_app, iter_messages
+from metrics.timescaledb import db, tables
 
 
 log = structlog.get_logger()
@@ -32,8 +32,8 @@ def main():
             }
         )
 
-    timescaledb.reset_table(timescaledb.SlackTechSupport)
-    timescaledb.write(timescaledb.SlackTechSupport, rows)
+    db.reset_table(tables.SlackTechSupport)
+    db.write(tables.SlackTechSupport, rows)
 
 
 if __name__ == "__main__":

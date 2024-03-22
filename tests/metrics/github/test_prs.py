@@ -9,7 +9,7 @@ from metrics.github.query import Repo
 TODAY = date(year=2023, month=6, day=10)
 YESTERDAY = date(year=2023, month=6, day=9)
 TOMORROW = date(year=2023, month=6, day=11)
-TWO_DAYS_AGO = date(year=2023, month=6, day=9)
+TWO_DAYS_AGO = date(year=2023, month=6, day=8)
 
 LONG_AGO = date.min
 

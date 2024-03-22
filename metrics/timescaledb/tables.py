@@ -38,6 +38,17 @@ GitHubVulnerabilities = Table(
 )
 
 
+GitHubIssues = Table(
+    "github_issues",
+    metadata,
+    Column("time", TIMESTAMP(timezone=True), primary_key=True),
+    Column("organisation", Text, primary_key=True),
+    Column("repo", Text, primary_key=True),
+    Column("author", Text, primary_key=True),
+    Column("count", Integer),
+)
+
+
 SlackTechSupport = Table(
     "slack_tech_support",
     metadata,
