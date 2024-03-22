@@ -1,4 +1,27 @@
+from dataclasses import dataclass
+from datetime import date
+
 from metrics.github import query
+from metrics.tools.dates import date_from_iso
+
+
+@dataclass(frozen=True)
+class Repo:
+    org: str
+    name: str
+    created_on: date
+    is_archived: bool = False
+    has_vulnerability_alerts_enabled: bool = False
+
+    @classmethod
+    def from_dict(cls, data, org):
+        return cls(
+            org,
+            data["name"],
+            date_from_iso(data["createdAt"]),
+            data["archivedAt"] is not None,
+            data["hasVulnerabilityAlertsEnabled"],
+        )
 
 
 def tech_repos(client, org):
@@ -29,7 +52,12 @@ def get_repo_ownership(client, orgs):
 
 
 def _active_repos(client, org):
-    return [repo for repo in query.repos(client, org) if not repo.is_archived]
+    return [repo for repo in _all_repos(client, org) if not repo.is_archived]
+
+
+def _all_repos(client, org):
+    repos = query.repos(client, org)
+    return [Repo.from_dict(r, org) for r in repos]
 
 
 # GitHub slugs for the teams we're interested in

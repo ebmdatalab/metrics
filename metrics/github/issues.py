@@ -5,7 +5,7 @@ from dataclasses import dataclass
 import structlog
 
 from metrics.github import query, repos
-from metrics.github.query import Repo
+from metrics.github.repos import Repo
 from metrics.tools.dates import date_from_iso, iter_days
 
 

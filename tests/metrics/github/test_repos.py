@@ -1,9 +1,8 @@
-from datetime import date
+import datetime
 
 import pytest
 
 from metrics.github import repos
-from metrics.github.query import Repo
 
 
 @pytest.fixture
@@ -40,10 +39,10 @@ def test_includes_tech_owned_repos(patch):
     patch(
         "repos",
         [
-            repo("opensafely-core", "ehrql"),
-            repo("opensafely-core", "cohort-extractor"),
-            repo("opensafely-core", "job-server"),
-            repo("opensafely-core", ".github"),
+            repo("ehrql"),
+            repo("cohort-extractor"),
+            repo("job-server"),
+            repo(".github"),
         ],
     )
     assert len(repos.tech_repos(None, "opensafely-core")) == 4
@@ -57,7 +56,7 @@ def test_excludes_non_tech_owned_repos(patch):
     patch(
         "repos",
         [
-            repo("opensafely-core", "other-repo"),
+            repo("other-repo"),
         ],
     )
     assert len(repos.tech_repos(None, "opensafely-core")) == 0
@@ -77,7 +76,7 @@ def test_excludes_archived_repos(patch):
     patch(
         "repos",
         [
-            repo("opensafely-core", "other-repo", is_archived=True),
+            repo("other-repo", is_archived=True),
         ],
     )
     assert len(repos.tech_repos(None, "opensafely-core")) == 0
@@ -86,7 +85,7 @@ def test_excludes_archived_repos(patch):
 def test_looks_up_ownership(patch):
     patch(
         "repos",
-        [repo("the_org", "repo1"), repo("the_org", "repo2"), repo("the_org", "repo3")],
+        [repo("repo1"), repo("repo2"), repo("repo3")],
     )
     patch(
         "team_repos",
@@ -106,7 +105,7 @@ def test_looks_up_ownership(patch):
 
 
 def test_looks_up_ownership_across_orgs(patch):
-    patch("repos", {"org1": [repo("org1", "repo1")], "org2": [repo("org2", "repo2")]})
+    patch("repos", {"org1": [repo("repo1")], "org2": [repo("repo2")]})
     patch(
         "team_repos",
         {
@@ -121,7 +120,7 @@ def test_looks_up_ownership_across_orgs(patch):
 
 
 def test_ignores_ownership_of_archived_repos(patch):
-    patch("repos", [repo("the_org", "the_repo", is_archived=True)])
+    patch("repos", [repo("the_repo", is_archived=True)])
     patch(
         "team_repos",
         {"the_org": {"team-rex": ["the_repo"], "team-rap": [], "tech-shared": []}},
@@ -130,7 +129,7 @@ def test_ignores_ownership_of_archived_repos(patch):
 
 
 def test_returns_none_for_unknown_ownership(patch):
-    patch("repos", [repo("the_org", "the_repo")])
+    patch("repos", [repo("the_repo")])
     patch(
         "team_repos", {"the_org": {"team-rex": [], "team-rap": [], "tech-shared": []}}
     )
@@ -139,11 +138,10 @@ def test_returns_none_for_unknown_ownership(patch):
     ]
 
 
-def repo(org, name, is_archived=False):
-    return Repo(
-        org=org,
+def repo(name, is_archived=False):
+    return dict(
         name=name,
-        created_on=date.min,
-        is_archived=is_archived,
-        has_vulnerability_alerts_enabled=False,
+        createdAt=datetime.datetime.min.isoformat(),
+        archivedAt=datetime.datetime.now().isoformat() if is_archived else None,
+        hasVulnerabilityAlertsEnabled=False,
     )
