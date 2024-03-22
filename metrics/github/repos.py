@@ -14,6 +14,10 @@ class Repo:
     is_archived: bool = False
     has_vulnerability_alerts_enabled: bool = False
 
+    @property
+    def is_tech_owned(self):
+        return self.team in _TECH_TEAMS
+
     @classmethod
     def from_dict(cls, data, org, team):
         return cls(
@@ -27,7 +31,7 @@ class Repo:
 
 
 def tech_repos(client, org):
-    return [r for r in _active_repos(client, org) if r.team in _TECH_TEAMS]
+    return [r for r in _active_repos(client, org) if r.is_tech_owned]
 
 
 def get_repo_ownership(client, orgs):
