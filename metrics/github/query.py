@@ -149,28 +149,14 @@ def issues(client, repo):
       }
     }
     """
-    for issue in maybe_truncate(
+    return maybe_truncate(
         client.graphql_query(
             query,
             path=["organization", "repository", "issues"],
             org=repo.org,
             repo=repo.name,
         )
-    ):
-        yield Issue(
-            repo,
-            issue["author"]["login"],
-            date_from_iso(issue["createdAt"]),
-            date_from_iso(issue["closedAt"]),
-        )
-
-
-@dataclass(frozen=True)
-class Issue:
-    repo: Repo
-    author: str
-    created_on: date
-    closed_on: date
+    )
 
 
 def maybe_truncate(it):
