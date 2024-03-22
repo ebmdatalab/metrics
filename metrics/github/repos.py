@@ -38,18 +38,6 @@ def all_repos(client, org):
     return _active_repos(client, org)
 
 
-def get_repo_ownership(client, orgs):
-    repo_owners = []
-
-    for org in orgs:
-        for repo in _active_repos(client, org):
-            repo_owners.append(
-                {"organisation": repo.org, "repo": repo.name, "owner": repo.team}
-            )
-
-    return repo_owners
-
-
 def _active_repos(client, org):
     return [repo for repo in _get_repos(client, org) if not repo.is_archived]
 

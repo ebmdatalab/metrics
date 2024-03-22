@@ -4,7 +4,7 @@ import sys
 import structlog
 
 from metrics.github.client import GitHubClient
-from metrics.github.repos import get_repo_ownership
+from metrics.github.repos import all_repos
 from metrics.timescaledb import db, tables
 
 
@@ -20,12 +20,15 @@ def main():
     )
 
     log.info("Getting repos")
-    repos = get_repo_ownership(client, ["ebmdatalab", "opensafely-core"])
+    orgs = ["ebmdatalab", "opensafely-core"]
+    repos = [repo for org in orgs for repo in all_repos(client, org)]
     log.info("Got repos")
+
+    data = [dict(organisation=r.org, repo=r.name, owner=r.team) for r in repos]
 
     log.info("Writing data")
     db.reset_table(tables.GitHubRepos)
-    db.write(tables.GitHubRepos, repos)
+    db.write(tables.GitHubRepos, data)
     log.info("Written data")
 
 
