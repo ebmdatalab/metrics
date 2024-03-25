@@ -366,9 +366,9 @@ sqlalchemy==2.0.28 \
     # via
     #   -c requirements.prod.txt
     #   sqlalchemy-utils
-sqlalchemy-utils==0.41.1 \
-    --hash=sha256:6c96b0768ea3f15c0dc56b363d386138c562752b84f647fb8d31a2223aaab801 \
-    --hash=sha256:a2181bff01eeb84479e38571d2c0718eb52042f9afd8c194d0d02877e84b7d74
+sqlalchemy-utils==0.41.2 \
+    --hash=sha256:85cf3842da2bf060760f955f8467b87983fb2e30f1764fd0e24a48307dc8ec6e \
+    --hash=sha256:bc599c8c3b3319e53ce6c5c3c471120bd325d0071fb6f38a10e924e3d07b9990
     # via -r requirements.dev.in
 typing-extensions==4.10.0 \
     --hash=sha256:69b1a937c3a517342112fb4c6df7e72fc39a38e7891a5730ed4985b5214b5475 \
