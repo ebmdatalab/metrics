@@ -1,7 +1,7 @@
 from datetime import date
 
 from metrics.github import security
-from metrics.github.repos import Repo
+from metrics.github.github import Repo
 
 
 def test_vulnerability_open_on():
@@ -53,7 +53,7 @@ def test_vulnerabilities(monkeypatch):
             Repo(org, "test2", "a-team", date(2023, 10, 13), False, True),
         ]
 
-    monkeypatch.setattr(security.repos, "tech_repos", fake_repos)
+    monkeypatch.setattr(security.github, "tech_repos", fake_repos)
 
     def fake_vulnerabilities(client, repo):
         return [

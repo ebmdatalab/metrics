@@ -4,7 +4,7 @@ import sys
 import structlog
 
 from metrics.github.client import GitHubClient
-from metrics.github.repos import all_repos
+from metrics.github.github import all_repos
 from metrics.timescaledb import db, tables
 
 

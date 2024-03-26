@@ -2,8 +2,8 @@ from datetime import date
 
 import pytest
 
+from metrics.github.github import Repo
 from metrics.github.issues import Issue, calculate_counts
-from metrics.github.repos import Repo
 
 
 TODAY = date(year=2023, month=6, day=10)

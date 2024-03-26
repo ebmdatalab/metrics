@@ -4,8 +4,8 @@ from dataclasses import dataclass
 
 import structlog
 
-from metrics.github import query, repos
-from metrics.github.repos import Repo
+from metrics.github import github, query
+from metrics.github.github import Repo
 from metrics.tools.dates import date_from_iso, iter_days
 
 
@@ -42,7 +42,7 @@ def get_metrics(client, orgs):
 def get_issues(client, orgs):
     issues = []
     for org in orgs:
-        for repo in repos.tech_repos(client, org):
+        for repo in github.tech_repos(client, org):
             issues.extend(Issue.from_dict(i, repo) for i in query.issues(client, repo))
     return issues
 

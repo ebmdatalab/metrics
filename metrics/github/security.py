@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from datetime import date
 
 from ..tools import dates
-from . import query, repos
+from . import github, query
 
 
 @dataclass
@@ -31,7 +31,7 @@ class Vulnerability:
 def vulnerabilities(client, org, to_date):
     metrics = []
 
-    for repo in repos.tech_repos(client, org):
+    for repo in github.tech_repos(client, org):
         vulns = list(map(Vulnerability.from_dict, query.vulnerabilities(client, repo)))
 
         for day in dates.iter_days(repo.created_on, to_date):
