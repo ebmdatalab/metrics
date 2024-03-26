@@ -5,6 +5,11 @@ from metrics.github import query
 from metrics.tools.dates import date_from_iso
 
 
+# Slugs (not names!) of the GitHub entities we're interested in
+_TECH_TEAMS = ["team-rap", "team-rex", "tech-shared"]
+_ORGS = ["ebmdatalab", "opensafely-core"]
+
+
 @dataclass(frozen=True)
 class Repo:
     org: str
@@ -30,32 +35,25 @@ class Repo:
         )
 
 
-def tech_prs(orgs):
-    prs = {}
-    for org in orgs:
-        for repo in tech_repos(org):
-            prs[repo] = list(query.prs(repo))
-    return prs
+def tech_prs():
+    return {repo: list(query.prs(repo)) for repo in tech_repos()}
 
 
-def tech_repos(org):
-    return [r for r in _active_repos(org) if r.is_tech_owned]
+def tech_repos():
+    return [repo for repo in all_repos() if repo.is_tech_owned]
 
 
-def all_repos(org):
-    return _active_repos(org)
+def all_repos():
+    return [repo for repo in _get_repos() if not repo.is_archived]
 
 
-def _active_repos(org):
-    return [repo for repo in _get_repos(org) if not repo.is_archived]
-
-
-def _get_repos(org):
-    ownership = _repo_owners(org)
+def _get_repos():
     repos = []
-    for repo in query.repos(org):
-        owner = ownership.get(repo["name"])
-        repos.append(Repo.from_dict(repo, org, owner))
+    for org in _ORGS:
+        ownership = _repo_owners(org)
+        for repo in query.repos(org):
+            owner = ownership.get(repo["name"])
+            repos.append(Repo.from_dict(repo, org, owner))
     return repos
 
 
@@ -65,7 +63,3 @@ def _repo_owners(org):
         for repo in query.team_repos(org, team):
             ownership[repo] = team
     return ownership
-
-
-# GitHub slugs for the teams we're interested in
-_TECH_TEAMS = ["team-rap", "team-rex", "tech-shared"]

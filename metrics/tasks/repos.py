@@ -11,8 +11,7 @@ log = structlog.get_logger()
 
 def main():
     log.info("Getting repos")
-    orgs = ["ebmdatalab", "opensafely-core"]
-    repos = [repo for org in orgs for repo in all_repos(org)]
+    repos = all_repos()
     log.info("Got repos")
 
     data = [dict(organisation=r.org, repo=r.name, owner=r.team) for r in repos]

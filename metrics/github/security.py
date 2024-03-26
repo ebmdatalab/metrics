@@ -28,10 +28,10 @@ class Vulnerability:
         )
 
 
-def vulnerabilities(org, to_date):
+def vulnerabilities(to_date):
     metrics = []
 
-    for repo in github.tech_repos(org):
+    for repo in github.tech_repos():
         vulns = list(map(Vulnerability.from_dict, query.vulnerabilities(repo)))
 
         for day in dates.iter_days(repo.created_on, to_date):

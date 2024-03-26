@@ -29,8 +29,8 @@ class Issue:
         )
 
 
-def get_metrics(orgs):
-    issues = get_issues(orgs)
+def get_metrics():
+    issues = get_issues()
     log.info(f"Got {len(issues)} issues")
 
     counts = calculate_counts(issues)
@@ -39,11 +39,10 @@ def get_metrics(orgs):
     return count_metrics
 
 
-def get_issues(orgs):
+def get_issues():
     issues = []
-    for org in orgs:
-        for repo in github.tech_repos(org):
-            issues.extend(Issue.from_dict(i, repo) for i in query.issues(repo))
+    for repo in github.tech_repos():
+        issues.extend(Issue.from_dict(i, repo) for i in query.issues(repo))
     return issues
 
 

@@ -13,15 +13,11 @@ log = structlog.get_logger()
 def main():
     yesterday = date.today() - timedelta(days=1)
 
-    log.info("Fetching vulnerabilities for ebmdatalab")
-    ebmdatalab_vulns = vulnerabilities("ebmdatalab", yesterday)
-
-    log.info("Fetching vulnerabilities for opensafely-core")
-    os_core_vulns = vulnerabilities("opensafely-core", yesterday)
+    log.info("Fetching vulnerabilities")
+    vulns = vulnerabilities(yesterday)
 
     db.reset_table(tables.GitHubVulnerabilities)
-    db.write(tables.GitHubVulnerabilities, ebmdatalab_vulns)
-    db.write(tables.GitHubVulnerabilities, os_core_vulns)
+    db.write(tables.GitHubVulnerabilities, vulns)
 
 
 if __name__ == "__main__":

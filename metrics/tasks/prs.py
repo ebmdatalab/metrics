@@ -12,8 +12,7 @@ log = structlog.get_logger()
 
 def main():
     log.info("Getting metrics")
-    orgs = ["ebmdatalab", "opensafely-core"]
-    prs = tech_prs(orgs)
+    prs = tech_prs()
     log.info(
         f"Got {sum(len(ps) for ps in prs.values())} PRs from {len(prs.keys())} repos"
     )

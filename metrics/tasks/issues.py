@@ -11,7 +11,7 @@ log = structlog.get_logger()
 
 def main():
     log.info("Getting metrics")
-    metrics = issues.get_metrics(["ebmdatalab", "opensafely-core"])
+    metrics = issues.get_metrics()
     log.info("Got metrics")
 
     log.info("Writing data")
