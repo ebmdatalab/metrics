@@ -30,7 +30,7 @@ class Repo:
         )
 
 
-def get_prs(client, orgs):
+def tech_prs(client, orgs):
     prs = {}
     for org in orgs:
         for repo in tech_repos(client, org):

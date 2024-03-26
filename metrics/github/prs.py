@@ -3,7 +3,7 @@ from datetime import date, datetime, time, timedelta
 
 import structlog
 
-from metrics.github.github import get_prs
+from metrics.github.github import tech_prs
 from metrics.tools.dates import iter_days
 
 
@@ -11,7 +11,7 @@ log = structlog.get_logger()
 
 
 def get_metrics(client, orgs):
-    prs = get_prs(client, orgs)
+    prs = tech_prs(client, orgs)
     log.info(
         f"Got {sum(len(ps) for ps in prs.values())} PRs from {len(prs.keys())} repos"
     )
