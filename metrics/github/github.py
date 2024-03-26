@@ -30,6 +30,14 @@ class Repo:
         )
 
 
+def get_prs(client, orgs):
+    prs = {}
+    for org in orgs:
+        for repo in tech_repos(client, org):
+            prs[repo] = list(query.prs(client, repo))
+    return prs
+
+
 def tech_repos(client, org):
     return [r for r in _active_repos(client, org) if r.is_tech_owned]
 

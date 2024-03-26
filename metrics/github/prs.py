@@ -3,7 +3,7 @@ from datetime import date, datetime, time, timedelta
 
 import structlog
 
-from metrics.github import github, query
+from metrics.github.github import get_prs
 from metrics.tools.dates import iter_days
 
 
@@ -23,14 +23,6 @@ def get_metrics(client, orgs):
     throughput_metrics = convert_to_metrics(throughput_counts, "prs_merged")
 
     return count_metrics + throughput_metrics
-
-
-def get_prs(client, orgs):
-    prs = {}
-    for org in orgs:
-        for repo in github.tech_repos(client, org):
-            prs[repo] = list(query.prs(client, repo))
-    return prs
 
 
 def calculate_counts(prs_by_repo, predicate):
