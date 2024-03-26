@@ -3,19 +3,13 @@ from datetime import date, datetime, time, timedelta
 
 import structlog
 
-from metrics.github.github import tech_prs
 from metrics.tools.dates import iter_days
 
 
 log = structlog.get_logger()
 
 
-def get_metrics(client, orgs):
-    prs = tech_prs(client, orgs)
-    log.info(
-        f"Got {sum(len(ps) for ps in prs.values())} PRs from {len(prs.keys())} repos"
-    )
-
+def get_pr_metrics(prs):
     old_counts = calculate_counts(prs, is_old)
     throughput_counts = calculate_counts(prs, was_merged_on)
 

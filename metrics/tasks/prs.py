@@ -4,7 +4,8 @@ import sys
 import structlog
 
 from metrics.github.client import GitHubClient
-from metrics.github.prs import get_metrics
+from metrics.github.github import tech_prs
+from metrics.github.metrics import get_pr_metrics
 from metrics.timescaledb import db, tables
 
 
@@ -20,7 +21,13 @@ def main():
     )
 
     log.info("Getting metrics")
-    metrics = get_metrics(client, ["ebmdatalab", "opensafely-core"])
+    orgs = ["ebmdatalab", "opensafely-core"]
+    prs = tech_prs(client, orgs)
+    log.info(
+        f"Got {sum(len(ps) for ps in prs.values())} PRs from {len(prs.keys())} repos"
+    )
+
+    metrics = get_pr_metrics(prs)
     log.info("Got metrics")
 
     log.info("Writing data")

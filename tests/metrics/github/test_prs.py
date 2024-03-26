@@ -3,7 +3,7 @@ from datetime import date, timedelta
 import pytest
 
 from metrics.github.github import Repo
-from metrics.github.prs import calculate_counts, is_old, was_merged_on
+from metrics.github.metrics import calculate_counts, is_old, was_merged_on
 
 
 TODAY = date(year=2023, month=6, day=10)
