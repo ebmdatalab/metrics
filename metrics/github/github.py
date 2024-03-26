@@ -30,39 +30,39 @@ class Repo:
         )
 
 
-def tech_prs(client, orgs):
+def tech_prs(orgs):
     prs = {}
     for org in orgs:
-        for repo in tech_repos(client, org):
-            prs[repo] = list(query.prs(client, repo))
+        for repo in tech_repos(org):
+            prs[repo] = list(query.prs(repo))
     return prs
 
 
-def tech_repos(client, org):
-    return [r for r in _active_repos(client, org) if r.is_tech_owned]
+def tech_repos(org):
+    return [r for r in _active_repos(org) if r.is_tech_owned]
 
 
-def all_repos(client, org):
-    return _active_repos(client, org)
+def all_repos(org):
+    return _active_repos(org)
 
 
-def _active_repos(client, org):
-    return [repo for repo in _get_repos(client, org) if not repo.is_archived]
+def _active_repos(org):
+    return [repo for repo in _get_repos(org) if not repo.is_archived]
 
 
-def _get_repos(client, org):
-    ownership = _repo_owners(client, org)
+def _get_repos(org):
+    ownership = _repo_owners(org)
     repos = []
-    for repo in query.repos(client, org):
+    for repo in query.repos(org):
         owner = ownership.get(repo["name"])
         repos.append(Repo.from_dict(repo, org, owner))
     return repos
 
 
-def _repo_owners(client, org):
+def _repo_owners(org):
     ownership = {}
     for team in _TECH_TEAMS:
-        for repo in query.team_repos(client, org, team):
+        for repo in query.team_repos(org, team):
             ownership[repo] = team
     return ownership
 

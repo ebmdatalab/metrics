@@ -47,7 +47,7 @@ def test_vulnerability_closed_on_is_closed():
 
 
 def test_vulnerabilities(monkeypatch):
-    def fake_repos(client, org):
+    def fake_repos(org):
         return [
             Repo(org, "test", "a-team", date(2023, 10, 13), False, True),
             Repo(org, "test2", "a-team", date(2023, 10, 13), False, True),
@@ -55,7 +55,7 @@ def test_vulnerabilities(monkeypatch):
 
     monkeypatch.setattr(security.github, "tech_repos", fake_repos)
 
-    def fake_vulnerabilities(client, repo):
+    def fake_vulnerabilities(repo):
         return [
             dict(
                 createdAt="2023-10-13T00:00:00Z",
@@ -73,7 +73,7 @@ def test_vulnerabilities(monkeypatch):
 
     monkeypatch.setattr(security.query, "vulnerabilities", fake_vulnerabilities)
 
-    result = security.vulnerabilities({}, "test-org", date(2023, 10, 29))
+    result = security.vulnerabilities("test-org", date(2023, 10, 29))
 
     assert len(result) == 34
     assert result[0] == {

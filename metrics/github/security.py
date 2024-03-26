@@ -28,11 +28,11 @@ class Vulnerability:
         )
 
 
-def vulnerabilities(client, org, to_date):
+def vulnerabilities(org, to_date):
     metrics = []
 
-    for repo in github.tech_repos(client, org):
-        vulns = list(map(Vulnerability.from_dict, query.vulnerabilities(client, repo)))
+    for repo in github.tech_repos(org):
+        vulns = list(map(Vulnerability.from_dict, query.vulnerabilities(repo)))
 
         for day in dates.iter_days(repo.created_on, to_date):
             closed_vulns = sum(1 for v in vulns if v.is_closed_on(day))
