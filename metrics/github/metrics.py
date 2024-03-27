@@ -1,12 +1,7 @@
 import datetime
 from collections import defaultdict
 
-import structlog
-
 from metrics.tools.dates import iter_days
-
-
-log = structlog.get_logger()
 
 
 def get_pr_metrics(prs):
