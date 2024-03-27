@@ -1,4 +1,4 @@
-from datetime import date
+import datetime
 
 import pytest
 
@@ -12,8 +12,8 @@ from metrics.tools.dates import (
     "value,expected",
     [
         (None, None),
-        ("2020-07-08", date(2020, 7, 8)),
-        ("2020-07-08T09:12", date(2020, 7, 8)),
+        ("2020-07-08", datetime.date(2020, 7, 8)),
+        ("2020-07-08T09:12", datetime.date(2020, 7, 8)),
     ],
 )
 def test_date_from_iso(value, expected):
@@ -21,10 +21,10 @@ def test_date_from_iso(value, expected):
 
 
 def test_iter_days():
-    dates = list(iter_days(date(2020, 7, 8), date(2020, 7, 10)))
+    dates = list(iter_days(datetime.date(2020, 7, 8), datetime.date(2020, 7, 10)))
 
     assert dates == [
-        date(2020, 7, 8),
-        date(2020, 7, 9),
-        date(2020, 7, 10),
+        datetime.date(2020, 7, 8),
+        datetime.date(2020, 7, 9),
+        datetime.date(2020, 7, 10),
     ]

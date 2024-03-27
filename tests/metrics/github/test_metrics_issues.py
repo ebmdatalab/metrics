@@ -1,26 +1,26 @@
-from datetime import date
+import datetime
 
 import pytest
 
-from metrics.github.issues import Issue, calculate_counts
-from metrics.github.repos import Repo
+from metrics.github.github import Issue, Repo
+from metrics.github.metrics import calculate_issue_counts
 
 
-TODAY = date(year=2023, month=6, day=10)
-YESTERDAY = date(year=2023, month=6, day=9)
-TOMORROW = date(year=2023, month=6, day=11)
-TWO_DAYS_AGO = date(year=2023, month=6, day=8)
+TODAY = datetime.date(year=2023, month=6, day=10)
+YESTERDAY = datetime.date(year=2023, month=6, day=9)
+TOMORROW = datetime.date(year=2023, month=6, day=11)
+TWO_DAYS_AGO = datetime.date(year=2023, month=6, day=8)
 
 pytestmark = pytest.mark.freeze_time(TODAY)
 
-REPO = Repo("the-org", "the-repo", "the-team", created_on=date.min)
+REPO = Repo("the-org", "the-repo", "the-team", created_on=datetime.date.min)
 AUTHOR = "author"
 
 
 def test_counts_issue_on_every_day_between_create_and_close():
     issues = {issue(created_on=TWO_DAYS_AGO, closed_on=YESTERDAY)}
 
-    assert calculate_counts(issues) == {
+    assert calculate_issue_counts(issues) == {
         (REPO.org, REPO.name, AUTHOR, TWO_DAYS_AGO): 1,
         (REPO.org, REPO.name, AUTHOR, YESTERDAY): 1,
     }
@@ -29,7 +29,7 @@ def test_counts_issue_on_every_day_between_create_and_close():
 def test_counts_issue_on_every_day_up_to_now_if_still_open():
     issues = {issue(created_on=TWO_DAYS_AGO)}
 
-    assert calculate_counts(issues) == {
+    assert calculate_issue_counts(issues) == {
         (REPO.org, REPO.name, AUTHOR, TWO_DAYS_AGO): 1,
         (REPO.org, REPO.name, AUTHOR, YESTERDAY): 1,
         (REPO.org, REPO.name, AUTHOR, TODAY): 1,
@@ -43,7 +43,7 @@ def test_counts_multiple_issues():
         issue(created_on=TODAY),
     }
 
-    assert calculate_counts(issues) == {
+    assert calculate_issue_counts(issues) == {
         (REPO.org, REPO.name, AUTHOR, TWO_DAYS_AGO): 1,
         (REPO.org, REPO.name, AUTHOR, YESTERDAY): 2,
         (REPO.org, REPO.name, AUTHOR, TODAY): 3,
@@ -56,7 +56,7 @@ def test_accounts_for_mixed_closure():
         issue(created_on=YESTERDAY),
     }
 
-    assert calculate_counts(issues) == {
+    assert calculate_issue_counts(issues) == {
         (REPO.org, REPO.name, AUTHOR, TWO_DAYS_AGO): 1,
         (REPO.org, REPO.name, AUTHOR, YESTERDAY): 2,
         (REPO.org, REPO.name, AUTHOR, TODAY): 1,
@@ -69,7 +69,7 @@ def test_returns_counts_by_org():
         issue(created_on=TODAY, repo_=repo("org2", "repo")),
     }
 
-    assert calculate_counts(issues) == {
+    assert calculate_issue_counts(issues) == {
         ("org1", "repo", AUTHOR, TODAY): 1,
         ("org2", "repo", AUTHOR, TODAY): 1,
     }
@@ -81,7 +81,7 @@ def test_returns_counts_by_repo():
         issue(created_on=TODAY, repo_=repo("org", "repo2")),
     }
 
-    assert calculate_counts(issues) == {
+    assert calculate_issue_counts(issues) == {
         ("org", "repo1", AUTHOR, TODAY): 1,
         ("org", "repo2", AUTHOR, TODAY): 1,
     }
@@ -93,7 +93,7 @@ def test_returns_counts_by_author():
         issue(created_on=TODAY, author="author2"),
     }
 
-    assert calculate_counts(issues) == {
+    assert calculate_issue_counts(issues) == {
         (REPO.org, REPO.name, "author1", TODAY): 1,
         (REPO.org, REPO.name, "author2", TODAY): 1,
     }
@@ -104,7 +104,7 @@ def repo(org, name, is_archived=False):
         org,
         name,
         "a-team",
-        created_on=date.min,
+        created_on=datetime.date.min,
         is_archived=is_archived,
         has_vulnerability_alerts_enabled=False,
     )
