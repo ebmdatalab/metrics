@@ -1,5 +1,5 @@
+import datetime
 from collections import defaultdict
-from datetime import date, datetime, time, timedelta
 
 import structlog
 
@@ -24,7 +24,7 @@ def calculate_counts(prs_by_repo, predicate):
     for repo, prs in prs_by_repo.items():
         for pr in prs:
             start = pr["created_on"]
-            end = pr["closed_on"] if pr["closed_on"] else date.today()
+            end = pr["closed_on"] if pr["closed_on"] else datetime.date.today()
             for day in iter_days(start, end):
                 if predicate(pr, day):
                     counts[(repo.org, repo.name, pr["author"], day)] += 1
@@ -36,7 +36,7 @@ def is_old(pr, dt):
     closed = pr["closed_on"] if pr["closed_on"] else None
 
     is_closed = closed and closed <= dt
-    opened_more_than_a_week_ago = dt - opened >= timedelta(weeks=1)
+    opened_more_than_a_week_ago = dt - opened >= datetime.timedelta(weeks=1)
 
     return not is_closed and opened_more_than_a_week_ago
 
@@ -49,7 +49,7 @@ def convert_to_metrics(counts, name):
     metrics = []
     for coord, count in counts.items():
         org, repo, author, date_ = coord
-        timestamp = datetime.combine(date_, time())
+        timestamp = datetime.datetime.combine(date_, datetime.time())
         metrics.append(
             {
                 "name": name,

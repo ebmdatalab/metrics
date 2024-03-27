@@ -1,6 +1,5 @@
 import datetime
 from dataclasses import dataclass
-from datetime import date
 
 from metrics.github import query
 from metrics.tools.dates import date_from_iso
@@ -16,7 +15,7 @@ class Repo:
     org: str
     name: str
     team: str
-    created_on: date
+    created_on: datetime.date
     is_archived: bool = False
     has_vulnerability_alerts_enabled: bool = False
 

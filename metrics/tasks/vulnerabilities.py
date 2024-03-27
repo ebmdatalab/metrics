@@ -1,5 +1,5 @@
+import datetime
 import sys
-from datetime import date, timedelta
 
 import structlog
 
@@ -11,7 +11,7 @@ log = structlog.get_logger()
 
 
 def main():
-    yesterday = date.today() - timedelta(days=1)
+    yesterday = datetime.date.today() - datetime.timedelta(days=1)
 
     log.info("Fetching vulnerabilities")
     vulns = vulnerabilities(yesterday)

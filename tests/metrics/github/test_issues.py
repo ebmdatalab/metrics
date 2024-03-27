@@ -1,4 +1,4 @@
-from datetime import date
+import datetime
 
 import pytest
 
@@ -6,14 +6,14 @@ from metrics.github.github import Issue, Repo
 from metrics.github.issues import calculate_counts
 
 
-TODAY = date(year=2023, month=6, day=10)
-YESTERDAY = date(year=2023, month=6, day=9)
-TOMORROW = date(year=2023, month=6, day=11)
-TWO_DAYS_AGO = date(year=2023, month=6, day=8)
+TODAY = datetime.date(year=2023, month=6, day=10)
+YESTERDAY = datetime.date(year=2023, month=6, day=9)
+TOMORROW = datetime.date(year=2023, month=6, day=11)
+TWO_DAYS_AGO = datetime.date(year=2023, month=6, day=8)
 
 pytestmark = pytest.mark.freeze_time(TODAY)
 
-REPO = Repo("the-org", "the-repo", "the-team", created_on=date.min)
+REPO = Repo("the-org", "the-repo", "the-team", created_on=datetime.date.min)
 AUTHOR = "author"
 
 
@@ -104,7 +104,7 @@ def repo(org, name, is_archived=False):
         org,
         name,
         "a-team",
-        created_on=date.min,
+        created_on=datetime.date.min,
         is_archived=is_archived,
         has_vulnerability_alerts_enabled=False,
     )

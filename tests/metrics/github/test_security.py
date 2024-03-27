@@ -1,56 +1,68 @@
-from datetime import date
+import datetime
 
 from metrics.github import security
 from metrics.github.github import Repo
 
 
 def test_vulnerability_open_on():
-    v = security.Vulnerability(date(2023, 10, 26), None, None)
+    v = security.Vulnerability(datetime.date(2023, 10, 26), None, None)
 
-    assert v.is_open_on(date(2023, 10, 29))
+    assert v.is_open_on(datetime.date(2023, 10, 29))
 
 
 def test_vulnerability_open_on_same_day():
-    v = security.Vulnerability(date(2023, 10, 26), None, None)
+    v = security.Vulnerability(datetime.date(2023, 10, 26), None, None)
 
-    assert v.is_open_on(date(2023, 10, 26))
+    assert v.is_open_on(datetime.date(2023, 10, 26))
 
 
 def test_vulnerability_open_on_date_in_past():
-    v = security.Vulnerability(date(2023, 10, 26), None, None)
+    v = security.Vulnerability(datetime.date(2023, 10, 26), None, None)
 
-    assert not v.is_open_on(date(2023, 10, 20))
+    assert not v.is_open_on(datetime.date(2023, 10, 20))
 
 
 def test_vulnerability_open_has_been_closed():
-    v = security.Vulnerability(date(2023, 10, 26), date(2023, 10, 28), None)
+    v = security.Vulnerability(
+        datetime.date(2023, 10, 26), datetime.date(2023, 10, 28), None
+    )
 
-    assert not v.is_open_on(date(2023, 10, 30))
+    assert not v.is_open_on(datetime.date(2023, 10, 30))
 
 
 def test_vulnerability_closed_on():
-    v = security.Vulnerability(date(2023, 10, 26), date(2023, 10, 28), None)
+    v = security.Vulnerability(
+        datetime.date(2023, 10, 26), datetime.date(2023, 10, 28), None
+    )
 
-    assert v.is_closed_on(date(2023, 10, 29))
+    assert v.is_closed_on(datetime.date(2023, 10, 29))
 
 
 def test_vulnerability_closed_on_still_open():
-    v = security.Vulnerability(date(2023, 10, 26), date(2023, 10, 28), None)
+    v = security.Vulnerability(
+        datetime.date(2023, 10, 26), datetime.date(2023, 10, 28), None
+    )
 
-    assert not v.is_closed_on(date(2023, 10, 27))
+    assert not v.is_closed_on(datetime.date(2023, 10, 27))
 
 
 def test_vulnerability_closed_on_is_closed():
-    v = security.Vulnerability(date(2023, 10, 26), date(2023, 10, 28), None)
+    v = security.Vulnerability(
+        datetime.date(2023, 10, 26), datetime.date(2023, 10, 28), None
+    )
 
-    assert v.is_closed_on(date(2023, 10, 29))
+    assert v.is_closed_on(datetime.date(2023, 10, 29))
 
 
 def test_vulnerabilities(monkeypatch):
     def fake_repos():
         return [
-            Repo("test-org", "test", "a-team", date(2023, 10, 13), False, True),
-            Repo("test-org", "test2", "a-team", date(2023, 10, 13), False, True),
+            Repo(
+                "test-org", "test", "a-team", datetime.date(2023, 10, 13), False, True
+            ),
+            Repo(
+                "test-org", "test2", "a-team", datetime.date(2023, 10, 13), False, True
+            ),
         ]
 
     monkeypatch.setattr(security.github, "tech_repos", fake_repos)
@@ -73,11 +85,11 @@ def test_vulnerabilities(monkeypatch):
 
     monkeypatch.setattr(security.query, "vulnerabilities", fake_vulnerabilities)
 
-    result = security.vulnerabilities(date(2023, 10, 29))
+    result = security.vulnerabilities(datetime.date(2023, 10, 29))
 
     assert len(result) == 34
     assert result[0] == {
-        "time": date(2023, 10, 13),
+        "time": datetime.date(2023, 10, 13),
         "value": 0,
         "closed": 0,
         "open": 2,
@@ -86,7 +98,7 @@ def test_vulnerabilities(monkeypatch):
         "has_alerts_enabled": True,
     }
     assert result[7] == {
-        "time": date(2023, 10, 20),
+        "time": datetime.date(2023, 10, 20),
         "value": 0,
         "closed": 1,
         "open": 1,
@@ -95,7 +107,7 @@ def test_vulnerabilities(monkeypatch):
         "has_alerts_enabled": True,
     }
     assert result[33] == {
-        "time": date(2023, 10, 29),
+        "time": datetime.date(2023, 10, 29),
         "value": 0,
         "closed": 2,
         "open": 2,

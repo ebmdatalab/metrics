@@ -1,5 +1,5 @@
+import datetime
 from dataclasses import dataclass
-from datetime import date
 
 from ..tools import dates
 from . import github, query
@@ -7,9 +7,9 @@ from . import github, query
 
 @dataclass
 class Vulnerability:
-    created_on: date
-    fixed_on: date | None
-    dismissed_on: date | None
+    created_on: datetime.date
+    fixed_on: datetime.date | None
+    dismissed_on: datetime.date | None
 
     def is_open_on(self, target_date):
         return self.created_on <= target_date and not self.is_closed_on(target_date)

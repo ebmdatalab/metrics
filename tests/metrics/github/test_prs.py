@@ -1,4 +1,4 @@
-from datetime import date, timedelta
+import datetime
 
 import pytest
 
@@ -6,15 +6,15 @@ from metrics.github.github import Repo
 from metrics.github.metrics import calculate_counts, is_old, was_merged_on
 
 
-TODAY = date(year=2023, month=6, day=10)
-YESTERDAY = date(year=2023, month=6, day=9)
-TOMORROW = date(year=2023, month=6, day=11)
-TWO_DAYS_AGO = date(year=2023, month=6, day=8)
+TODAY = datetime.date(year=2023, month=6, day=10)
+YESTERDAY = datetime.date(year=2023, month=6, day=9)
+TOMORROW = datetime.date(year=2023, month=6, day=11)
+TWO_DAYS_AGO = datetime.date(year=2023, month=6, day=8)
 
-LONG_AGO = date.min
+LONG_AGO = datetime.date.min
 
-SIX_DAYS = timedelta(days=6)
-ONE_WEEK = timedelta(weeks=1)
+SIX_DAYS = datetime.timedelta(days=6)
+ONE_WEEK = datetime.timedelta(weeks=1)
 
 pytestmark = pytest.mark.freeze_time(TODAY)
 
@@ -130,7 +130,7 @@ def repo(org, name, is_archived=False):
         org,
         name,
         "a-team",
-        created_on=date.min,
+        created_on=datetime.date.min,
         is_archived=is_archived,
         has_vulnerability_alerts_enabled=False,
     )
