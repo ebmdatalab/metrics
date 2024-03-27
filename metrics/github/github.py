@@ -84,17 +84,13 @@ class Issue:
 
 
 def tech_prs():
-    prs = []
-    for repo in tech_repos():
-        prs.extend(PR.from_dict(p, repo) for p in query.prs(repo))
-    return prs
+    return [PR.from_dict(pr, repo) for repo in tech_repos() for pr in query.prs(repo)]
 
 
 def tech_issues():
-    issues = []
-    for repo in tech_repos():
-        issues.extend(Issue.from_dict(i, repo) for i in query.issues(repo))
-    return issues
+    return [
+        Issue.from_dict(i, repo) for repo in tech_repos() for i in query.issues(repo)
+    ]
 
 
 def tech_repos():
@@ -116,8 +112,4 @@ def _get_repos():
 
 
 def _repo_owners(org):
-    ownership = {}
-    for team in _TECH_TEAMS:
-        for repo in query.team_repos(org, team):
-            ownership[repo] = team
-    return ownership
+    return {repo: team for team in _TECH_TEAMS for repo in query.team_repos(org, team)}
