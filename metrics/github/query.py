@@ -1,7 +1,5 @@
 import itertools
 import os
-from dataclasses import dataclass
-from datetime import date
 
 from metrics.tools.dates import date_from_iso
 
@@ -25,25 +23,9 @@ def repos(client, org):
       }
     }
     """
-    for raw_repo in maybe_truncate(
+    return maybe_truncate(
         client.graphql_query(query, path=["organization", "repositories"], org=org)
-    ):
-        yield Repo(
-            org,
-            raw_repo["name"],
-            date_from_iso(raw_repo["createdAt"]),
-            raw_repo["archivedAt"] is not None,
-            raw_repo["hasVulnerabilityAlertsEnabled"],
-        )
-
-
-@dataclass(frozen=True)
-class Repo:
-    org: str
-    name: str
-    created_on: date
-    is_archived: bool = False
-    has_vulnerability_alerts_enabled: bool = False
+    )
 
 
 def team_repos(client, org, team):
@@ -149,28 +131,14 @@ def issues(client, repo):
       }
     }
     """
-    for issue in maybe_truncate(
+    return maybe_truncate(
         client.graphql_query(
             query,
             path=["organization", "repository", "issues"],
             org=repo.org,
             repo=repo.name,
         )
-    ):
-        yield Issue(
-            repo,
-            issue["author"]["login"],
-            date_from_iso(issue["createdAt"]),
-            date_from_iso(issue["closedAt"]),
-        )
-
-
-@dataclass(frozen=True)
-class Issue:
-    repo: Repo
-    author: str
-    created_on: date
-    closed_on: date
+    )
 
 
 def maybe_truncate(it):
