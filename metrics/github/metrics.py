@@ -1,12 +1,13 @@
 import datetime
 from collections import defaultdict
 
+from metrics.github.github import PR
 from metrics.tools.dates import iter_days
 
 
 def get_pr_metrics(prs):
-    old_counts = calculate_pr_counts(prs, is_old)
-    throughput_counts = calculate_pr_counts(prs, was_merged_on)
+    old_counts = calculate_pr_counts(prs, PR.was_old_on)
+    throughput_counts = calculate_pr_counts(prs, PR.was_merged_on)
 
     count_metrics = convert_pr_counts_to_metrics(old_counts, "queue_older_than_7_days")
     throughput_metrics = convert_pr_counts_to_metrics(throughput_counts, "prs_merged")
@@ -23,20 +24,6 @@ def calculate_pr_counts(prs, predicate):
             if predicate(pr, day):
                 counts[(pr.repo.org, pr.repo.name, pr.author, day)] += 1
     return dict(counts)
-
-
-def is_old(pr, dt):
-    opened = pr.created_on
-    closed = pr.closed_on if pr.closed_on else None
-
-    is_closed = closed and closed <= dt
-    opened_more_than_a_week_ago = dt - opened >= datetime.timedelta(weeks=1)
-
-    return not is_closed and opened_more_than_a_week_ago
-
-
-def was_merged_on(pr, dt):
-    return pr.merged_on and dt == pr.merged_on
 
 
 def convert_pr_counts_to_metrics(counts, name):

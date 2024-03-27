@@ -3,7 +3,17 @@ import datetime
 import pytest
 
 from metrics.github import github
-from metrics.github.github import Repo
+from metrics.github.github import PR, Repo
+
+
+TODAY = datetime.date(year=2023, month=6, day=10)
+YESTERDAY = datetime.date(year=2023, month=6, day=9)
+TOMORROW = datetime.date(year=2023, month=6, day=11)
+
+LONG_AGO = datetime.date.min
+
+SIX_DAYS = datetime.timedelta(days=6)
+ONE_WEEK = datetime.timedelta(weeks=1)
 
 
 @pytest.fixture
@@ -142,6 +152,31 @@ def test_returns_none_for_unknown_ownership(patch):
     assert github.all_repos() == [repo("ebmdatalab", "the_repo", None)]
 
 
+def test_is_old():
+    # A PR is old if it was created a week or more ago.
+    assert pr(created_on=LONG_AGO).was_old_on(TODAY)
+    assert pr(created_on=TODAY - ONE_WEEK).was_old_on(TODAY)
+    assert not pr(created_on=TODAY - SIX_DAYS).was_old_on(TODAY)
+    assert not pr(created_on=TODAY).was_old_on(TODAY)
+
+    # PRs that have not yet opened are not old. (This is a real case because we
+    # calculate metrics for historic dates.)
+    assert not pr(created_on=TODAY + ONE_WEEK).was_old_on(TODAY)
+
+    # Closed PRs are not considered old, as long as they were closed on or before
+    # the date that we're interested in.
+    assert not pr(created_on=LONG_AGO, closed_on=TODAY - ONE_WEEK).was_old_on(TODAY)
+    assert not pr(created_on=LONG_AGO, closed_on=TODAY).was_old_on(TODAY)
+    assert pr(created_on=LONG_AGO, closed_on=TODAY + ONE_WEEK).was_old_on(TODAY)
+
+
+def test_was_merged_in_on():
+    assert not pr(merged_on=None).was_merged_on(TODAY)
+    assert not pr(merged_on=YESTERDAY).was_merged_on(TODAY)
+    assert pr(merged_on=TODAY).was_merged_on(TODAY)
+    assert not pr(merged_on=TOMORROW).was_merged_on(TODAY)
+
+
 def repo_data(name, is_archived=False):
     return dict(
         name=name,
@@ -153,3 +188,7 @@ def repo_data(name, is_archived=False):
 
 def repo(org, name, team):
     return Repo(org, name, team, datetime.date.min)
+
+
+def pr(created_on=TODAY, closed_on=None, merged_on=None):
+    return PR(repo("org", "repo", "team"), "author", created_on, merged_on, closed_on)

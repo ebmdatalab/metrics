@@ -43,6 +43,18 @@ class PR:
     merged_on: datetime.date
     closed_on: datetime.date
 
+    def was_old_on(self, date):
+        opened = self.created_on
+        closed = self.closed_on if self.closed_on else None
+
+        is_closed = closed and closed <= date
+        opened_more_than_a_week_ago = date - opened >= datetime.timedelta(weeks=1)
+
+        return not is_closed and opened_more_than_a_week_ago
+
+    def was_merged_on(self, date):
+        return self.merged_on and date == self.merged_on
+
     @classmethod
     def from_dict(cls, data, repo):
         return cls(

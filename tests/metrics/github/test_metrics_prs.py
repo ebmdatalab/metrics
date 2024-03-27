@@ -3,18 +3,12 @@ import datetime
 import pytest
 
 from metrics.github.github import PR, Repo
-from metrics.github.metrics import calculate_pr_counts, is_old, was_merged_on
+from metrics.github.metrics import calculate_pr_counts
 
 
 TODAY = datetime.date(year=2023, month=6, day=10)
 YESTERDAY = datetime.date(year=2023, month=6, day=9)
-TOMORROW = datetime.date(year=2023, month=6, day=11)
 TWO_DAYS_AGO = datetime.date(year=2023, month=6, day=8)
-
-LONG_AGO = datetime.date.min
-
-SIX_DAYS = datetime.timedelta(days=6)
-ONE_WEEK = datetime.timedelta(weeks=1)
 
 pytestmark = pytest.mark.freeze_time(TODAY)
 
@@ -49,7 +43,7 @@ def test_counts_only_prs_matching_predicate():
         pr(r, author="an-author", merged_on=None),
     ]
 
-    counts = calculate_pr_counts(prs, lambda pr, _date: pr.merged_on)
+    counts = calculate_pr_counts(prs, lambda pr_, _date: pr_.merged_on)
     assert counts == {("an-org", "a-repo", "an-author", TODAY): 1}
 
 
@@ -88,31 +82,6 @@ def test_returns_counts_by_author():
         ("an-org", "a-repo", "an-author", TODAY): 1,
         ("an-org", "a-repo", "another-author", TODAY): 1,
     }
-
-
-def test_is_old():
-    # A PR is old if it was created a week or more ago.
-    assert is_old(pr(created_on=LONG_AGO), TODAY)
-    assert is_old(pr(created_on=TODAY - ONE_WEEK), TODAY)
-    assert not is_old(pr(created_on=TODAY - SIX_DAYS), TODAY)
-    assert not is_old(pr(created_on=TODAY), TODAY)
-
-    # PRs that have not yet opened are not old. (This is a real case because we
-    # calculate metrics for historic dates.)
-    assert not is_old(pr(created_on=TODAY + ONE_WEEK), TODAY)
-
-    # Closed PRs are not considered old, as long as they were closed on or before
-    # the date that we're interested in.
-    assert not is_old(pr(created_on=LONG_AGO, closed_on=TODAY - ONE_WEEK), TODAY)
-    assert not is_old(pr(created_on=LONG_AGO, closed_on=TODAY), TODAY)
-    assert is_old(pr(created_on=LONG_AGO, closed_on=TODAY + ONE_WEEK), TODAY)
-
-
-def test_was_merged_in_on():
-    assert not was_merged_on(pr(merged_on=None), TODAY)
-    assert not was_merged_on(pr(merged_on=YESTERDAY), TODAY)
-    assert was_merged_on(pr(merged_on=TODAY), TODAY)
-    assert not was_merged_on(pr(merged_on=TOMORROW), TODAY)
 
 
 def repo(org, name, is_archived=False):
