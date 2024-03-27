@@ -19,18 +19,14 @@ ONE_WEEK = datetime.timedelta(weeks=1)
 @pytest.fixture
 def patch(monkeypatch):
     def patch(query_func, result):
-        if isinstance(result, list):
-            fake = lambda *_args: result
-        elif isinstance(result, dict):
+        assert isinstance(result, dict)
 
-            def fake(*keys):
-                r = result
-                for key in keys:
-                    r = r[key]
-                return r
+        def fake(*keys):
+            r = result
+            for key in keys:
+                r = r[key]
+            return r
 
-        else:
-            raise ValueError
         monkeypatch.setattr(github.query, query_func, fake)
 
     return patch
@@ -54,12 +50,15 @@ def test_includes_tech_owned_repos(patch):
     )
     patch(
         "repos",
-        [
-            repo_data("ehrql"),
-            repo_data("cohort-extractor"),
-            repo_data("job-server"),
-            repo_data(".github"),
-        ],
+        {
+            "opensafely-core": [
+                repo_data("ehrql"),
+                repo_data("cohort-extractor"),
+                repo_data("job-server"),
+                repo_data(".github"),
+            ],
+            "ebmdatalab": [],
+        },
     )
     assert len(github.tech_repos()) == 4
 
@@ -74,9 +73,7 @@ def test_excludes_non_tech_owned_repos(patch):
     )
     patch(
         "repos",
-        [
-            repo_data("other-repo"),
-        ],
+        {"ebmdatalab": [repo_data("other-repo")], "opensafely-core": []},
     )
     assert len(github.tech_repos()) == 0
 
@@ -95,9 +92,10 @@ def test_excludes_archived_tech_repos(patch):
     )
     patch(
         "repos",
-        [
-            repo_data("other-repo", is_archived=True),
-        ],
+        {
+            "opensafely-core": [repo_data("other-repo", is_archived=True)],
+            "ebmdatalab": [],
+        },
     )
     assert len(github.tech_repos()) == 0
 
@@ -129,7 +127,13 @@ def test_looks_up_ownership(patch):
 
 
 def test_excludes_archived_non_tech_repos(patch):
-    patch("repos", [repo_data("the_repo", is_archived=True)])
+    patch(
+        "repos",
+        {
+            "opensafely-core": [],
+            "ebmdatalab": [repo_data("the_repo", is_archived=True)],
+        },
+    )
     patch(
         "team_repos",
         {
