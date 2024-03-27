@@ -24,7 +24,10 @@ def patch(monkeypatch):
         def fake(*keys):
             r = result
             for key in keys:
-                r = r[key]
+                if key in r:
+                    r = r[key]
+                else:
+                    return []
             return r
 
         monkeypatch.setattr(github.query, query_func, fake)
@@ -41,11 +44,6 @@ def test_includes_tech_owned_repos(patch):
                 "team-rex": ["job-server"],
                 "tech-shared": [".github"],
             },
-            "ebmdatalab": {
-                "team-rap": [],
-                "team-rex": [],
-                "tech-shared": [],
-            },
         },
     )
     patch(
@@ -57,7 +55,6 @@ def test_includes_tech_owned_repos(patch):
                 repo_data("job-server"),
                 repo_data(".github"),
             ],
-            "ebmdatalab": [],
         },
     )
     assert len(github.tech_repos()) == 4
@@ -66,47 +63,22 @@ def test_includes_tech_owned_repos(patch):
 def test_excludes_non_tech_owned_repos(patch):
     patch(
         "team_repos",
-        {
-            "opensafely-core": {"team-rap": [], "team-rex": [], "tech-shared": []},
-            "ebmdatalab": {"team-rap": [], "team-rex": [], "tech-shared": []},
-        },
+        {"ebmdatalab": {"team-rap": [], "team-rex": [], "tech-shared": []}},
     )
-    patch(
-        "repos",
-        {"ebmdatalab": [repo_data("other-repo")], "opensafely-core": []},
-    )
+    patch("repos", {"ebmdatalab": [repo_data("other-repo")]})
     assert len(github.tech_repos()) == 0
 
 
 def test_excludes_archived_tech_repos(patch):
-    patch(
-        "team_repos",
-        {
-            "opensafely-core": {
-                "team-rap": ["other-repo"],
-                "team-rex": [],
-                "tech-shared": [],
-            },
-            "ebmdatalab": {"team-rap": [], "team-rex": [], "tech-shared": []},
-        },
-    )
-    patch(
-        "repos",
-        {
-            "opensafely-core": [repo_data("other-repo", is_archived=True)],
-            "ebmdatalab": [],
-        },
-    )
+    patch("team_repos", {"opensafely-core": {"team-rap": ["other-repo"]}})
+    patch("repos", {"opensafely-core": [repo_data("other-repo", is_archived=True)]})
     assert len(github.tech_repos()) == 0
 
 
 def test_looks_up_ownership(patch):
     patch(
         "repos",
-        {
-            "ebmdatalab": [repo_data("repo1"), repo_data("repo2"), repo_data("repo3")],
-            "opensafely-core": [],
-        },
+        {"ebmdatalab": [repo_data("repo1"), repo_data("repo2"), repo_data("repo3")]},
     )
     patch(
         "team_repos",
@@ -115,8 +87,7 @@ def test_looks_up_ownership(patch):
                 "team-rex": ["repo1"],
                 "team-rap": ["repo2"],
                 "tech-shared": ["repo3"],
-            },
-            "opensafely-core": {"team-rap": [], "team-rex": [], "tech-shared": []},
+            }
         },
     )
     assert github.all_repos() == [
@@ -127,31 +98,19 @@ def test_looks_up_ownership(patch):
 
 
 def test_excludes_archived_non_tech_repos(patch):
-    patch(
-        "repos",
-        {
-            "opensafely-core": [],
-            "ebmdatalab": [repo_data("the_repo", is_archived=True)],
-        },
-    )
+    patch("repos", {"ebmdatalab": [repo_data("the_repo", is_archived=True)]})
     patch(
         "team_repos",
-        {
-            "ebmdatalab": {"team-rex": [], "team-rap": [], "tech-shared": []},
-            "opensafely-core": {"team-rap": [], "team-rex": [], "tech-shared": []},
-        },
+        {"ebmdatalab": {"team-rex": [], "team-rap": [], "tech-shared": []}},
     )
     assert github.all_repos() == []
 
 
 def test_returns_none_for_unknown_ownership(patch):
-    patch("repos", {"ebmdatalab": [repo_data("the_repo")], "opensafely-core": []})
+    patch("repos", {"ebmdatalab": [repo_data("the_repo")]})
     patch(
         "team_repos",
-        {
-            "ebmdatalab": {"team-rex": [], "team-rap": [], "tech-shared": []},
-            "opensafely-core": {"team-rap": [], "team-rex": [], "tech-shared": []},
-        },
+        {"ebmdatalab": {"team-rex": [], "team-rap": [], "tech-shared": []}},
     )
     assert github.all_repos() == [repo("ebmdatalab", "the_repo", None)]
 
