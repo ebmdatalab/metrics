@@ -37,7 +37,7 @@ def team_repos(org, team):
         yield repo["name"]
 
 
-def vulnerabilities(repo):
+def vulnerabilities(org, repo):
     query = """
     query vulnerabilities($cursor: String, $org: String!, $repo: String!) {
       organization(login: $org) {
@@ -62,12 +62,12 @@ def vulnerabilities(repo):
     return _client().graphql_query(
         query,
         path=["organization", "repository", "vulnerabilityAlerts"],
-        org=repo.org,
-        repo=repo.name,
+        org=org,
+        repo=repo,
     )
 
 
-def prs(repo):
+def prs(org, repo):
     query = """
     query prs($cursor: String, $org: String!, $repo: String!) {
       organization(login: $org) {
@@ -95,13 +95,13 @@ def prs(repo):
         _client().graphql_query(
             query,
             path=["organization", "repository", "pullRequests"],
-            org=repo.org,
-            repo=repo.name,
+            org=org,
+            repo=repo,
         )
     )
 
 
-def issues(repo):
+def issues(org, repo):
     query = """
     query issues($cursor: String, $org: String!, $repo: String!) {
       organization(login: $org) {
@@ -127,8 +127,8 @@ def issues(repo):
         _client().graphql_query(
             query,
             path=["organization", "repository", "issues"],
-            org=repo.org,
-            repo=repo.name,
+            org=org,
+            repo=repo,
         )
     )
 

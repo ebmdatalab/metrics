@@ -84,12 +84,18 @@ class Issue:
 
 
 def tech_prs():
-    return [PR.from_dict(pr, repo) for repo in tech_repos() for pr in query.prs(repo)]
+    return [
+        PR.from_dict(pr, repo)
+        for repo in tech_repos()
+        for pr in query.prs(repo.org, repo.name)
+    ]
 
 
 def tech_issues():
     return [
-        Issue.from_dict(i, repo) for repo in tech_repos() for i in query.issues(repo)
+        Issue.from_dict(i, repo)
+        for repo in tech_repos()
+        for i in query.issues(repo.org, repo.name)
     ]
 
 

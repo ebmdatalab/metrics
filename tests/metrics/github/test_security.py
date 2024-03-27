@@ -67,7 +67,7 @@ def test_vulnerabilities(monkeypatch):
 
     monkeypatch.setattr(security.github, "tech_repos", fake_repos)
 
-    def fake_vulnerabilities(repo):
+    def fake_vulnerabilities(org, repo):
         return [
             dict(
                 createdAt="2023-10-13T00:00:00Z",
