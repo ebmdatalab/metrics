@@ -14,15 +14,14 @@ def get_pr_metrics(prs):
     return count_metrics + throughput_metrics
 
 
-def calculate_pr_counts(prs_by_repo, predicate):
+def calculate_pr_counts(prs, predicate):
     counts = defaultdict(int)
-    for repo, prs in prs_by_repo.items():
-        for pr in prs:
-            start = pr.created_on
-            end = pr.closed_on if pr.closed_on else datetime.date.today()
-            for day in iter_days(start, end):
-                if predicate(pr, day):
-                    counts[(repo.org, repo.name, pr.author, day)] += 1
+    for pr in prs:
+        start = pr.created_on
+        end = pr.closed_on if pr.closed_on else datetime.date.today()
+        for day in iter_days(start, end):
+            if predicate(pr, day):
+                counts[(pr.repo.org, pr.repo.name, pr.author, day)] += 1
     return dict(counts)
 
 

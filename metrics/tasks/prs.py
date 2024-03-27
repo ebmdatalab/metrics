@@ -13,9 +13,7 @@ log = structlog.get_logger()
 def main():
     log.info("Getting metrics")
     prs = tech_prs()
-    log.info(
-        f"Got {sum(len(ps) for ps in prs.values())} PRs from {len(prs.keys())} repos"
-    )
+    log.info(f"Got {len(prs)} PRs")
 
     metrics = get_pr_metrics(prs)
     log.info("Got metrics")

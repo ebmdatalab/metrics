@@ -20,12 +20,7 @@ pytestmark = pytest.mark.freeze_time(TODAY)
 
 
 def test_makes_counts_for_every_day_between_pr_creation_and_now():
-    r = repo("an-org", "a-repo")
-    prs = {
-        r: [
-            pr(r, author="an-author", created_on=TWO_DAYS_AGO),
-        ]
-    }
+    prs = [pr(repo("an-org", "a-repo"), author="an-author", created_on=TWO_DAYS_AGO)]
 
     counts = calculate_pr_counts(prs, true)
     assert counts == {
@@ -37,13 +32,11 @@ def test_makes_counts_for_every_day_between_pr_creation_and_now():
 
 def test_counts_prs():
     r = repo("an-org", "a-repo")
-    prs = {
-        r: [
-            pr(r, author="an-author"),
-            pr(r, author="an-author"),
-            pr(r, author="an-author"),
-        ]
-    }
+    prs = [
+        pr(r, author="an-author"),
+        pr(r, author="an-author"),
+        pr(r, author="an-author"),
+    ]
 
     counts = calculate_pr_counts(prs, true)
     assert counts == {("an-org", "a-repo", "an-author", TODAY): 3}
@@ -51,24 +44,20 @@ def test_counts_prs():
 
 def test_counts_only_prs_matching_predicate():
     r = repo("an-org", "a-repo")
-    prs = {
-        r: [
-            pr(r, author="an-author", merged_on=TODAY),
-            pr(r, author="an-author", merged_on=None),
-        ]
-    }
+    prs = [
+        pr(r, author="an-author", merged_on=TODAY),
+        pr(r, author="an-author", merged_on=None),
+    ]
 
     counts = calculate_pr_counts(prs, lambda pr, _date: pr.merged_on)
     assert counts == {("an-org", "a-repo", "an-author", TODAY): 1}
 
 
 def test_returns_counts_by_org():
-    r1 = repo("an-org", "a-repo")
-    r2 = repo("another-org", "another-repo")
-    prs = {
-        r1: [pr(r1, author="an-author")],
-        r2: [pr(r2, author="an-author")],
-    }
+    prs = [
+        pr(repo("an-org", "a-repo"), author="an-author"),
+        pr(repo("another-org", "another-repo"), author="an-author"),
+    ]
 
     counts = calculate_pr_counts(prs, true)
     assert counts == {
@@ -78,12 +67,10 @@ def test_returns_counts_by_org():
 
 
 def test_returns_counts_by_repo():
-    r1 = repo("an-org", "a-repo")
-    r2 = repo("an-org", "another-repo")
-    prs = {
-        r1: [pr(r1, author="an-author")],
-        r2: [pr(r2, author="an-author")],
-    }
+    prs = [
+        pr(repo("an-org", "a-repo"), author="an-author"),
+        pr(repo("an-org", "another-repo"), author="an-author"),
+    ]
 
     counts = calculate_pr_counts(prs, true)
     assert counts == {
@@ -94,12 +81,7 @@ def test_returns_counts_by_repo():
 
 def test_returns_counts_by_author():
     r = repo("an-org", "a-repo")
-    prs = {
-        r: [
-            pr(r, author="an-author"),
-            pr(r, author="another-author"),
-        ]
-    }
+    prs = [pr(r, author="an-author"), pr(r, author="another-author")]
 
     counts = calculate_pr_counts(prs, true)
     assert counts == {

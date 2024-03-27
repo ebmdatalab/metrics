@@ -72,9 +72,9 @@ class Issue:
 
 
 def tech_prs():
-    prs = {}
+    prs = []
     for repo in tech_repos():
-        prs[repo] = [PR.from_dict(p, repo) for p in query.prs(repo)]
+        prs.extend(PR.from_dict(p, repo) for p in query.prs(repo))
     return prs
 
 
