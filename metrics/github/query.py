@@ -2,7 +2,6 @@ import itertools
 import os
 
 from metrics.github.client import GitHubClient
-from metrics.tools.dates import date_from_iso
 
 
 def repos(org):
@@ -92,22 +91,14 @@ def prs(repo):
       }
     }
     """
-    for pr in maybe_truncate(
+    return maybe_truncate(
         _client().graphql_query(
             query,
             path=["organization", "repository", "pullRequests"],
             org=repo.org,
             repo=repo.name,
         )
-    ):
-        yield {
-            "org": repo.org,
-            "repo": repo.name,
-            "author": pr["author"]["login"],
-            "closed_on": date_from_iso(pr["closedAt"]),
-            "created_on": date_from_iso(pr["createdAt"]),
-            "merged_on": date_from_iso(pr["mergedAt"]),
-        }
+    )
 
 
 def issues(repo):

@@ -36,6 +36,25 @@ class Repo:
 
 
 @dataclass(frozen=True)
+class PR:
+    repo: Repo
+    author: str
+    created_on: datetime.date
+    merged_on: datetime.date
+    closed_on: datetime.date
+
+    @classmethod
+    def from_dict(cls, data, repo):
+        return cls(
+            repo,
+            data["author"]["login"],
+            date_from_iso(data["createdAt"]),
+            date_from_iso(data["mergedAt"]),
+            date_from_iso(data["closedAt"]),
+        )
+
+
+@dataclass(frozen=True)
 class Issue:
     repo: Repo
     author: str
@@ -53,7 +72,10 @@ class Issue:
 
 
 def tech_prs():
-    return {repo: list(query.prs(repo)) for repo in tech_repos()}
+    prs = {}
+    for repo in tech_repos():
+        prs[repo] = [PR.from_dict(p, repo) for p in query.prs(repo)]
+    return prs
 
 
 def tech_issues():

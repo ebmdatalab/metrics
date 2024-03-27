@@ -18,17 +18,17 @@ def calculate_pr_counts(prs_by_repo, predicate):
     counts = defaultdict(int)
     for repo, prs in prs_by_repo.items():
         for pr in prs:
-            start = pr["created_on"]
-            end = pr["closed_on"] if pr["closed_on"] else datetime.date.today()
+            start = pr.created_on
+            end = pr.closed_on if pr.closed_on else datetime.date.today()
             for day in iter_days(start, end):
                 if predicate(pr, day):
-                    counts[(repo.org, repo.name, pr["author"], day)] += 1
+                    counts[(repo.org, repo.name, pr.author, day)] += 1
     return dict(counts)
 
 
 def is_old(pr, dt):
-    opened = pr["created_on"]
-    closed = pr["closed_on"] if pr["closed_on"] else None
+    opened = pr.created_on
+    closed = pr.closed_on if pr.closed_on else None
 
     is_closed = closed and closed <= dt
     opened_more_than_a_week_ago = dt - opened >= datetime.timedelta(weeks=1)
@@ -37,7 +37,7 @@ def is_old(pr, dt):
 
 
 def was_merged_on(pr, dt):
-    return pr["merged_on"] and dt == pr["merged_on"]
+    return pr.merged_on and dt == pr.merged_on
 
 
 def convert_pr_counts_to_metrics(counts, name):

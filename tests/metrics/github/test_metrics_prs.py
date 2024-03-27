@@ -2,7 +2,7 @@ import datetime
 
 import pytest
 
-from metrics.github.github import Repo
+from metrics.github.github import PR, Repo
 from metrics.github.metrics import calculate_pr_counts, is_old, was_merged_on
 
 
@@ -20,9 +20,10 @@ pytestmark = pytest.mark.freeze_time(TODAY)
 
 
 def test_makes_counts_for_every_day_between_pr_creation_and_now():
+    r = repo("an-org", "a-repo")
     prs = {
-        repo("an-org", "a-repo"): [
-            pr(author="an-author", created_on=TWO_DAYS_AGO),
+        r: [
+            pr(r, author="an-author", created_on=TWO_DAYS_AGO),
         ]
     }
 
@@ -35,11 +36,12 @@ def test_makes_counts_for_every_day_between_pr_creation_and_now():
 
 
 def test_counts_prs():
+    r = repo("an-org", "a-repo")
     prs = {
-        repo("an-org", "a-repo"): [
-            pr(author="an-author"),
-            pr(author="an-author"),
-            pr(author="an-author"),
+        r: [
+            pr(r, author="an-author"),
+            pr(r, author="an-author"),
+            pr(r, author="an-author"),
         ]
     }
 
@@ -48,21 +50,24 @@ def test_counts_prs():
 
 
 def test_counts_only_prs_matching_predicate():
+    r = repo("an-org", "a-repo")
     prs = {
-        repo("an-org", "a-repo"): [
-            pr(author="an-author", merged_on=TODAY),
-            pr(author="an-author", merged_on=None),
+        r: [
+            pr(r, author="an-author", merged_on=TODAY),
+            pr(r, author="an-author", merged_on=None),
         ]
     }
 
-    counts = calculate_pr_counts(prs, lambda pr, _date: pr["merged_on"])
+    counts = calculate_pr_counts(prs, lambda pr, _date: pr.merged_on)
     assert counts == {("an-org", "a-repo", "an-author", TODAY): 1}
 
 
 def test_returns_counts_by_org():
+    r1 = repo("an-org", "a-repo")
+    r2 = repo("another-org", "another-repo")
     prs = {
-        repo("an-org", "a-repo"): [pr(author="an-author")],
-        repo("another-org", "another-repo"): [pr(author="an-author")],
+        r1: [pr(r1, author="an-author")],
+        r2: [pr(r2, author="an-author")],
     }
 
     counts = calculate_pr_counts(prs, true)
@@ -73,9 +78,11 @@ def test_returns_counts_by_org():
 
 
 def test_returns_counts_by_repo():
+    r1 = repo("an-org", "a-repo")
+    r2 = repo("an-org", "another-repo")
     prs = {
-        repo("an-org", "a-repo"): [pr(author="an-author")],
-        repo("an-org", "another-repo"): [pr(author="an-author")],
+        r1: [pr(r1, author="an-author")],
+        r2: [pr(r2, author="an-author")],
     }
 
     counts = calculate_pr_counts(prs, true)
@@ -86,10 +93,11 @@ def test_returns_counts_by_repo():
 
 
 def test_returns_counts_by_author():
+    r = repo("an-org", "a-repo")
     prs = {
-        repo("an-org", "a-repo"): [
-            pr(author="an-author"),
-            pr(author="another-author"),
+        r: [
+            pr(r, author="an-author"),
+            pr(r, author="another-author"),
         ]
     }
 
@@ -136,13 +144,8 @@ def repo(org, name, is_archived=False):
     )
 
 
-def pr(created_on=TODAY, closed_on=None, merged_on=None, author=None):
-    return {
-        "created_on": created_on,
-        "closed_on": closed_on,
-        "merged_on": merged_on,
-        "author": author,
-    }
+def pr(repo_=None, created_on=TODAY, closed_on=None, merged_on=None, author=None):
+    return PR(repo_, author, created_on, merged_on, closed_on)
 
 
 def true(*_args):
