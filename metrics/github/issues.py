@@ -1,49 +1,23 @@
 import datetime
 from collections import defaultdict
-from dataclasses import dataclass
 
 import structlog
 
-from metrics.github import github, query
-from metrics.github.github import Repo
-from metrics.tools.dates import date_from_iso, iter_days
+from metrics.github.github import tech_issues
+from metrics.tools.dates import iter_days
 
 
 log = structlog.get_logger()
 
 
-@dataclass(frozen=True)
-class Issue:
-    repo: Repo
-    author: str
-    created_on: datetime.date
-    closed_on: datetime.date
-
-    @classmethod
-    def from_dict(cls, data, repo):
-        return cls(
-            repo,
-            data["author"]["login"],
-            date_from_iso(data["createdAt"]),
-            date_from_iso(data["closedAt"]),
-        )
-
-
 def get_metrics():
-    issues = get_issues()
+    issues = tech_issues()
     log.info(f"Got {len(issues)} issues")
 
     counts = calculate_counts(issues)
     count_metrics = convert_to_metrics(counts)
 
     return count_metrics
-
-
-def get_issues():
-    issues = []
-    for repo in github.tech_repos():
-        issues.extend(Issue.from_dict(i, repo) for i in query.issues(repo))
-    return issues
 
 
 def calculate_counts(issues):

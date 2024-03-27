@@ -1,3 +1,4 @@
+import datetime
 from dataclasses import dataclass
 from datetime import date
 
@@ -35,8 +36,32 @@ class Repo:
         )
 
 
+@dataclass(frozen=True)
+class Issue:
+    repo: Repo
+    author: str
+    created_on: datetime.date
+    closed_on: datetime.date
+
+    @classmethod
+    def from_dict(cls, data, repo):
+        return cls(
+            repo,
+            data["author"]["login"],
+            date_from_iso(data["createdAt"]),
+            date_from_iso(data["closedAt"]),
+        )
+
+
 def tech_prs():
     return {repo: list(query.prs(repo)) for repo in tech_repos()}
+
+
+def tech_issues():
+    issues = []
+    for repo in tech_repos():
+        issues.extend(Issue.from_dict(i, repo) for i in query.issues(repo))
+    return issues
 
 
 def tech_repos():
