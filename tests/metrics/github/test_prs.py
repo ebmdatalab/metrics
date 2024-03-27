@@ -3,7 +3,7 @@ import datetime
 import pytest
 
 from metrics.github.github import Repo
-from metrics.github.metrics import calculate_counts, is_old, was_merged_on
+from metrics.github.metrics import calculate_pr_counts, is_old, was_merged_on
 
 
 TODAY = datetime.date(year=2023, month=6, day=10)
@@ -26,7 +26,7 @@ def test_makes_counts_for_every_day_between_pr_creation_and_now():
         ]
     }
 
-    counts = calculate_counts(prs, true)
+    counts = calculate_pr_counts(prs, true)
     assert counts == {
         ("an-org", "a-repo", "an-author", TWO_DAYS_AGO): 1,
         ("an-org", "a-repo", "an-author", YESTERDAY): 1,
@@ -43,7 +43,7 @@ def test_counts_prs():
         ]
     }
 
-    counts = calculate_counts(prs, true)
+    counts = calculate_pr_counts(prs, true)
     assert counts == {("an-org", "a-repo", "an-author", TODAY): 3}
 
 
@@ -55,7 +55,7 @@ def test_counts_only_prs_matching_predicate():
         ]
     }
 
-    counts = calculate_counts(prs, lambda pr, _date: pr["merged_on"])
+    counts = calculate_pr_counts(prs, lambda pr, _date: pr["merged_on"])
     assert counts == {("an-org", "a-repo", "an-author", TODAY): 1}
 
 
@@ -65,7 +65,7 @@ def test_returns_counts_by_org():
         repo("another-org", "another-repo"): [pr(author="an-author")],
     }
 
-    counts = calculate_counts(prs, true)
+    counts = calculate_pr_counts(prs, true)
     assert counts == {
         ("an-org", "a-repo", "an-author", TODAY): 1,
         ("another-org", "another-repo", "an-author", TODAY): 1,
@@ -78,7 +78,7 @@ def test_returns_counts_by_repo():
         repo("an-org", "another-repo"): [pr(author="an-author")],
     }
 
-    counts = calculate_counts(prs, true)
+    counts = calculate_pr_counts(prs, true)
     assert counts == {
         ("an-org", "a-repo", "an-author", TODAY): 1,
         ("an-org", "another-repo", "an-author", TODAY): 1,
@@ -93,7 +93,7 @@ def test_returns_counts_by_author():
         ]
     }
 
-    counts = calculate_counts(prs, true)
+    counts = calculate_pr_counts(prs, true)
     assert counts == {
         ("an-org", "a-repo", "an-author", TODAY): 1,
         ("an-org", "a-repo", "another-author", TODAY): 1,

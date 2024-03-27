@@ -2,7 +2,8 @@ import sys
 
 import structlog
 
-from metrics.github import issues
+from metrics.github.github import tech_issues
+from metrics.github.metrics import get_issues_metrics
 from metrics.timescaledb import db, tables
 
 
@@ -11,7 +12,10 @@ log = structlog.get_logger()
 
 def main():
     log.info("Getting metrics")
-    metrics = issues.get_metrics()
+    issues = tech_issues()
+    log.info(f"Got {len(issues)} issues")
+
+    metrics = get_issues_metrics(issues)
     log.info("Got metrics")
 
     log.info("Writing data")
