@@ -1,15 +1,15 @@
+import datetime
 from dataclasses import dataclass
-from datetime import date
 
 from ..tools import dates
-from . import query, repos
+from . import github, query
 
 
 @dataclass
 class Vulnerability:
-    created_on: date
-    fixed_on: date | None
-    dismissed_on: date | None
+    created_on: datetime.date
+    fixed_on: datetime.date | None
+    dismissed_on: datetime.date | None
 
     def is_open_on(self, target_date):
         return self.created_on <= target_date and not self.is_closed_on(target_date)
@@ -28,11 +28,13 @@ class Vulnerability:
         )
 
 
-def vulnerabilities(client, org, to_date):
+def vulnerabilities(to_date):
     metrics = []
 
-    for repo in repos.tech_repos(client, org):
-        vulns = list(map(Vulnerability.from_dict, query.vulnerabilities(client, repo)))
+    for repo in github.tech_repos():
+        vulns = list(
+            map(Vulnerability.from_dict, query.vulnerabilities(repo.org, repo.name))
+        )
 
         for day in dates.iter_days(repo.created_on, to_date):
             closed_vulns = sum(1 for v in vulns if v.is_closed_on(day))

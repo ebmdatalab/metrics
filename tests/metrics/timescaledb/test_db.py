@@ -1,4 +1,4 @@
-from datetime import date, timedelta
+import datetime
 
 import pytest
 from sqlalchemy import TIMESTAMP, Column, Table, Text, create_engine, select, text
@@ -131,9 +131,11 @@ def test_reset_hypertable(engine, hypertable):
     # put enough rows in the db to make sure we exercise the batch removal of rows
     batch_size = 5
     rows = []
-    start = date(2020, 4, 1)
+    start = datetime.date(2020, 4, 1)
     for i in range(batch_size * 5):
-        rows.append({"time": start + timedelta(days=i), "value": "reset" + str(i)})
+        rows.append(
+            {"time": start + datetime.timedelta(days=i), "value": "reset" + str(i)}
+        )
 
     check_reset(batch_size, engine, rows, hypertable)
 

@@ -1,10 +1,9 @@
-import os
 import sys
 
 import structlog
 
-from metrics.github.client import GitHubClient
-from metrics.github.prs import get_metrics
+from metrics.github.github import tech_prs
+from metrics.github.metrics import get_pr_metrics
 from metrics.timescaledb import db, tables
 
 
@@ -12,15 +11,11 @@ log = structlog.get_logger()
 
 
 def main():
-    client = GitHubClient(
-        tokens={
-            "ebmdatalab": os.environ["GITHUB_EBMDATALAB_TOKEN"],
-            "opensafely-core": os.environ["GITHUB_OS_CORE_TOKEN"],
-        }
-    )
-
     log.info("Getting metrics")
-    metrics = get_metrics(client, ["ebmdatalab", "opensafely-core"])
+    prs = tech_prs()
+    log.info(f"Got {len(prs)} PRs")
+
+    metrics = get_pr_metrics(prs)
     log.info("Got metrics")
 
     log.info("Writing data")

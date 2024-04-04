@@ -1,10 +1,10 @@
 import itertools
 import os
 
-from metrics.tools.dates import date_from_iso
+from metrics.github.client import GitHubClient
 
 
-def repos(client, org):
+def repos(org):
     query = """
     query repos($cursor: String, $org: String!) {
       organization(login: $org) {
@@ -24,20 +24,20 @@ def repos(client, org):
     }
     """
     return maybe_truncate(
-        client.graphql_query(query, path=["organization", "repositories"], org=org)
+        _client().graphql_query(query, path=["organization", "repositories"], org=org)
     )
 
 
-def team_repos(client, org, team):
+def team_repos(org, team):
     """The API doesn't make it easy for us to get all the information we need about repos in
     one place, so we just return a list of repos here and join that to the richer repo objects
     in the caller."""
-    results = client.rest_query("/orgs/{org}/teams/{team}/repos", org=org, team=team)
+    results = _client().rest_query("/orgs/{org}/teams/{team}/repos", org=org, team=team)
     for repo in results:
         yield repo["name"]
 
 
-def vulnerabilities(client, repo):
+def vulnerabilities(org, repo):
     query = """
     query vulnerabilities($cursor: String, $org: String!, $repo: String!) {
       organization(login: $org) {
@@ -59,15 +59,15 @@ def vulnerabilities(client, repo):
     }
     """
 
-    return client.graphql_query(
+    return _client().graphql_query(
         query,
         path=["organization", "repository", "vulnerabilityAlerts"],
-        org=repo.org,
-        repo=repo.name,
+        org=org,
+        repo=repo,
     )
 
 
-def prs(client, repo):
+def prs(org, repo):
     query = """
     query prs($cursor: String, $org: String!, $repo: String!) {
       organization(login: $org) {
@@ -91,25 +91,17 @@ def prs(client, repo):
       }
     }
     """
-    for pr in maybe_truncate(
-        client.graphql_query(
+    return maybe_truncate(
+        _client().graphql_query(
             query,
             path=["organization", "repository", "pullRequests"],
-            org=repo.org,
-            repo=repo.name,
+            org=org,
+            repo=repo,
         )
-    ):
-        yield {
-            "org": repo.org,
-            "repo": repo.name,
-            "author": pr["author"]["login"],
-            "closed_on": date_from_iso(pr["closedAt"]),
-            "created_on": date_from_iso(pr["createdAt"]),
-            "merged_on": date_from_iso(pr["mergedAt"]),
-        }
+    )
 
 
-def issues(client, repo):
+def issues(org, repo):
     query = """
     query issues($cursor: String, $org: String!, $repo: String!) {
       organization(login: $org) {
@@ -132,12 +124,21 @@ def issues(client, repo):
     }
     """
     return maybe_truncate(
-        client.graphql_query(
+        _client().graphql_query(
             query,
             path=["organization", "repository", "issues"],
-            org=repo.org,
-            repo=repo.name,
+            org=org,
+            repo=repo,
         )
+    )
+
+
+def _client():
+    return GitHubClient(
+        tokens={
+            "ebmdatalab": os.environ["GITHUB_EBMDATALAB_TOKEN"],
+            "opensafely-core": os.environ["GITHUB_OS_CORE_TOKEN"],
+        }
     )
 
 
