@@ -8,6 +8,22 @@ from metrics.tools.dates import date_from_iso
 # Slugs (not names!) of the GitHub entities we're interested in
 _TECH_TEAMS = ["team-rap", "team-rex", "tech-shared"]
 _ORGS = ["ebmdatalab", "opensafely-core"]
+# Some repos (for example the websites) frequently have PRs created by people
+# outside the tech teams. We don't want our delivery metrics to be skewed by these
+# and we don't necessarily want to hold people in other teams to the same hygiene
+# standards as we hold ourselves. So we treat them differently. (We don't want to
+# exclude such PRs from other repos because it's definitely interesting if there are
+# old PRs (or lots of PRs) created by non-tech-team members in those repos.)
+_CONTENT_REPOS = {
+    "ebmdatalab": [
+        "opensafely.org",
+        "team-manual",
+        "bennett.ox.ac.uk",
+        "openprescribing",
+    ]
+}
+_MANAGERS = {"sebbacon", "benbc"}
+_EX_DEVELOPERS = {"ghickman", "milanwiedemann", "CarolineMorton"}
 
 
 @dataclass(frozen=True)
@@ -22,6 +38,10 @@ class Repo:
     @property
     def is_tech_owned(self):
         return self.team in _TECH_TEAMS
+
+    @property
+    def is_content_repo(self):
+        return self.org in _CONTENT_REPOS and self.name in _CONTENT_REPOS[self.org]
 
     @classmethod
     def from_dict(cls, data, org, team):
@@ -42,6 +62,7 @@ class PR:
     created_on: datetime.date
     merged_on: datetime.date
     closed_on: datetime.date
+    is_content: bool
 
     def was_old_on(self, date):
         opened = self.created_on
@@ -56,13 +77,17 @@ class PR:
         return self.merged_on and date == self.merged_on
 
     @classmethod
-    def from_dict(cls, data, repo):
+    def from_dict(cls, data, repo, tech_team_members):
+        author = data["author"]["login"]
+        is_content = repo.is_content_repo and author not in tech_team_members
+
         return cls(
             repo,
-            data["author"]["login"],
+            author,
             date_from_iso(data["createdAt"]),
             date_from_iso(data["mergedAt"]),
             date_from_iso(data["closedAt"]),
+            is_content,
         )
 
 
@@ -84,8 +109,9 @@ class Issue:
 
 
 def tech_prs():
+    tech_team_members = _tech_team_members()
     return [
-        PR.from_dict(pr, repo)
+        PR.from_dict(pr, repo, tech_team_members)
         for repo in tech_repos()
         for pr in query.prs(repo.org, repo.name)
     ]
@@ -119,3 +145,16 @@ def _get_repos():
 
 def _repo_owners(org):
     return {repo: team for team in _TECH_TEAMS for repo in query.team_repos(org, team)}
+
+
+def _tech_team_members():
+    return (
+        _MANAGERS
+        | _EX_DEVELOPERS
+        | {
+            person
+            for org in _ORGS
+            for team in _TECH_TEAMS
+            for person in query.team_members(org, team)
+        }
+    )

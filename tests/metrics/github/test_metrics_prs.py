@@ -18,9 +18,9 @@ def test_makes_counts_for_every_day_between_pr_creation_and_now():
 
     counts = calculate_pr_counts(prs, true)
     assert counts == {
-        ("an-org", "a-repo", "an-author", TWO_DAYS_AGO): 1,
-        ("an-org", "a-repo", "an-author", YESTERDAY): 1,
-        ("an-org", "a-repo", "an-author", TODAY): 1,
+        ("an-org", "a-repo", "an-author", False, TWO_DAYS_AGO): 1,
+        ("an-org", "a-repo", "an-author", False, YESTERDAY): 1,
+        ("an-org", "a-repo", "an-author", False, TODAY): 1,
     }
 
 
@@ -33,7 +33,7 @@ def test_counts_prs():
     ]
 
     counts = calculate_pr_counts(prs, true)
-    assert counts == {("an-org", "a-repo", "an-author", TODAY): 3}
+    assert counts == {("an-org", "a-repo", "an-author", False, TODAY): 3}
 
 
 def test_counts_only_prs_matching_predicate():
@@ -44,7 +44,7 @@ def test_counts_only_prs_matching_predicate():
     ]
 
     counts = calculate_pr_counts(prs, lambda pr_, _date: pr_.merged_on)
-    assert counts == {("an-org", "a-repo", "an-author", TODAY): 1}
+    assert counts == {("an-org", "a-repo", "an-author", False, TODAY): 1}
 
 
 def test_returns_counts_by_org():
@@ -55,8 +55,8 @@ def test_returns_counts_by_org():
 
     counts = calculate_pr_counts(prs, true)
     assert counts == {
-        ("an-org", "a-repo", "an-author", TODAY): 1,
-        ("another-org", "another-repo", "an-author", TODAY): 1,
+        ("an-org", "a-repo", "an-author", False, TODAY): 1,
+        ("another-org", "another-repo", "an-author", False, TODAY): 1,
     }
 
 
@@ -68,8 +68,8 @@ def test_returns_counts_by_repo():
 
     counts = calculate_pr_counts(prs, true)
     assert counts == {
-        ("an-org", "a-repo", "an-author", TODAY): 1,
-        ("an-org", "another-repo", "an-author", TODAY): 1,
+        ("an-org", "a-repo", "an-author", False, TODAY): 1,
+        ("an-org", "another-repo", "an-author", False, TODAY): 1,
     }
 
 
@@ -79,8 +79,22 @@ def test_returns_counts_by_author():
 
     counts = calculate_pr_counts(prs, true)
     assert counts == {
-        ("an-org", "a-repo", "an-author", TODAY): 1,
-        ("an-org", "a-repo", "another-author", TODAY): 1,
+        ("an-org", "a-repo", "an-author", False, TODAY): 1,
+        ("an-org", "a-repo", "another-author", False, TODAY): 1,
+    }
+
+
+def test_distinguishes_content_from_non_content():
+    r = repo("an-org", "a-repo")
+    prs = [
+        pr(r, author="an-author", is_content=True),
+        pr(r, author="an-author", is_content=False),
+    ]
+
+    counts = calculate_pr_counts(prs, true)
+    assert counts == {
+        ("an-org", "a-repo", "an-author", False, TODAY): 1,
+        ("an-org", "a-repo", "an-author", True, TODAY): 1,
     }
 
 
@@ -95,8 +109,15 @@ def repo(org, name, is_archived=False):
     )
 
 
-def pr(repo_=None, created_on=TODAY, closed_on=None, merged_on=None, author=None):
-    return PR(repo_, author, created_on, merged_on, closed_on)
+def pr(
+    repo_=None,
+    created_on=TODAY,
+    closed_on=None,
+    merged_on=None,
+    author=None,
+    is_content=False,
+):
+    return PR(repo_, author, created_on, merged_on, closed_on, is_content)
 
 
 def true(*_args):
