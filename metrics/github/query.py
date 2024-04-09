@@ -32,9 +32,17 @@ def team_repos(org, team):
     """The API doesn't make it easy for us to get all the information we need about repos in
     one place, so we just return a list of repos here and join that to the richer repo objects
     in the caller."""
-    results = _client().rest_query("/orgs/{org}/teams/{team}/repos", org=org, team=team)
-    for repo in results:
+    repos = _client().rest_query("/orgs/{org}/teams/{team}/repos", org=org, team=team)
+    for repo in repos:
         yield repo["name"]
+
+
+def team_members(org, team):
+    members = _client().rest_query(
+        "/orgs/{org}/teams/{team}/members", org=org, team=team
+    )
+    for member in members:
+        yield member["login"]
 
 
 def vulnerabilities(org, repo):

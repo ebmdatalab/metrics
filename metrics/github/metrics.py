@@ -22,14 +22,14 @@ def calculate_pr_counts(prs, predicate):
         end = pr.closed_on if pr.closed_on else datetime.date.today()
         for day in iter_days(start, end):
             if predicate(pr, day):
-                counts[(pr.repo.org, pr.repo.name, pr.author, day)] += 1
+                counts[(pr.repo.org, pr.repo.name, pr.author, pr.is_content, day)] += 1
     return dict(counts)
 
 
 def convert_pr_counts_to_metrics(counts, name):
     metrics = []
     for coord, count in counts.items():
-        org, repo, author, date_ = coord
+        org, repo, author, is_content, date_ = coord
         timestamp = datetime.datetime.combine(date_, datetime.time())
         metrics.append(
             {
@@ -38,6 +38,7 @@ def convert_pr_counts_to_metrics(counts, name):
                 "organisation": org,
                 "repo": repo,
                 "author": author,
+                "is_content": is_content,
                 "value": count,
             }
         )

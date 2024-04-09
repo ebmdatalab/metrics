@@ -115,6 +115,41 @@ def test_returns_none_for_unknown_ownership(patch):
     assert github.all_repos() == [repo("ebmdatalab", "the_repo", None)]
 
 
+def test_correctly_labels_non_tech_prs_from_non_content_repos(patch):
+    patch("team_members", {"ebmdatalab": {"team-rex": ["tech-person"]}})
+    patch("team_repos", {"ebmdatalab": {"team-rex": ["job-server"]}})
+    patch("repos", {"ebmdatalab": [repo_data("job-server")]})
+    patch("prs", {"ebmdatalab": {"job-server": [pr_data(author="non-tech-person")]}})
+
+    prs = github.tech_prs()
+    assert len(prs) == 1
+    assert not prs[0].is_content
+
+
+def test_correctly_labels_tech_prs_from_content_repos(patch):
+    patch("team_members", {"ebmdatalab": {"team-rex": ["tech-person"]}})
+    patch("team_repos", {"ebmdatalab": {"team-rex": ["opensafely.org"]}})
+    patch("repos", {"ebmdatalab": [repo_data("opensafely.org")]})
+    patch("prs", {"ebmdatalab": {"opensafely.org": [pr_data(author="tech-person")]}})
+
+    prs = github.tech_prs()
+    assert len(prs) == 1
+    assert not prs[0].is_content
+
+
+def test_correctly_labels_non_tech_prs_from_content_repos(patch):
+    patch("team_members", {"ebmdatalab": {"team-rex": ["tech-person"]}})
+    patch("team_repos", {"ebmdatalab": {"team-rex": ["opensafely.org"]}})
+    patch("repos", {"ebmdatalab": [repo_data("opensafely.org")]})
+    patch(
+        "prs", {"ebmdatalab": {"opensafely.org": [pr_data(author="non-tech-person")]}}
+    )
+
+    prs = github.tech_prs()
+    assert len(prs) == 1
+    assert prs[0].is_content
+
+
 def test_is_old():
     # A PR is old if it was created a week or more ago.
     assert pr(created_on=LONG_AGO).was_old_on(TODAY)
@@ -153,5 +188,21 @@ def repo(org, name, team):
     return Repo(org, name, team, datetime.date.min)
 
 
-def pr(created_on=TODAY, closed_on=None, merged_on=None):
-    return PR(repo("org", "repo", "team"), "author", created_on, merged_on, closed_on)
+def pr_data(author="author"):
+    return dict(
+        author=dict(login=author),
+        createdAt=datetime.datetime.min.isoformat(),
+        mergedAt=None,
+        closedAt=None,
+    )
+
+
+def pr(created_on=TODAY, closed_on=None, merged_on=None, is_content=False):
+    return PR(
+        repo("org", "repo", "team"),
+        "author",
+        created_on,
+        merged_on,
+        closed_on,
+        is_content,
+    )

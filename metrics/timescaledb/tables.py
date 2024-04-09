@@ -20,6 +20,7 @@ GitHubPullRequests = Table(
     Column("name", Text, primary_key=True),
     Column("value", Integer),
     Column("author", Text, primary_key=True),
+    Column("is_content", Boolean, primary_key=True),
     Column("organisation", Text, primary_key=True),
     Column("repo", Text, primary_key=True),
 )
