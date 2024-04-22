@@ -53,9 +53,9 @@ _compile src dst *args: virtualenv
     $BIN/pip-compile --allow-unsafe --generate-hashes --output-file={{ dst }} {{ src }} {{ args }}
 
 
-# update requirements.prod.txt if pyproject.toml has changed
+# update requirements.prod.txt if requirements.prod.in has changed
 requirements-prod *args:
-    "{{ just_executable() }}" _compile pyproject.toml requirements.prod.txt {{ args }}
+    "{{ just_executable() }}" _compile requirements.prod.in requirements.prod.txt {{ args }}
 
 
 # update requirements.dev.txt if requirements.dev.in has changed
