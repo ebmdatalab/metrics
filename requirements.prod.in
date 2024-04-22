@@ -1,0 +1,5 @@
+  greenlet
+  requests
+  slack-bolt
+  sqlalchemy[postgresql_psycopgbinary]
+  structlog
