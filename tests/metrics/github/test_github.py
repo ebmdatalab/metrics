@@ -35,6 +35,23 @@ def patch(monkeypatch):
     return patch
 
 
+def test_codespaces(patch):
+    patch(
+        "codespaces",
+        {
+            "opensafely": [
+                {
+                    "owner": {"login": "testuser"},
+                    "repository": {"name": "testrepo"},
+                    "created_at": datetime.datetime.now().isoformat(),
+                    "last_used_at": datetime.datetime.now().isoformat(),
+                },
+            ]
+        },
+    )
+    assert len(github.codespaces("opensafely")) == 1
+
+
 def test_includes_tech_owned_repos(patch):
     patch(
         "team_repos",

@@ -108,6 +108,32 @@ class Issue:
         )
 
 
+@dataclass(frozen=True)
+class Codespace:
+    org: str
+    repo_name: str
+    user: str
+    created_at: datetime.datetime
+    last_used_at: datetime.datetime
+
+    @classmethod
+    def from_dict(cls, data, org):
+        return cls(
+            org=org,
+            repo_name=data["repository"]["name"],
+            user=data["owner"]["login"],
+            created_at=data["created_at"],
+            last_used_at=data["last_used_at"],
+        )
+
+
+def codespaces(org):
+    return [
+        Codespace.from_dict(data=codespace, org=org)
+        for codespace in query.codespaces(org)
+    ]
+
+
 def tech_prs():
     tech_team_members = _tech_team_members()
     return [
