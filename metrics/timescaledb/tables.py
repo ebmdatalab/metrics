@@ -4,6 +4,16 @@ from sqlalchemy import TIMESTAMP, Boolean, Column, Integer, MetaData, Table, Tex
 metadata = MetaData()
 
 
+GitHubCodespaces = Table(
+    "github_codespaces",
+    metadata,
+    Column("created_at", TIMESTAMP(timezone=True), primary_key=True),
+    Column("organisation", Text, primary_key=True),
+    Column("repo", Text, primary_key=True),
+    Column("user", Text, primary_key=True),
+    Column("last_used_at", TIMESTAMP(timezone=True)),
+)
+
 GitHubRepos = Table(
     "github_repos",
     metadata,
