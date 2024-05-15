@@ -19,13 +19,53 @@ def reset_table(table, batch_size=None):
 
 
 def write(table, rows):
-    max_params = 65535  # limit for postgresql
-    batch_size = max_params // len(table.columns)
+    batch_size = _batch_size(table)
 
     with _get_engine().begin() as connection:
         for values in batched(rows, batch_size):
             connection.execute(insert(table).values(values))
             log.info("Inserted %s rows", len(values), table=table.name)
+
+
+def upsert(table, rows):
+    _ensure_table(table)
+    batch_size = _batch_size(table)
+    non_pk_columns = set(table.columns) - set(table.primary_key.columns)
+
+    # use the primary key constraint to match rows to be updated,
+    # using default constraint name if not otherwise specified
+    constraint = table.primary_key.name or table.name + "_pkey"
+
+    with _get_engine().begin() as connection:
+        for values in batched(rows, batch_size):
+            # Construct a PostgreSQL "INSERT..ON CONFLICT" style upsert statement
+            # https://docs.sqlalchemy.org/en/20/dialects/postgresql.html#insert-on-conflict-upsert
+
+            # "Vanilla" statement to start, we need this to be able to derive
+            # the "excluded" columns in the values which we need to use to update
+            # the target table in case of conflict on the constraint
+            insert_stmt = insert(table).values(values)
+
+            # This dict dicates which columns in the target table are updated (the
+            # non-PK columns) and the corresponding values with which they are updated
+            update_set_clause = {
+                c: insert_stmt.excluded[c.name] for c in non_pk_columns
+            }
+
+            # Extend the insert statement to include checking for row conflicts using
+            # the primary key constraint and telling the database to update
+            # the conflicting rows according to the SET clause
+            insert_stmt = insert_stmt.on_conflict_do_update(
+                constraint=constraint,
+                set_=update_set_clause,
+            )
+            connection.execute(insert_stmt)
+            log.info("Inserted %s rows", len(values), table=table.name)
+
+
+def _batch_size(table):
+    max_params = 65535  # limit for postgresql
+    return max_params // len(table.columns)
 
 
 def _drop_table(table, batch_size):
