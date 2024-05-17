@@ -75,3 +75,16 @@ def convert_issue_counts_to_metrics(counts):
             }
         )
     return metrics
+
+
+def convert_codespaces_to_dicts(codespaces):
+    return [
+        {
+            "organisation": c.org,
+            "repo": c.repo_name,
+            "user": c.user,
+            "created_at": c.created_at,
+            "last_used_at": c.last_used_at,
+        }
+        for c in codespaces
+    ]
