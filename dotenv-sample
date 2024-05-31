@@ -4,6 +4,7 @@ TIMESCALEDB_URL=postgresql://user:pass@localhost:5433/metrics
 # API tokens for pulling data from Github
 GITHUB_EBMDATALAB_TOKEN=
 GITHUB_OS_CORE_TOKEN=
+GITHUB_OS_TOKEN=
 
 # Slack API access credentials.
 # The slack app used for this will need the following OAuth scopes:

@@ -164,3 +164,29 @@ def test_write(engine, table):
     # check rows are in table
     rows = get_rows(engine, table)
     assert len(rows) == 3
+
+
+def test_upsert(engine, table):
+    # add a non-PK column to the table
+    table.append_column(Column("value2", Text))
+
+    # insert initial rows
+    rows = [{"value": i, "value2": "a"} for i in range(1, 4)]
+    db.upsert(table, rows)
+
+    # second batch of rows, some with preexisting value1, some new
+    # all with different value2
+    rows = [{"value": i, "value2": "b"} for i in range(3, 6)]
+    db.upsert(table, rows)
+
+    # check all rows are in table
+    rows = get_rows(engine, table)
+    assert len(rows) == 5
+
+    # check upsert leaves unmatched rows 1-2 intact
+    original_rows = [r for r in rows if int(r[0]) < 3]
+    assert original_rows == [("1", "a"), ("2", "a")]
+
+    # check upsert modifies matched row 3 and new rows 4-5
+    modified_rows = [r for r in rows if int(r[0]) >= 3]
+    assert modified_rows == [("3", "b"), ("4", "b"), ("5", "b")]

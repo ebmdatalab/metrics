@@ -52,6 +52,14 @@ class GitHubClient:
             data = response.json()
             if isinstance(data, list):
                 yield from data
+
+            # Unlike the team repositories endpoint or the team members endpoint,
+            # which return arrays of the objects we're interested in,
+            # the codespaces endpoint returns an object.
+            # This object has a codespaces key,
+            # whose value is an array of the objects we're interested in.
+            elif "codespaces" in path and isinstance(data, dict):
+                yield from data["codespaces"]
             else:
                 raise RuntimeError("Unexpected response format:", data)
 

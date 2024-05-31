@@ -141,11 +141,16 @@ def issues(org, repo):
     )
 
 
+def codespaces(org):
+    yield from _client().rest_query("/orgs/{org}/codespaces", org=org)
+
+
 def _client():
     return GitHubClient(
         tokens={
             "ebmdatalab": os.environ["GITHUB_EBMDATALAB_TOKEN"],
             "opensafely-core": os.environ["GITHUB_OS_CORE_TOKEN"],
+            "opensafely": os.environ["GITHUB_OS_TOKEN"],
         }
     )
 

@@ -9,6 +9,7 @@ dokku$ dokku git:set metrics deploy-branch main
 ```bash
 dokku config:set metrics GITHUB_EBMDATALAB_TOKEN='xxx'
 dokku config:set metrics GITHUB_OS_CORE_TOKEN='xxx'
+dokku config:set metrics GITHUB_OS_TOKEN='xxx'
 dokku config:set metrics SLACK_SIGNING_SECRET='xxx'
 dokku config:set metrics SLACK_TECH_SUPPORT_CHANNEL_ID='xxx'
 dokku config:set metrics SLACK_TOKEN='xxx'
@@ -21,6 +22,12 @@ Each token is assigned to a single organisation and should have the following *r
 * organisation permissions: members
 * *all repositories* owned by the organisation with the following permissions:
 Code scanning alerts, Dependabot alerts, Metadata, Pull requests and Repository security advisories
+
+The `GITHUB_OS_TOKEN` is a fine-grained GitHub personal access token that is used for authenticating with the GitHub REST API.
+It is assigned to a single organisation and should have the following *read-only* permissions:
+* organisation permissions: codespaces
+* *all repositories* owned by the organisation with the following permissions:
+Codespaces and Metadata
 
 ## Disable checks
 Dokku performs health checks on apps during deploy by sending requests to port 80.
