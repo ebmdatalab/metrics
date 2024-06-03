@@ -21,7 +21,7 @@ Each token is assigned to a single organisation and should have the following *r
 
 * organisation permissions: members
 * *all repositories* owned by the organisation with the following permissions:
-Code scanning alerts, Dependabot alerts, Metadata, Pull requests and Repository security advisories
+Code scanning alerts, Dependabot alerts, Issues, Metadata, Pull requests and Repository security advisories
 
 The `GITHUB_OS_TOKEN` is a fine-grained GitHub personal access token that is used for authenticating with the GitHub REST API.
 It is assigned to a single organisation and should have the following *read-only* permissions:
