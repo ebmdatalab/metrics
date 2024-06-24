@@ -7,7 +7,9 @@
 certifi==2024.2.2 \
     --hash=sha256:0569859f95fc761b18b45ef421b1290a0f65f147e92a1e5eb3e635f9a5e4e66f \
     --hash=sha256:dc383c07b76109f368f6106eee2b593b04a011ea4d55f652c6ca24a754d1cdd1
-    # via requests
+    # via
+    #   requests
+    #   sentry-sdk
 charset-normalizer==3.3.2 \
     --hash=sha256:06435b539f889b1f6f4ac1758871aae42dc3a8c0e24ac9e60c2384973ad73027 \
     --hash=sha256:06a81e93cd441c56a9b65d8e1d043daeb97a3d0856d177d5c90ba85acb3db087 \
@@ -241,6 +243,10 @@ requests==2.31.0 \
     --hash=sha256:58cd2187c01e70e6e26505bca751777aa9f2ee0b7f4300988b709f44e013003f \
     --hash=sha256:942c5a758f98d790eaed1a29cb6eefc7ffb0d1cf7af05c3d2791656dbd6ad1e1
     # via -r requirements.prod.in
+sentry-sdk==2.6.0 \
+    --hash=sha256:422b91cb49378b97e7e8d0e8d5a1069df23689d45262b86f54988a7db264e874 \
+    --hash=sha256:65cc07e9c6995c5e316109f138570b32da3bd7ff8d0d0ee4aaf2628c3dd8127d
+    # via -r requirements.prod.in
 slack-bolt==1.19.0 \
     --hash=sha256:45135b8a1dea40abeb20b9b9d1973953f6755b76388156ee218d6c61d96f992a \
     --hash=sha256:810891cc110e0fb3948f26c044302ed90abda2a25e9ec1689e179da8bb2747cf
@@ -313,4 +319,6 @@ typing-extensions==4.11.0 \
 urllib3==2.2.1 \
     --hash=sha256:450b20ec296a467077128bff42b73080516e71b56ff59a60a02bef2232c4fa9d \
     --hash=sha256:d0570876c61ab9e520d776c38acbbb5b05a776d3f9ff98a5c8fd5162a444cf19
-    # via requests
+    # via
+    #   requests
+    #   sentry-sdk
