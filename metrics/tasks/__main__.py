@@ -15,31 +15,25 @@ for _, modname, _ in pkgutil.iter_modules(metrics.tasks.__path__):
     if modname != "__main__":
         log.info(f"Found {modname}")
         monitor_slug = f"metrics-{modname}"
+        status = MonitorStatus.IN_PROGRESS
         check_in_id = capture_checkin(
             monitor_slug=monitor_slug,
-            status=MonitorStatus.IN_PROGRESS,
+            status=status,
             monitor_config=sentry.monitor_config,
         )
         try:
             pkgutil.resolve_name(f"metrics.tasks.{modname}").main()
-            capture_checkin(
-                monitor_slug=monitor_slug,
-                check_in_id=check_in_id,
-                status=MonitorStatus.OK,
-                monitor_config=sentry.monitor_config,
-            )
+            status = MonitorStatus.OK
         except AttributeError as error:
             log.error(f"Skipping {modname} because {error}")
-            capture_checkin(
-                monitor_slug=monitor_slug,
-                status=MonitorStatus.ERROR,
-                monitor_config=sentry.monitor_config,
-            )
+            status = MonitorStatus.ERROR
         except Exception as exc:
             log.error(f"Failed to run {modname} because because an error occurred.")
             log.exception(exc)
+            status = MonitorStatus.ERROR
+        finally:
             capture_checkin(
                 monitor_slug=monitor_slug,
-                status=MonitorStatus.ERROR,
+                status=status,
                 monitor_config=sentry.monitor_config,
             )

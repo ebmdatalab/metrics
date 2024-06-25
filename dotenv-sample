@@ -17,3 +17,6 @@ SLACK_TOKEN=
 
 # Slack channel ID for tech-support-channel
 SLACK_TECH_SUPPORT_CHANNEL_ID=C0270Q313H7
+
+# Sentry DSN for the Metrics project
+SENTRY_DSN=
