@@ -14,6 +14,7 @@ dokku config:set metrics SLACK_SIGNING_SECRET='xxx'
 dokku config:set metrics SLACK_TECH_SUPPORT_CHANNEL_ID='xxx'
 dokku config:set metrics SLACK_TOKEN='xxx'
 dokku config:set metrics TIMESCALEDB_URL='xxx'
+dokku config:set metrics SENTRY_DSN='xxx'
 ```
 
 The `GITHUB_EBMDATALAB_TOKEN` and `GITHUB_OS_CORE_TOKEN` are fine-grained GitHub personal access tokens that are used for authenticating with the GitHub GraphQL API.
