@@ -19,8 +19,8 @@ for _, modname, _ in pkgutil.iter_modules(metrics.tasks.__path__):
             monitor.ok()
         except AttributeError as error:
             log.error(f"Skipping {modname} because {error}")
-            monitor.error()
+            monitor.error(error)
         except Exception as exc:
             log.error(f"Failed to run {modname} because because an error occurred.")
             log.exception(exc)
-            monitor.error()
+            monitor.error(exc)
