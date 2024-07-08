@@ -247,9 +247,9 @@ sentry-sdk==2.6.0 \
     --hash=sha256:422b91cb49378b97e7e8d0e8d5a1069df23689d45262b86f54988a7db264e874 \
     --hash=sha256:65cc07e9c6995c5e316109f138570b32da3bd7ff8d0d0ee4aaf2628c3dd8127d
     # via -r requirements.prod.in
-slack-bolt==1.19.0 \
-    --hash=sha256:45135b8a1dea40abeb20b9b9d1973953f6755b76388156ee218d6c61d96f992a \
-    --hash=sha256:810891cc110e0fb3948f26c044302ed90abda2a25e9ec1689e179da8bb2747cf
+slack-bolt==1.19.1 \
+    --hash=sha256:a3041d8f49eba22c3be4dd8f57602d6685d367c0e1cc7619260e1ce4a363d07f \
+    --hash=sha256:b916829ece0ff7a2cae1502f1774fd100592cd8a81a39e4f04e3137a3f19522b
     # via -r requirements.prod.in
 slack-sdk==3.27.1 \
     --hash=sha256:85d86b34d807c26c8bb33c1569ec0985876f06ae4a2692afba765b7a5490d28c \
