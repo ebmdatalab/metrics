@@ -1,13 +1,13 @@
 import os
 
-import sentry_sdk
+from sentry_sdk import capture_exception, init
 from sentry_sdk.crons import capture_checkin
 from sentry_sdk.crons.consts import MonitorStatus
 
 
 class Cron:
     def __init__(self):
-        sentry_sdk.init(
+        init(
             dsn=os.environ.get("SENTRY_DSN"),
         )
 
@@ -54,5 +54,6 @@ class Cron:
         def ok(self):
             self._checkin(status=MonitorStatus.OK)
 
-        def error(self):
+        def error(self, err):
             self._checkin(status=MonitorStatus.ERROR)
+            capture_exception(err)
