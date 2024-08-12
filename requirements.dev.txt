@@ -127,7 +127,7 @@ filelock==3.13.1 \
 freezegun==1.4.0 \
     --hash=sha256:10939b0ba0ff5adaecf3b06a5c2f73071d9678e507c5eaedb23c761d56ac774b \
     --hash=sha256:55e0fc3c84ebf0a96a5aa23ff8b53d70246479e9a68863f1fcac5a3e52f19dd6
-    # via pytest-freezegun
+    # via pytest-freezer
 greenlet==3.0.3 \
     --hash=sha256:01bc7ea167cf943b4c802068e178bbf70ae2e8c080467070d01bfa02f337ee67 \
     --hash=sha256:0448abc479fab28b00cb472d278828b3ccca164531daab4e970a0458786055d6 \
@@ -246,10 +246,10 @@ pytest==8.3.2 \
     --hash=sha256:c132345d12ce551242c87269de812483f5bcc87cdbb4722e48487ba194f9fdce
     # via
     #   -r requirements.dev.in
-    #   pytest-freezegun
-pytest-freezegun==0.4.2 \
-    --hash=sha256:19c82d5633751bf3ec92caa481fb5cffaac1787bd485f0df6436fd6242176949 \
-    --hash=sha256:5318a6bfb8ba4b709c8471c94d0033113877b3ee02da5bfcd917c1889cde99a7
+    #   pytest-freezer
+pytest-freezer==0.4.8 \
+    --hash=sha256:644ce7ddb8ba52b92a1df0a80a699bad2b93514c55cf92e9f2517b68ebe74814 \
+    --hash=sha256:8ee2f724b3ff3540523fa355958a22e6f4c1c819928b78a7a183ae4248ce6ee6
     # via -r requirements.dev.in
 python-dateutil==2.9.0.post0 \
     --hash=sha256:37dd54208da7e1cd875388217d5e00ebd4179249f90fb72437e91a35459a0ad3 \

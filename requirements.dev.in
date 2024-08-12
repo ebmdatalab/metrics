@@ -9,7 +9,7 @@ coverage
 pip-tools
 pre-commit
 pytest
-pytest-freezegun
+pytest-freezer
 pyyaml
 sqlalchemy-utils
 ruff
