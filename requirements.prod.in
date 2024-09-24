@@ -1,6 +1,9 @@
+  altair
   greenlet
+  numpy
   requests
   requests-cache
+  scikit-survival
   slack-bolt
   sqlalchemy[postgresql_psycopgbinary]
   structlog
