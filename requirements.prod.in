@@ -1,4 +1,5 @@
   greenlet
+  pandas
   requests
   requests-cache
   slack-bolt
