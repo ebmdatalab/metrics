@@ -1,4 +1,7 @@
+  altair
+  GitPython
   greenlet
+  pandas
   requests
   slack-bolt
   sqlalchemy[postgresql_psycopgbinary]

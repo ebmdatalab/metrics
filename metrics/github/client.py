@@ -39,7 +39,7 @@ class GitHubClient:
             more_pages = page["pageInfo"]["hasNextPage"]
             cursor = page["pageInfo"]["endCursor"]
 
-    def rest_query(self, path, **variables):
+    def rest_query(self, path, results_name=None, **variables):
         headers = self._get_headers(variables)
 
         more_pages = True
@@ -52,6 +52,8 @@ class GitHubClient:
             data = response.json()
             if isinstance(data, list):
                 yield from data
+            elif results_name:
+                yield from data[results_name]
 
             # Unlike the team repositories endpoint or the team members endpoint,
             # which return arrays of the objects we're interested in,

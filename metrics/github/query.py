@@ -45,6 +45,13 @@ def team_members(org, team):
         yield member["login"]
 
 
+def workflow_runs(org, repo):
+    runs = _client().rest_query(
+        "/repos/{org}/{repo}/actions/runs?per_page=100&branch=main&status=success", results_name="workflow_runs", org=org, repo=repo
+    )
+    return runs
+
+
 def vulnerabilities(org, repo):
     query = """
     query vulnerabilities($cursor: String, $org: String!, $repo: String!) {
