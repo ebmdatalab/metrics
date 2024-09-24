@@ -65,13 +65,15 @@ class PR:
     is_content: bool
 
     def was_old_on(self, date):
-        opened = self.created_on
-        closed = self.closed_on if self.closed_on else None
+        return not self.was_closed_on(date) and self.age_on(date) >= datetime.timedelta(
+            weeks=1
+        )
 
-        is_closed = closed and closed <= date
-        opened_more_than_a_week_ago = date - opened >= datetime.timedelta(weeks=1)
+    def was_closed_on(self, date):
+        return self.closed_on and self.closed_on <= date
 
-        return not is_closed and opened_more_than_a_week_ago
+    def age_on(self, date):
+        return date - self.created_on
 
     def was_merged_on(self, date):
         return self.merged_on and date == self.merged_on
