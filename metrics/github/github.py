@@ -62,7 +62,29 @@ class PR:
     created_at: datetime.datetime
     merged_at: datetime.datetime
     closed_at: datetime.datetime
+    is_draft: bool
     is_content: bool
+
+    def was_opened_on(self, date):
+        return self.created_at.date() == date
+
+    def was_closed(self):
+        return self.closed_at
+
+    def was_closed_at_end_of(self, date):
+        return self.closed_at and self.closed_at.date() <= date
+
+    def was_merged(self):
+        return self.merged_at
+
+    def was_merged_on(self, date):
+        return self.merged_at and date == self.merged_at.date()
+
+    def was_open_at_end_of(self, date):
+        return self.created_at.date() <= date and not self.was_closed_at_end_of(date)
+
+    def was_abandoned(self):
+        return self.was_closed() and not self.was_merged()
 
     def age_at(self, time):
         return (time - self.created_at) / datetime.timedelta(days=1)
@@ -72,14 +94,18 @@ class PR:
         next_day = date + datetime.timedelta(days=1)
         return self.age_at(datetime.datetime.combine(next_day, midnight))
 
-    def was_closed_at_end_of(self, date):
-        return self.closed_at and self.closed_at.date() <= date
+    def age_when_closed(self):
+        if not self.was_closed():
+            raise ValueError()
+        return self.age_at(self.closed_at)
+
+    def age_when_merged(self):
+        if not self.was_merged():
+            raise ValueError()
+        return self.age_at(self.merged_at)
 
     def was_old_at_end_of(self, date):
         return not self.was_closed_at_end_of(date) and self.age_at_end_of(date) >= 7
-
-    def was_merged_on(self, date):
-        return self.merged_at and date == self.merged_at.date()
 
     @classmethod
     def from_dict(cls, data, repo, tech_team_members):
@@ -92,6 +118,7 @@ class PR:
             datetime_from_iso(data["createdAt"]),
             datetime_from_iso(data["mergedAt"]),
             datetime_from_iso(data["closedAt"]),
+            data["isDraft"],
             is_content,
         )
 
