@@ -34,7 +34,10 @@ def get_rows(engine, table):
         return connection.execute(select(table)).all()
 
 
-def assert_is_hypertable(engine, table):
+def assert_is_hypertable(connection, engine, table):
+    # check there are timescaledb child tables
+    # https://stackoverflow.com/questions/1461722/how-to-find-child-tables-that-inherit-from-another-table-in-psql
+
     sql = """
     SELECT
       count(*)
@@ -46,8 +49,7 @@ def assert_is_hypertable(engine, table):
       trigger_name = 'ts_insert_blocker';
     """
 
-    with engine.connect() as connection:
-        result = connection.execute(text(sql), {"table_name": table.name}).fetchone()
+    result = connection.execute(text(sql), {"table_name": table.name}).fetchone()
 
     # We should have one trigger called ts_insert_blocker for a hypertable.
     assert result[0] == 1, result
@@ -75,25 +77,16 @@ def hypertable(request):
 def test_ensure_table(engine, table):
     with engine.begin() as connection:
         assert not db._has_table(connection, table)
-
-    db._ensure_table(table)
-
-    with engine.begin() as connection:
+        db._ensure_table(connection, table)
         assert db._has_table(connection, table)
 
 
 def test_ensure_hypertable(engine, hypertable):
     with engine.begin() as connection:
         assert not db._has_table(connection, hypertable)
-
-    db._ensure_table(hypertable)
-
-    with engine.begin() as connection:
+        db._ensure_table(connection, hypertable)
         assert db._has_table(connection, hypertable)
-
-    # check there are timescaledb child tables
-    # https://stackoverflow.com/questions/1461722/how-to-find-child-tables-that-inherit-from-another-table-in-psql
-    assert_is_hypertable(engine, hypertable)
+        assert_is_hypertable(connection, engine, hypertable)
 
 
 def test_get_url(monkeypatch):
@@ -114,7 +107,8 @@ def test_get_url_with_prefix(monkeypatch):
 
 
 def test_reset_table(engine, table):
-    db._ensure_table(table)
+    with engine.begin() as connection:
+        db._ensure_table(connection, table)
 
     # put enough rows in the db to make sure we exercise the batch removal of rows
     batch_size = 5
@@ -126,7 +120,8 @@ def test_reset_table(engine, table):
 
 
 def test_reset_hypertable(engine, hypertable):
-    db._ensure_table(hypertable)
+    with engine.begin() as connection:
+        db._ensure_table(connection, hypertable)
 
     # put enough rows in the db to make sure we exercise the batch removal of rows
     batch_size = 5
@@ -156,7 +151,8 @@ def check_reset(batch_size, engine, rows, table):
 
 def test_write(engine, table):
     # set up a table to write to
-    db._ensure_table(table)
+    with engine.begin() as connection:
+        db._ensure_table(connection, table)
 
     rows = [{"value": "write" + str(i)} for i in range(1, 4)]
     db.write(table, rows)
