@@ -26,7 +26,7 @@ Code scanning alerts, Dependabot alerts, Issues, Metadata, Pull requests and Rep
 
 The `GITHUB_OS_TOKEN` is a fine-grained GitHub personal access token that is used for authenticating with the GitHub REST API.
 It is assigned to a single organisation and should have the following *read-only* permissions:
-* organisation permissions: codespaces
+* organisation permissions: organisation codespaces
 * *all repositories* owned by the organisation with the following permissions:
 Codespaces and Metadata
 

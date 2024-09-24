@@ -71,7 +71,7 @@ e.g `just metrics prs` to run metrics/tasks/prs.py
 
 All tasks are defined in `metrics/tasks` and must have a `main()` function that takes no arguments.
 
-### Fast debug mode
+### Speeding up development
 
 You can set a flag to trigger a fast mode which only retrieves and handful of PRs
 but allows the main code paths to be tested quickly.
@@ -79,6 +79,23 @@ but allows the main code paths to be tested quickly.
 ```
 DEBUG_FAST=t just metrics prs
 ```
+
+Alternatively you can turn on caching of GitHub API requests.
+This is particularly useful when iterating on metric definitions
+without changing the data that we retrieve from the API.
+
+```
+DEBUG_CACHE=t just metrics prs
+```
+
+NB that the cache has no expiry time
+(although it will be bypassed on subsequent runs if `DEBUG_CACHE isn't defined).
+You can clear the cache explicitly.
+
+```
+just clean-cache
+```
+
 
 ## Tests
 Run the tests with:
