@@ -35,6 +35,9 @@ def get_rows(engine, table):
 
 
 def assert_is_hypertable(connection, engine, table):
+    # check there are timescaledb child tables
+    # https://stackoverflow.com/questions/1461722/how-to-find-child-tables-that-inherit-from-another-table-in-psql
+
     sql = """
     SELECT
       count(*)
@@ -83,9 +86,6 @@ def test_ensure_hypertable(engine, hypertable):
         assert not db._has_table(connection, hypertable)
         db._ensure_table(connection, hypertable)
         assert db._has_table(connection, hypertable)
-
-        # check there are timescaledb child tables
-        # https://stackoverflow.com/questions/1461722/how-to-find-child-tables-that-inherit-from-another-table-in-psql
         assert_is_hypertable(connection, engine, hypertable)
 
 

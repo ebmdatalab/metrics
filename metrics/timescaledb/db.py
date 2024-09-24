@@ -29,15 +29,15 @@ def write(table, rows):
 
 
 def upsert(table, rows):
-    _ensure_table(table)
-    batch_size = _batch_size(table)
-    non_pk_columns = set(table.columns) - set(table.primary_key.columns)
-
-    # use the primary key constraint to match rows to be updated,
-    # using default constraint name if not otherwise specified
-    constraint = table.primary_key.name or table.name + "_pkey"
-
     with _get_engine().begin() as connection:
+        _ensure_table(connection, table)
+        batch_size = _batch_size(table)
+        non_pk_columns = set(table.columns) - set(table.primary_key.columns)
+
+        # use the primary key constraint to match rows to be updated,
+        # using default constraint name if not otherwise specified
+        constraint = table.primary_key.name or table.name + "_pkey"
+
         for values in batched(rows, batch_size):
             # Construct a PostgreSQL "INSERT..ON CONFLICT" style upsert statement
             # https://docs.sqlalchemy.org/en/20/dialects/postgresql.html#insert-on-conflict-upsert
