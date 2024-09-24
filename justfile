@@ -168,3 +168,7 @@ docker-build env="dev": _env
 docker-run env="dev" *args="": _env
     {{ just_executable() }} docker-build {{ env }}
     docker compose run --rm metrics-{{ env }} {{ args }}
+
+# See DEVELOPERS.md
+clean-cache:
+    rm -f github-cache.sqlite

@@ -1,13 +1,22 @@
 import json
+import os
 import textwrap
 
 import requests
 import requests.utils
+import requests_cache
 import structlog
 
 
 log = structlog.get_logger()
 
+# See DEVELOPERS.md
+if "DEBUG_CACHE" in os.environ:
+    requests_cache.install_cache(
+        "github-cache",
+        # Turn on caching for POST requests because that's what GraphQL uses
+        allowable_methods=("GET", "HEAD", "POST"),
+    )
 
 session = requests.Session()
 

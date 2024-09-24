@@ -6,3 +6,4 @@
 __pycache__/
 github.db
 htmlcov
+github-cache.sqlite
