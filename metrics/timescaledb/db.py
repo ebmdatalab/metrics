@@ -13,9 +13,10 @@ log = structlog.get_logger()
 
 
 def reset_table(table, batch_size=None):
-    _drop_table(table, batch_size)
-    _ensure_table(table)
-    log.info("Reset table", table=table.name)
+    with _get_engine().begin() as connection:
+        _drop_table(connection, table, batch_size)
+        _ensure_table(connection, table)
+        log.info("Reset table", table=table.name)
 
 
 def write(table, rows):
@@ -68,30 +69,29 @@ def _batch_size(table):
     return max_params // len(table.columns)
 
 
-def _drop_table(table, batch_size):
-    with _get_engine().begin() as connection:
-        log.debug("Removing table: %s", table.name)
+def _drop_table(connection, table, batch_size, cascade=False):
+    log.debug("Removing table: %s", table.name)
 
-        if not _has_table(connection, table):
-            return
+    if not _has_table(connection, table):
+        return
 
-        if _is_hypertable(table):
-            # We have limited shared memory in our hosted database, so we can't DROP or
-            # TRUNCATE our hypertables.  Instead for each "raw" table we need to:
-            #  * empty the raw rows (from the named table) in batches
-            #  * drop the sharded "child" tables in batches
-            #  * drop the now empty raw table
-            while _has_rows(connection, table):
-                _delete_rows(connection, table, batch_size)
+    if _is_hypertable(table):
+        # We have limited shared memory in our hosted database, so we can't DROP or
+        # TRUNCATE our hypertables.  Instead for each "raw" table we need to:
+        #  * empty the raw rows (from the named table) in batches
+        #  * drop the sharded "child" tables in batches
+        #  * drop the now empty raw table
+        while _has_rows(connection, table):
+            _delete_rows(connection, table, batch_size)
 
-            log.debug("Removed all raw rows", table=table.name)
+        log.debug("Removed all raw rows", table=table.name)
 
-            _drop_child_tables(connection, table)
-            log.debug("Removed all child tables", table=table.name)
+        _drop_child_tables(connection, table)
+        log.debug("Removed all child tables", table=table.name)
 
-        connection.execute(text(f"DROP TABLE {table.name}"))
+    connection.execute(text(f"DROP TABLE {table.name}"))
 
-        log.debug("Removed raw table", table=table.name)
+    log.debug("Removed raw table", table=table.name)
 
 
 def _has_table(connection, table):
@@ -142,16 +142,15 @@ def _drop_child_tables(connection, table):
         connection.execute(text(f"DROP TABLE IF EXISTS {tables}"))
 
 
-def _ensure_table(table):
-    with _get_engine().begin() as connection:
-        connection.execute(schema.CreateTable(table, if_not_exists=True))
+def _ensure_table(connection, table):
+    connection.execute(schema.CreateTable(table, if_not_exists=True))
 
-        if _is_hypertable(table):
-            connection.execute(
-                text(
-                    f"SELECT create_hypertable('{table.name}', 'time', if_not_exists => TRUE);"
-                )
+    if _is_hypertable(table):
+        connection.execute(
+            text(
+                f"SELECT create_hypertable('{table.name}', 'time', if_not_exists => TRUE);"
             )
+        )
 
 
 @functools.cache
