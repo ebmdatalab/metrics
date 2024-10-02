@@ -52,9 +52,12 @@ dokku$ dokku letsencrypt:enable grafana
 
 ### Configure user on postgresql db cluster
 
-* create `grafanareader` user on cluster in DigitalOcean control panel for primary node
-* by default `grafanareader` cannot connect to `jobserver` database
-* connect to primary node with psql & allow connections:
+* Create `grafanareader` user on db cluster in DigitalOcean control panel for primary node.
+* By default `grafanareader` cannot connect to the `jobserver` database. Connect to primary node with psql and allow connections (via dokku4):
+
+```sh
+$ psql -h <primary node hostname> -p<primary node port> -Udoadmin -d defaultdb
+```
 
 ```sql
 GRANT CONNECT ON database jobserver TO grafanareader;
@@ -65,9 +68,13 @@ GRANT CONNECT ON database jobserver TO grafanareader;
 
 ```sql
 GRANT SELECT ON applications_application, applications_cmoprioritylistpage, applications_commercialinvolvementpage, applications_datasetspage, applications_legalbasispage, applications_previousehrexperiencepage, applications_recordleveldatapage, applications_referencespage, applications_researcherregistration, applications_sharingcodepage, applications_shortdatareportpage, applications_sponsordetailspage, applications_studydatapage, applications_studyfundingpage, applications_studyinformationpage, applications_studypurposepage, applications_teamdetailspage, applications_typeofstudypage, interactive_analysisrequest, jobserver_backend, jobserver_backendmembership, jobserver_job, jobserver_jobrequest, jobserver_org, jobserver_orgmembership, jobserver_project, jobserver_projectcollaboration, jobserver_projectmembership, jobserver_publishrequest, jobserver_release, jobserver_releasefile, jobserver_releasefilereview, jobserver_repo, jobserver_report, jobserver_snapshot, jobserver_snapshot_files, jobserver_stats, jobserver_workspace, redirects_redirect TO grafanareader;
-CREATE VIEW jobserver_user_grafana AS SELECT id,last_login,is_superuser,username,is_staff,is_active,date_joined,fullname,created_by_id,login_token_expires_at,pat_expires_at,roles FROM jobserver_user;
+
+CREATE VIEW jobserver_user_grafana AS SELECT id,last_login,username,is_active,date_joined,fullname,created_by_id,login_token_expires_at,pat_expires_at,roles FROM jobserver_user;
+
 GRANT SELECT ON jobserver_user_grafana TO grafanareader;
 ```
+
+The `jobserver_user_grafana` view may need recreating if the underlying `jobserver_user` table changes.
 
 ### Connect from Grafana
 
