@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 
 
 def date_from_iso(value):
@@ -15,3 +15,7 @@ def iter_days(start, end):
     while start <= end:
         yield start
         start += timedelta(days=1)
+
+
+def is_month_end(day: date):
+    return (day + timedelta(days=1)).day == 1

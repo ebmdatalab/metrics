@@ -64,19 +64,31 @@ class PR:
     closed_on: datetime.date
     is_content: bool
 
-    def was_old_on(self, date):
-        return not self.was_closed_on(date) and self.age_on(date) >= datetime.timedelta(
-            weeks=1
-        )
+    def age_on(self, date):
+        return date - self.created_on
 
     def was_closed_on(self, date):
         return self.closed_on and self.closed_on <= date
 
-    def age_on(self, date):
-        return date - self.created_on
-
     def was_merged_on(self, date):
         return self.merged_on and date == self.merged_on
+
+    def was_open_at_end_of(self, date):
+        return self.created_on <= date and not self.was_closed_on(date)
+
+    def was_opened_in_period(self, start_exclusive, end_inclusive):
+        return start_exclusive < self.created_on <= end_inclusive
+
+    def was_closed_in_period(self, start_exclusive, end_inclusive):
+        return self.closed_on and start_exclusive < self.closed_on <= end_inclusive
+
+    def was_merged_in_period(self, start_exclusive, end_inclusive):
+        return self.merged_on and start_exclusive < self.merged_on <= end_inclusive
+
+    def was_old_on(self, date):
+        return not self.was_closed_on(date) and self.age_on(date) >= datetime.timedelta(
+            weeks=1
+        )
 
     @classmethod
     def from_dict(cls, data, repo, tech_team_members):
