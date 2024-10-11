@@ -1,11 +1,10 @@
   altair
   greenlet
-  lifelines
   numpy
   requests
   requests-cache
+  scikit-survival
   slack-bolt
   sqlalchemy[postgresql_psycopgbinary]
   structlog
   sentry-sdk
-  scipy==1.13.1

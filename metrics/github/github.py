@@ -7,7 +7,7 @@ from metrics.tools.dates import date_from_iso
 
 # Slugs (not names!) of the GitHub entities we're interested in
 _TECH_TEAMS = ["team-rap", "team-rex", "tech-shared"]
-_ORGS = ["ebmdatalab", "opensafely-core"]
+_ORGS = ["opensafely-core"]
 # Some repos (for example the websites) frequently have PRs created by people
 # outside the tech teams. We don't want our delivery metrics to be skewed by these
 # and we don't necessarily want to hold people in other teams to the same hygiene
@@ -67,6 +67,11 @@ class PR:
     def age_on(self, date):
         return date - self.created_on
 
+    def age_when_merged(self):
+        if not self.was_merged():
+            raise ValueError()
+        return self.age_on(self.merged_on)
+
     def was_closed_on(self, date):
         return self.closed_on and self.closed_on <= date
 
@@ -75,6 +80,12 @@ class PR:
 
     def was_open_at_end_of(self, date):
         return self.created_on <= date and not self.was_closed_on(date)
+
+    def was_merged(self):
+        return self.merged_on
+
+    def was_abandoned(self):
+        return self.closed_on and not self.was_merged()
 
     def was_opened_in_period(self, start_exclusive, end_inclusive):
         return start_exclusive < self.created_on <= end_inclusive
