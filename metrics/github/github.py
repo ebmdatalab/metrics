@@ -67,6 +67,11 @@ class PR:
     def age_on(self, date):
         return date - self.created_on
 
+    def age_when_closed(self):
+        if not self.was_closed():
+            raise ValueError()
+        return self.age_on(self.closed_on)
+
     def age_when_merged(self):
         if not self.was_merged():
             raise ValueError()
@@ -81,11 +86,14 @@ class PR:
     def was_open_at_end_of(self, date):
         return self.created_on <= date and not self.was_closed_on(date)
 
+    def was_closed(self):
+        return self.closed_on
+
     def was_merged(self):
         return self.merged_on
 
     def was_abandoned(self):
-        return self.closed_on and not self.was_merged()
+        return self.was_closed() and not self.was_merged()
 
     def was_opened_in_period(self, start_exclusive, end_inclusive):
         return start_exclusive < self.created_on <= end_inclusive
