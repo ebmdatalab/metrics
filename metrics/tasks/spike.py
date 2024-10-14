@@ -9,11 +9,12 @@ from metrics.github.github import tech_prs
 
 
 # TODO
-#   - maybe speed up by building look-up table dates -> buckets
+#   - maybe speed up by building look-up table dates -> windows
 
-BUCKET_WEEKS = 8
-BUCKET_DAYS = BUCKET_WEEKS * 7
-BUCKET_WORKDAYS = BUCKET_WEEKS * 5
+WINDOW_WEEKS = 4
+WINDOW_DAYS = WINDOW_WEEKS * 7
+WINDOW_WORKDAYS = WINDOW_WEEKS * 5
+WINDOW_STEP = 2
 
 START_DATE = datetime.date(2021, 1, 1)
 END_DATE = datetime.date.today()
@@ -50,47 +51,47 @@ def main():
                 axis=altair.Axis(values=[1, 2, 5, 10, 20, 50, 100, 200, 500]),
                 title="Age (days)",
             ).scale(type="symlog"),
-            color="category:N",
+            color=altair.Color("category:N", legend=altair.Legend(title="Outcome")),
         )
     )
 
     # We exclude PRs that were eventually abandoned from the remainder of the analysis
     prs = [pr for pr in prs if not pr.was_abandoned()]
 
-    buckets = build_buckets(START_DATE, END_DATE, length_days=BUCKET_DAYS)
+    windows = build_windows(START_DATE, END_DATE, length_days=WINDOW_DAYS)
 
     opened_count_data = list()
-    for bucket_start, bucket_end in buckets:
-        bucket_count = len(
-            [pr for pr in prs if pr.was_opened_in_period(bucket_start, bucket_end)]
+    for window_start, window_end in windows:
+        window_count = len(
+            [pr for pr in prs if pr.was_opened_in_period(window_start, window_end)]
         )
-        count = bucket_count / BUCKET_WORKDAYS
-        opened_count_data.append(datapoint(bucket_end, count=count))
+        count = window_count / WINDOW_WORKDAYS
+        opened_count_data.append(datapoint(window_end, count=count))
 
     opened_count_chart = (
         altair.Chart(altair.Data(values=opened_count_data), width=600, height=100)
         .mark_line()
         .encode(
-            x=altair.X("date:T", title="Bucket end"),
+            x=altair.X("date:T", title="Window end"),
             y=altair.Y("count:Q", title="Opened per week day"),
         )
     )
 
     queue_data = list()
-    for bucket_start, bucket_end in buckets:
-        count = len([pr for pr in prs if pr.was_open_at_end_of(bucket_end)])
-        queue_data.append(datapoint(bucket_end, count=count))
+    for window_start, window_end in windows:
+        count = len([pr for pr in prs if pr.was_open_at_end_of(window_end)])
+        queue_data.append(datapoint(window_end, count=count))
 
     queue_length_chart = (
         altair.Chart(altair.Data(values=queue_data), width=600, height=100)
         .mark_line()
         .encode(
-            x=altair.X("date:T", title="Bucket end"),
+            x=altair.X("date:T", title="Window end"),
             y=altair.Y("count:Q", title="Number open"),
         )
     )
 
-    quantile_chart, probabilities_chart = kaplan_meier_charts(prs, buckets)
+    quantile_chart, probabilities_chart = kaplan_meier_charts(prs, windows)
 
     altair.vconcat(
         scatter_chart,
@@ -101,15 +102,15 @@ def main():
     ).resolve_scale(color="independent").save("prs.html")
 
 
-def kaplan_meier_charts(prs, buckets):
+def kaplan_meier_charts(prs, windows):
     quantile_data = []
     probabilities_data = []
-    for bucket_start, bucket_end in buckets:
+    for window_start, window_end in windows:
         observation_flags = []
         durations = []
 
         for pr in prs:
-            if pr.was_opened_in_period(bucket_start, bucket_end):
+            if pr.was_opened_in_period(window_start, window_end):
                 if pr.was_merged():
                     # Uncensored observation
                     observation_flags.append(True)
@@ -129,20 +130,18 @@ def kaplan_meier_charts(prs, buckets):
             probability = quantile / 100.0
             survival_time = numpy.interp([probability], cum_probs, survival_times)[0]
             quantile_data.append(
-                datapoint(bucket_end, quantile=f"p{quantile}", value=survival_time)
+                datapoint(window_end, quantile=f"p{quantile}", value=survival_time)
             )
 
-        for latency in [0, 2, 7, 14, 28]:
-            prob = numpy.interp([latency], survival_times, survival_probs)[0]
-            probabilities_data.append(
-                datapoint(bucket_end, latency=latency, value=prob)
-            )
+        for days in [0, 2, 7, 14, 28]:
+            prob = numpy.interp([days], survival_times, cum_probs)[0]
+            probabilities_data.append(datapoint(window_end, days=days, value=prob))
 
     quantile_chart = (
         altair.Chart(altair.Data(values=quantile_data), width=600, height=200)
         .mark_line()
         .encode(
-            x=altair.X("date:T", title="Bucket end"),
+            x=altair.X("date:T", title="Window end"),
             y=altair.Y(
                 "value:Q",
                 # Setting explict tick values because of a bug: https://github.com/vega/vega/issues/2914
@@ -157,11 +156,9 @@ def kaplan_meier_charts(prs, buckets):
         altair.Chart(altair.Data(values=probabilities_data), width=600, height=200)
         .mark_line()
         .encode(
-            x=altair.X("date:T", title="Bucket end"),
-            y=altair.Y("value:Q", title="Probability of being open after..."),
-            color=altair.Color(
-                "latency:N", legend=altair.Legend(title="Number of days")
-            ),
+            x=altair.X("date:T", title="Window end"),
+            y=altair.Y("value:Q", title="Proportion closed within..."),
+            color=altair.Color("days:N", legend=altair.Legend(title="Number of days")),
         )
     )
 
@@ -172,15 +169,15 @@ def datapoint(date, **kwargs):
     return dict(date=date.isoformat(), **kwargs)
 
 
-def build_buckets(start_date, end_date, length_days):
-    bucket_size = datetime.timedelta(days=length_days)
-    bucket_start_exclusive = start_date - datetime.timedelta(days=1)
+def build_windows(start_date, end_date, length_days):
+    window_size = datetime.timedelta(days=length_days)
+    window_start_exclusive = start_date - datetime.timedelta(days=1)
 
-    buckets = []
-    while (bucket_end_inclusive := bucket_start_exclusive + bucket_size) <= end_date:
-        buckets.append((bucket_start_exclusive, bucket_end_inclusive))
-        bucket_start_exclusive += datetime.timedelta(days=1)
-    return buckets
+    windows = []
+    while (window_end_inclusive := window_start_exclusive + window_size) <= end_date:
+        windows.append((window_start_exclusive, window_end_inclusive))
+        window_start_exclusive += datetime.timedelta(days=WINDOW_STEP)
+    return windows
 
 
 if __name__ == "__main__":
