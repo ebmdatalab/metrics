@@ -148,7 +148,7 @@ jobs:
 
     if: github.ref == 'refs/heads/main'
 
-    concurrency: deploy-production
+    concurrency: deploy-production-ci
 
     steps:
       - uses: actions/checkout@v4
