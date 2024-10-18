@@ -148,7 +148,9 @@ def kaplan_meier_charts(prs, windows):
                 axis=altair.Axis(values=[1, 2, 5, 10, 20, 50]),
                 title="Age (days)",
             ).scale(type="symlog"),
-            color=altair.Color("quantile:N", legend=altair.Legend(title="Deciles")),
+            color=altair.Color(
+                "quantile:N", legend=altair.Legend(title="Deciles"), sort="descending"
+            ),
         )
     )
 
@@ -158,7 +160,11 @@ def kaplan_meier_charts(prs, windows):
         .encode(
             x=altair.X("date:T", title="Window end"),
             y=altair.Y("value:Q", title="Proportion closed within..."),
-            color=altair.Color("days:N", legend=altair.Legend(title="Number of days")),
+            color=altair.Color(
+                "days:N",
+                legend=altair.Legend(title="Number of days"),
+                sort="descending",
+            ),
         )
     )
 
