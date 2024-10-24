@@ -12,8 +12,8 @@ WINDOW_WEEKS = 4
 WINDOW_DAYS = WINDOW_WEEKS * 7
 WINDOW_WORKDAYS = WINDOW_WEEKS * 5
 
-START_DATE = datetime.date(2021, 1, 1)
-END_DATE = datetime.date.today()
+START_DATE = datetime.datetime(2021, 1, 1, 0, 0, tzinfo=datetime.UTC)
+END_DATE = datetime.datetime.now(tz=datetime.UTC)
 
 
 def main():
@@ -48,7 +48,7 @@ def scatter_chart(prs):
         else:
             category = "merged"
             age = pr.age_when_merged()
-        scatter_data.append(datapoint(pr.created_on, value=age.days, category=category))
+        scatter_data.append(datapoint(pr.created_on, value=age, category=category))
 
     return (
         altair.Chart(altair.Data(values=scatter_data), width=600, height=200)
@@ -141,11 +141,11 @@ def build_survival_curve(prs, window_start, window_end):
             if pr.was_merged():
                 # Uncensored observation
                 observation_flags.append(True)
-                durations.append(pr.age_when_merged().days)
+                durations.append(pr.age_when_merged())
             else:
                 # Censored observation
                 observation_flags.append(False)
-                durations.append(pr.age_on(END_DATE).days)
+                durations.append(pr.age_on(END_DATE))
 
     times, probs = sksurv.nonparametric.kaplan_meier_estimator(
         observation_flags, durations

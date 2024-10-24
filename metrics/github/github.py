@@ -2,7 +2,7 @@ import datetime
 from dataclasses import dataclass
 
 from metrics.github import query
-from metrics.tools.dates import date_from_iso
+from metrics.tools.dates import date_from_iso, datetime_from_iso
 
 
 # Slugs (not names!) of the GitHub entities we're interested in
@@ -65,7 +65,7 @@ class PR:
     is_content: bool
 
     def age_on(self, date):
-        return date - self.created_on
+        return (date - self.created_on) / datetime.timedelta(days=1)
 
     def age_when_closed(self):
         if not self.was_closed():
@@ -99,9 +99,7 @@ class PR:
         return start_exclusive < self.created_on <= end_inclusive
 
     def was_old_on(self, date):
-        return not self.was_closed_on(date) and self.age_on(date) >= datetime.timedelta(
-            weeks=1
-        )
+        return not self.was_closed_on(date) and self.age_on(date) >= 7
 
     @classmethod
     def from_dict(cls, data, repo, tech_team_members):
@@ -111,9 +109,9 @@ class PR:
         return cls(
             repo,
             author,
-            date_from_iso(data["createdAt"]),
-            date_from_iso(data["mergedAt"]),
-            date_from_iso(data["closedAt"]),
+            datetime_from_iso(data["createdAt"]),
+            datetime_from_iso(data["mergedAt"]),
+            datetime_from_iso(data["closedAt"]),
             is_content,
         )
 
