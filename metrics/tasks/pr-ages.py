@@ -1,4 +1,5 @@
 import datetime
+import itertools
 
 import altair
 import numpy
@@ -104,44 +105,24 @@ def opened_chart(prs, windows):
 def probabilities_chart(prs, windows):
     probabilities_data = []
     for window_start, window_end in windows:
-        observation_flags = []
-        durations = []
+        prob_of_survival = build_survival_curve(prs, window_start, window_end)
 
-        for pr in prs:
-            if pr.was_opened_in_period(window_start, window_end):
-                if pr.was_merged():
-                    # Uncensored observation
-                    observation_flags.append(True)
-                    durations.append(pr.age_when_merged().days)
-                else:
-                    # Censored observation
-                    observation_flags.append(False)
-                    durations.append(pr.age_on(datetime.date.today()).days)
-
-        survival_times, survival_probs = sksurv.nonparametric.kaplan_meier_estimator(
-            observation_flags, durations
-        )
-
-        def prob_of_surviving_for_days(days):
-            return numpy.interp([days], survival_times, survival_probs)[0]
-
-        categories = [0, 2, 7, 14, 28]
-        probabilities = [prob_of_surviving_for_days(days) for days in categories]
-
-        unassigned_prob = 1
-        for category, cumulative_prob in zip(categories, probabilities):
-            prob_this_category = unassigned_prob - cumulative_prob
+        for span_start, span_end in itertools.pairwise([0, 1, 3, 7, 14, 28]):
+            prob_closed = prob_of_survival(span_start) - prob_of_survival(span_end)
             probabilities_data.append(
-                datapoint(window_end, days=category, value=prob_this_category)
+                datapoint(window_end, days=span_end, value=prob_closed)
             )
-            unassigned_prob = cumulative_prob
 
     return (
         altair.Chart(altair.Data(values=probabilities_data), width=600, height=200)
         .mark_area()
         .encode(
             x=altair.X("date:T", title="Window end"),
-            y=altair.Y("value:Q", title="Proportion closed within..."),
+            y=altair.Y(
+                "value:Q",
+                title="Proportion closed within...",
+                scale=altair.Scale(domain=[0.0, 1.0]),
+            ),
             color=altair.Color(
                 "days:O",
                 legend=altair.Legend(title="Number of days"),
@@ -150,6 +131,32 @@ def probabilities_chart(prs, windows):
             order="days:O",
         )
     )
+
+
+def build_survival_curve(prs, window_start, window_end):
+    observation_flags = []
+    durations = []
+    for pr in prs:
+        if pr.was_opened_in_period(window_start, window_end):
+            if pr.was_merged():
+                # Uncensored observation
+                observation_flags.append(True)
+                durations.append(pr.age_when_merged().days)
+            else:
+                # Censored observation
+                observation_flags.append(False)
+                durations.append(pr.age_on(END_DATE).days)
+
+    times, probs = sksurv.nonparametric.kaplan_meier_estimator(
+        observation_flags, durations
+    )
+
+    def prob_of_surviving_for_days(days):
+        if days == 0:
+            return 1.0
+        return numpy.interp([days], times, probs)[0]
+
+    return prob_of_surviving_for_days
 
 
 def write_charts(*charts):
