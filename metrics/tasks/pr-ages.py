@@ -10,7 +10,6 @@ from metrics.github.github import tech_prs
 WINDOW_WEEKS = 4
 WINDOW_DAYS = WINDOW_WEEKS * 7
 WINDOW_WORKDAYS = WINDOW_WEEKS * 5
-WINDOW_STEP = 2
 
 START_DATE = datetime.date(2021, 1, 1)
 END_DATE = datetime.date.today()
@@ -168,7 +167,7 @@ def build_windows(start_date, end_date, length_days):
     windows = []
     while (window_end_inclusive := window_start_exclusive + window_size) <= end_date:
         windows.append((window_start_exclusive, window_end_inclusive))
-        window_start_exclusive += datetime.timedelta(days=WINDOW_STEP)
+        window_start_exclusive += datetime.timedelta(days=1)
     return windows
 
 
