@@ -2,7 +2,7 @@ import functools
 import os
 
 import structlog
-from sqlalchemy import create_engine, inspect, schema, text
+from sqlalchemy import MetaData, create_engine, inspect, schema, text
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.engine import make_url
 
@@ -15,6 +15,7 @@ log = structlog.get_logger()
 def reset_table(table, batch_size=None):
     with _get_engine().begin() as connection:
         _drop_table(connection, table, batch_size)
+    with _get_engine().begin() as connection:
         _ensure_table(connection, table)
         log.info("Reset table", table=table.name)
 
@@ -143,7 +144,37 @@ def _drop_child_tables(connection, table):
 
 
 def _ensure_table(connection, table):
-    connection.execute(schema.CreateTable(table, if_not_exists=True))
+    metadata = MetaData()
+    engine = connection.engine
+    metadata.reflect(engine)
+    if table.name not in metadata.tables:
+        connection.execute(schema.CreateTable(table))
+    else:
+        db_table = metadata.tables[table.name]
+        db_columns = [d.name for d in db_table.columns]
+        py_columns = [c.name for c in table.columns]
+
+        for column in [c for c in table.columns if c.name not in db_columns]:
+            col_type = column.type.compile(dialect=engine.dialect)
+            if column.nullable:
+                nullability = "NULL"
+            else:
+                if not column.default:
+                    raise ValueError(
+                        "Adding a nullable column requires a default value"
+                    )
+                type_processor = column.type.literal_processor(dialect=engine.dialect)
+                processed_default = type_processor(column.default.arg)
+                nullability = f"NOT NULL DEFAULT {processed_default}"
+            connection.execute(
+                text(
+                    f"ALTER TABLE {table.name} ADD {column.name} {col_type} {nullability}"
+                )
+            )
+        for column in [d for d in db_table.columns if d.name not in py_columns]:
+            connection.execute(
+                text(f"ALTER TABLE {table.name} DROP COLUMN {column.name}")
+            )
 
     if _is_hypertable(table):
         connection.execute(

@@ -1,7 +1,17 @@
 import datetime
 
 import pytest
-from sqlalchemy import TIMESTAMP, Column, Table, Text, create_engine, select, text
+from sqlalchemy import (
+    TIMESTAMP,
+    Column,
+    Integer,
+    MetaData,
+    Table,
+    Text,
+    create_engine,
+    select,
+    text,
+)
 from sqlalchemy_utils import create_database, database_exists, drop_database
 
 from metrics.timescaledb import db, tables
@@ -74,11 +84,55 @@ def hypertable(request):
     )
 
 
-def test_ensure_table(engine, table):
+def test_ensure_new_table(engine, table):
     with engine.begin() as connection:
         assert not db._has_table(connection, table)
         db._ensure_table(connection, table)
         assert db._has_table(connection, table)
+
+
+def test_ensure_existing_table_no_changes(engine, table):
+    with engine.begin() as connection:
+        assert not db._has_table(connection, table)
+        db._ensure_table(connection, table)
+        assert db._has_table(connection, table)
+    with engine.begin() as connection:
+        metadata = MetaData()
+        metadata.reflect(engine)
+        db._ensure_table(connection, table)
+        assert db._has_table(connection, table)
+
+        def comparable_columns(columns):
+            return [
+                (c.name, c.type._type_affinity, c.nullable, c.default) for c in columns
+            ]
+
+        assert comparable_columns(
+            metadata.tables[table.name].columns
+        ) == comparable_columns(table.columns)
+
+
+def test_ensure_existing_table_with_changes(engine, table):
+    with engine.begin() as connection:
+        db._ensure_table(connection, table)
+    with engine.begin() as connection:
+        test_column_nullable = Column("test", Text, nullable=True)
+        test_column_not_nullable = Column(
+            "testnotnull", Integer, nullable=False, default=123
+        )
+        table._columns.add(test_column_nullable)
+        table._columns.add(test_column_not_nullable)
+        db._ensure_table(connection, table)
+    with engine.begin() as connection:
+        metadata = MetaData()
+        metadata.reflect(engine)
+        assert test_column_nullable.name in metadata.tables[table.name].columns
+        table._columns.remove(test_column_nullable)
+        db._ensure_table(connection, table)
+    with engine.begin() as connection:
+        metadata = MetaData()
+        metadata.reflect(engine)
+        assert test_column_nullable.name not in metadata.tables[table.name].columns
 
 
 def test_ensure_hypertable(engine, hypertable):
