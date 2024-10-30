@@ -12,6 +12,8 @@ GitHubCodespaces = Table(
     Column("repo", Text, primary_key=True),
     Column("user", Text, primary_key=True),
     Column("last_used_at", TIMESTAMP(timezone=True)),
+    Column("has_uncommitted_changes", Boolean),
+    Column("has_unpushed_changes", Boolean),
 )
 
 GitHubRepos = Table(

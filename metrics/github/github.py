@@ -115,6 +115,8 @@ class Codespace:
     user: str
     created_at: datetime.datetime
     last_used_at: datetime.datetime
+    has_uncommitted_changes: bool
+    has_unpushed_changes: bool
 
     @classmethod
     def from_dict(cls, data, org):
@@ -124,6 +126,8 @@ class Codespace:
             user=data["owner"]["login"],
             created_at=data["created_at"],
             last_used_at=data["last_used_at"],
+            has_uncommitted_changes=data["git_status"]["has_uncommitted_changes"],
+            has_unpushed_changes=data["git_status"]["has_unpushed_changes"],
         )
 
 

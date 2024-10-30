@@ -85,6 +85,8 @@ def convert_codespaces_to_dicts(codespaces):
             "user": c.user,
             "created_at": c.created_at,
             "last_used_at": c.last_used_at,
+            "has_uncommitted_changes": c.has_uncommitted_changes,
+            "has_unpushed_changes": c.has_unpushed_changes,
         }
         for c in codespaces
     ]

@@ -45,6 +45,10 @@ def test_codespaces(patch):
                     "repository": {"name": "testrepo"},
                     "created_at": datetime.datetime.now().isoformat(),
                     "last_used_at": datetime.datetime.now().isoformat(),
+                    "git_status": {
+                        "has_uncommitted_changes": True,
+                        "has_unpushed_changes": False,
+                    },
                 },
             ]
         },
