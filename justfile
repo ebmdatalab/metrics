@@ -109,6 +109,11 @@ upgrade env package="": virtualenv
     FORCE=true "{{ just_executable() }}" requirements-{{ env }} $opts
 
 
+update-dependencies: virtualenv
+    just upgrade prod
+    just upgrade dev
+
+
 # *args is variadic, 0 or more. This allows us to do `just test -k match`, for example.
 # Run the tests
 test *args: devenv
