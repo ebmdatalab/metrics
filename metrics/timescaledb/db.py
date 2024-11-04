@@ -2,7 +2,7 @@ import functools
 import os
 
 import structlog
-from sqlalchemy import MetaData, create_engine, inspect, schema, text
+from sqlalchemy import Boolean, MetaData, create_engine, inspect, schema, text
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.engine import make_url
 
@@ -63,6 +63,17 @@ def upsert(table, rows):
             )
             connection.execute(insert_stmt)
             log.info("Inserted %s rows", len(values), table=table.name)
+
+
+def flag_deleted(table):
+    if "deleted" not in table.columns or not isinstance(
+        table.columns["deleted"].type, Boolean
+    ):
+        raise AttributeError("Table must have deleted column of boolean type")
+    with _get_engine().begin() as connection:
+        _ensure_table(connection, table)
+        update = table.update().values(deleted=True)
+        connection.execute(update)
 
 
 def _batch_size(table):

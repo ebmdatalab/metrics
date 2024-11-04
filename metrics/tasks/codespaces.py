@@ -15,6 +15,12 @@ def main():
     codespaces = github.codespaces(org="opensafely")
     log.info(f"Got {len(codespaces)} codespaces")
 
+    log.info("Flagging old codespaces as deleted")
+    db.flag_deleted(tables.GitHubCodespaces)
+    log.info("Deletes flagged")
+
+    # Incoming data has deleted=False so previously flagged rows will be overwritten
+    # if codespace still exists.
     log.info("Writing data")
     db.upsert(tables.GitHubCodespaces, convert_codespaces_to_dicts(codespaces))
     log.info("Written data")

@@ -3,6 +3,7 @@ import datetime
 import pytest
 from sqlalchemy import (
     TIMESTAMP,
+    Boolean,
     Column,
     Integer,
     MetaData,
@@ -214,6 +215,27 @@ def test_write(engine, table):
     # check rows are in table
     rows = get_rows(engine, table)
     assert len(rows) == 3
+
+
+def test_flag_deleted(engine, table):
+    table.append_column(Column("deleted", Boolean))
+    # insert initial rows
+    with engine.begin() as connection:
+        db._ensure_table(connection, table)
+
+    with engine.begin() as connection:
+        rows = [
+            {
+                "value": "write" + str(i),
+                "deleted": False,
+            }
+            for i in range(1, 4)
+        ]
+        db.write(table, rows)
+        db.flag_deleted(table)
+
+    rows = get_rows(engine, table)
+    assert all(r[1] for r in rows)
 
 
 def test_upsert(engine, table):
