@@ -3,7 +3,7 @@ name: Update python dependencies
 on:
   workflow_dispatch:
   schedule:
-    - cron:  "5 6 * * *"
+    - cron:  "5 6 * * MON"
 
 jobs:
   update-dependencies:
@@ -24,3 +24,4 @@ jobs:
     - uses: opensafely-core/update-dependencies-action@v1
       with:
         token: ${{ steps.generate-token.outputs.token }}
+        automerge: false
