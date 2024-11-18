@@ -89,6 +89,7 @@ def prs(org, repo):
               createdAt
               closedAt
               mergedAt
+              isDraft
             }
             pageInfo {
               endCursor

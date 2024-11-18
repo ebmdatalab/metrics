@@ -22,7 +22,9 @@ def main():
     interesting_prs = [
         pr
         for pr in all_prs
-        if pr.created_on > START_DATE and "dependabot" not in pr.author
+        if pr.created_on > START_DATE
+        and "dependabot" not in pr.author
+        and not pr.is_draft
     ]
     unabandoned_prs = [pr for pr in interesting_prs if not pr.was_abandoned()]
 

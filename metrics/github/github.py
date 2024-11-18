@@ -62,6 +62,7 @@ class PR:
     created_on: datetime.date
     merged_on: datetime.date
     closed_on: datetime.date
+    is_draft: bool
     is_content: bool
 
     def age_on(self, date):
@@ -112,6 +113,7 @@ class PR:
             datetime_from_iso(data["createdAt"]),
             datetime_from_iso(data["mergedAt"]),
             datetime_from_iso(data["closedAt"]),
+            data["isDraft"],
             is_content,
         )
 
