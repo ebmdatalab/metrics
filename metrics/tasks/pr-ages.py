@@ -98,7 +98,7 @@ def opened_chart(prs, windows):
         altair.Chart(altair.Data(values=opened_count_data), width=600, height=100)
         .mark_line()
         .encode(
-            x=altair.X("date:T", title="Window end"),
+            x=altair.X("date:T", title=f"{WINDOW_WEEKS}-week window end"),
             y=altair.Y("count:Q", title="Opened per week day"),
         )
     )
@@ -119,7 +119,7 @@ def probabilities_chart(prs, windows):
         altair.Chart(altair.Data(values=probabilities_data), width=600, height=200)
         .mark_area()
         .encode(
-            x=altair.X("date:T", title="Window end"),
+            x=altair.X("date:T", title=f"{WINDOW_WEEKS}-week window end"),
             y=altair.Y(
                 "value:Q",
                 title="Proportion closed within...",
