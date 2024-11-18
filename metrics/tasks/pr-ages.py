@@ -8,7 +8,7 @@ import sksurv.nonparametric
 from metrics.github.github import tech_prs
 
 
-WINDOW_WEEKS = 4
+WINDOW_WEEKS = 6
 WINDOW_DAYS = WINDOW_WEEKS * 7
 WINDOW_WORKDAYS = WINDOW_WEEKS * 5
 
