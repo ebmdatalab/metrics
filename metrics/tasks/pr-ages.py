@@ -78,7 +78,7 @@ def queue_length_chart(prs, windows):
         altair.Chart(altair.Data(values=queue_data), width=600, height=100)
         .mark_line()
         .encode(
-            x=altair.X("date:T", title="Window end"),
+            x=altair.X("date:T", title="Date"),
             y=altair.Y("count:Q", title="Number open"),
         )
     )
