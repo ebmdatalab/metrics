@@ -25,6 +25,7 @@ def main():
         if pr.created_on > START_DATE
         and "dependabot" not in pr.author
         and not pr.is_draft
+        and not pr.is_content
     ]
     unabandoned_prs = [pr for pr in interesting_prs if not pr.was_abandoned()]
 
