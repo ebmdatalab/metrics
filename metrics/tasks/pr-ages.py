@@ -15,8 +15,8 @@ WINDOW_WEEKS = 6
 WINDOW_DAYS = WINDOW_WEEKS * 7
 ONE_DAY = datetime.timedelta(days=1)
 
-START_DATE = datetime.datetime(2021, 1, 1, 0, 0, tzinfo=datetime.UTC)
-END_DATE = datetime.datetime.now(tz=datetime.UTC)
+START_DATE = datetime.date(2021, 1, 1)
+END_DATE = datetime.date.today()
 
 
 def main():
@@ -25,7 +25,7 @@ def main():
     interesting_prs = [
         pr
         for pr in all_prs
-        if pr.created_on > START_DATE
+        if pr.created_on.date() > START_DATE
         and "dependabot" not in pr.author
         and not pr.is_draft
         and not pr.is_content
@@ -65,7 +65,7 @@ def scatter_chart(prs):
     for pr in prs:
         if not pr.was_closed():
             category = "open"
-            age = pr.age_on(END_DATE)
+            age = pr.age_at_end_of(END_DATE)
         elif pr.was_abandoned():
             category = "abandoned"
             age = pr.age_when_closed()
@@ -153,7 +153,7 @@ def build_survival_curve(prs, window):
             else:
                 # Censored observation
                 observation_flags.append(False)
-                durations.append(pr.age_on(END_DATE))
+                durations.append(pr.age_at_end_of(END_DATE))
 
     times, probs = sksurv.nonparametric.kaplan_meier_estimator(
         observation_flags, durations
@@ -177,8 +177,8 @@ def datapoint(date, **kwargs):
 
 @dataclass
 class Window:
-    start: datetime.datetime
-    end: datetime.datetime
+    start: datetime.datetime  # exclusive
+    end: datetime.datetime  # inclusive
 
     def days(self):
         return dates.iter_days(self.start + ONE_DAY, self.end)
@@ -186,13 +186,14 @@ class Window:
 
 def build_windows(start_date, end_date, length_days):
     window_size = datetime.timedelta(days=length_days)
-    window_start_exclusive = start_date - ONE_DAY
 
     windows = []
-    while (window_end_inclusive := window_start_exclusive + window_size) <= end_date:
-        windows.append(Window(window_start_exclusive, window_end_inclusive))
-        window_start_exclusive += ONE_DAY
-    return windows
+    end = end_date
+    while (start := end - window_size) >= start_date:
+        windows.append(Window(start, end))
+        end -= ONE_DAY
+
+    return list(reversed(windows))
 
 
 if __name__ == "__main__":

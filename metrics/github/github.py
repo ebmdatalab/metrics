@@ -65,27 +65,32 @@ class PR:
     is_draft: bool
     is_content: bool
 
-    def age_on(self, date):
-        return (date - self.created_on) / datetime.timedelta(days=1)
+    def age_at(self, time):
+        return (time - self.created_on) / datetime.timedelta(days=1)
+
+    def age_at_end_of(self, date):
+        midnight = datetime.time(0, 0, 0, tzinfo=datetime.UTC)
+        next_day = date + datetime.timedelta(days=1)
+        return self.age_at(datetime.datetime.combine(next_day, midnight))
 
     def age_when_closed(self):
         if not self.was_closed():
             raise ValueError()
-        return self.age_on(self.closed_on)
+        return self.age_at(self.closed_on)
 
     def age_when_merged(self):
         if not self.was_merged():
             raise ValueError()
-        return self.age_on(self.merged_on)
+        return self.age_at(self.merged_on)
 
-    def was_closed_on(self, date):
-        return self.closed_on and self.closed_on <= date
+    def was_closed_at_end_of(self, date):
+        return self.closed_on and self.closed_on.date() <= date
 
     def was_merged_on(self, date):
         return self.merged_on and date == self.merged_on
 
     def was_open_at_end_of(self, date):
-        return self.created_on <= date and not self.was_closed_on(date)
+        return self.created_on.date() <= date and not self.was_closed_at_end_of(date)
 
     def was_closed(self):
         return self.closed_on
@@ -100,10 +105,10 @@ class PR:
         return start_exclusive < self.created_on <= end_inclusive
 
     def was_opened_on(self, date):
-        return self.created_on.date() == date.date()
+        return self.created_on.date() == date
 
     def was_old_on(self, date):
-        return not self.was_closed_on(date) and self.age_on(date) >= 7
+        return not self.was_closed_at_end_of(date) and self.age_at(date) >= 7
 
     @classmethod
     def from_dict(cls, data, repo, tech_team_members):
