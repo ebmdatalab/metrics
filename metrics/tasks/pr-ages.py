@@ -33,12 +33,30 @@ def main():
 
     windows = build_windows(START_DATE, END_DATE, length_days=WINDOW_DAYS)
 
+    prs_open_by_day, prs_opened_by_day = categorise_prs(unabandoned_prs)
+
     write_charts(
         scatter_chart(interesting_prs),
-        opened_chart(unabandoned_prs, windows),
-        queue_length_chart(unabandoned_prs, windows),
+        count_chart("Opened per day", prs_opened_by_day, windows),
+        count_chart("Open at end of day", prs_open_by_day, windows),
         probabilities_chart(unabandoned_prs, windows),
     )
+
+
+def categorise_prs(unabandoned_prs):
+    prs_opened_by_day = dict()
+    prs_open_by_day = dict()
+    for day in dates.iter_days(START_DATE, END_DATE):
+        opened_prs = list()
+        open_prs = list()
+        for pr in unabandoned_prs:
+            if pr.was_opened_on(day):
+                opened_prs.append(pr)
+            if pr.was_open_at_end_of(day):
+                open_prs.append(pr)
+        prs_opened_by_day[day] = opened_prs
+        prs_open_by_day[day] = open_prs
+    return prs_open_by_day, prs_opened_by_day
 
 
 def scatter_chart(prs):
@@ -71,30 +89,13 @@ def scatter_chart(prs):
     )
 
 
-def queue_length_chart(prs, windows):
-    return count_chart(
-        "Open at end of day", lambda pr, day: pr.was_open_at_end_of(day), prs, windows
-    )
-
-
-def opened_chart(prs, windows):
-    return count_chart(
-        "Opened per day", lambda pr, day: pr.was_opened_on(day), prs, windows
-    )
-
-
-def count_chart(title, predicate, prs, windows):
-    day_counts = dict()
-
-    for day in dates.iter_days(START_DATE, END_DATE):
-        day_counts[day] = len([pr for pr in prs if predicate(pr, day)])
-
+def count_chart(title, prs, windows):
     count_data = list()
 
     for window_start_exc, window_end_inc in windows:
         window_counts = list()
         for day in dates.iter_days(window_start_exc + ONE_DAY, window_end_inc):
-            window_counts.append(day_counts[day])
+            window_counts.append(len(prs[day]))
         count_data.append(
             datapoint(window_end_inc, count=statistics.mean(window_counts))
         )
