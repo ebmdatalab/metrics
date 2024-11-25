@@ -7,11 +7,13 @@ import numpy
 import sksurv.nonparametric
 
 from metrics.github.github import tech_prs
+from metrics.tools import dates
 
 
 WINDOW_WEEKS = 6
 WINDOW_DAYS = WINDOW_WEEKS * 7
 WINDOW_WORKDAYS = WINDOW_WEEKS * 5
+ONE_DAY = datetime.timedelta(days=1)
 
 START_DATE = datetime.datetime(2021, 1, 1, 0, 0, tzinfo=datetime.UTC)
 END_DATE = datetime.datetime.now(tz=datetime.UTC)
@@ -71,14 +73,20 @@ def scatter_chart(prs):
 
 
 def queue_length_chart(prs, windows):
+    queue_lengths = dict()
+
+    for day in dates.iter_days(START_DATE, END_DATE):
+        queue_lengths[day] = len([pr for pr in prs if pr.was_open_at_end_of(day)])
+
     queue_data = list()
 
     for window_start_exc, window_end_inc in windows:
-        queue_sizes = []
-        day = window_start_exc + datetime.timedelta(days=1)
-        while (day := day + datetime.timedelta(days=1)) <= window_end_inc:
-            queue_sizes.append(len([pr for pr in prs if pr.was_open_at_end_of(day)]))
-        queue_data.append(datapoint(window_end_inc, count=statistics.mean(queue_sizes)))
+        window_queue_lengths = list()
+        for day in dates.iter_days(window_start_exc + ONE_DAY, window_end_inc):
+            window_queue_lengths.append(queue_lengths[day])
+        queue_data.append(
+            datapoint(window_end_inc, count=statistics.mean(window_queue_lengths))
+        )
 
     return (
         altair.Chart(altair.Data(values=queue_data), width=600, height=100)
@@ -177,12 +185,12 @@ def datapoint(date, **kwargs):
 
 def build_windows(start_date, end_date, length_days):
     window_size = datetime.timedelta(days=length_days)
-    window_start_exclusive = start_date - datetime.timedelta(days=1)
+    window_start_exclusive = start_date - ONE_DAY
 
     windows = []
     while (window_end_inclusive := window_start_exclusive + window_size) <= end_date:
         windows.append((window_start_exclusive, window_end_inclusive))
-        window_start_exclusive += datetime.timedelta(days=1)
+        window_start_exclusive += ONE_DAY
     return windows
 
 
