@@ -12,7 +12,6 @@ from metrics.tools import dates
 
 WINDOW_WEEKS = 6
 WINDOW_DAYS = WINDOW_WEEKS * 7
-WINDOW_WORKDAYS = WINDOW_WEEKS * 5
 ONE_DAY = datetime.timedelta(days=1)
 
 START_DATE = datetime.datetime(2021, 1, 1, 0, 0, tzinfo=datetime.UTC)
@@ -99,21 +98,28 @@ def queue_length_chart(prs, windows):
 
 
 def opened_chart(prs, windows):
+    opened_counts = dict()
+
+    for day in dates.iter_days(START_DATE, END_DATE):
+        opened_counts[day] = len([pr for pr in prs if pr.was_opened_on(day)])
+
+    # print(opened_counts)
     opened_count_data = list()
 
-    for window_start, window_end in windows:
-        window_prs = [
-            pr for pr in prs if pr.was_opened_in_period(window_start, window_end)
-        ]
-        opened_per_workday = len(window_prs) / WINDOW_WORKDAYS
-        opened_count_data.append(datapoint(window_end, count=opened_per_workday))
+    for window_start_exc, window_end_inc in windows:
+        window_opened_counts = list()
+        for day in dates.iter_days(window_start_exc + ONE_DAY, window_end_inc):
+            window_opened_counts.append(opened_counts[day])
+        opened_count_data.append(
+            datapoint(window_end_inc, count=statistics.mean(window_opened_counts))
+        )
 
     return (
         altair.Chart(altair.Data(values=opened_count_data), width=600, height=100)
         .mark_line()
         .encode(
             x=altair.X("date:T", title=f"{WINDOW_WEEKS}-week window end"),
-            y=altair.Y("count:Q", title="Opened per week day"),
+            y=altair.Y("count:Q", title="Opened per day"),
         )
     )
 

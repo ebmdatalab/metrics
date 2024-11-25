@@ -99,6 +99,9 @@ class PR:
     def was_opened_in_period(self, start_exclusive, end_inclusive):
         return start_exclusive < self.created_on <= end_inclusive
 
+    def was_opened_on(self, date):
+        return self.created_on.date() == date.date()
+
     def was_old_on(self, date):
         return not self.was_closed_on(date) and self.age_on(date) >= 7
 
