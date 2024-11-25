@@ -1,5 +1,6 @@
 import datetime
 import itertools
+import statistics
 
 import altair
 import numpy
@@ -71,16 +72,20 @@ def scatter_chart(prs):
 
 def queue_length_chart(prs, windows):
     queue_data = list()
-    for window_start, window_end in windows:
-        count = len([pr for pr in prs if pr.was_open_at_end_of(window_end)])
-        queue_data.append(datapoint(window_end, count=count))
+
+    for window_start_exc, window_end_inc in windows:
+        queue_sizes = []
+        day = window_start_exc + datetime.timedelta(days=1)
+        while (day := day + datetime.timedelta(days=1)) <= window_end_inc:
+            queue_sizes.append(len([pr for pr in prs if pr.was_open_at_end_of(day)]))
+        queue_data.append(datapoint(window_end_inc, count=statistics.mean(queue_sizes)))
 
     return (
         altair.Chart(altair.Data(values=queue_data), width=600, height=100)
         .mark_line()
         .encode(
-            x=altair.X("date:T", title="Date"),
-            y=altair.Y("count:Q", title="Number open"),
+            x=altair.X("date:T", title=f"{WINDOW_WEEKS}-week window end"),
+            y=altair.Y("count:Q", title="Open at end of day"),
         )
     )
 
