@@ -1,6 +1,7 @@
 import datetime
 import itertools
 import statistics
+from dataclasses import dataclass
 
 import altair
 import numpy
@@ -92,13 +93,11 @@ def scatter_chart(prs):
 def count_chart(title, prs, windows):
     count_data = list()
 
-    for window_start_exc, window_end_inc in windows:
+    for window in windows:
         window_counts = list()
-        for day in dates.iter_days(window_start_exc + ONE_DAY, window_end_inc):
+        for day in window.days():
             window_counts.append(len(prs[day]))
-        count_data.append(
-            datapoint(window_end_inc, count=statistics.mean(window_counts))
-        )
+        count_data.append(datapoint(window.end, count=statistics.mean(window_counts)))
 
     return (
         altair.Chart(altair.Data(values=count_data), width=600, height=100)
@@ -112,13 +111,13 @@ def count_chart(title, prs, windows):
 
 def probabilities_chart(prs, windows):
     probabilities_data = []
-    for window_start, window_end in windows:
-        prob_of_survival = build_survival_curve(prs, window_start, window_end)
+    for window in windows:
+        prob_of_survival = build_survival_curve(prs, window)
 
         for span_start, span_end in itertools.pairwise([0, 1, 3, 7, 14, 28]):
             prob_closed = prob_of_survival(span_start) - prob_of_survival(span_end)
             probabilities_data.append(
-                datapoint(window_end, days=span_end, value=prob_closed)
+                datapoint(window.end, days=span_end, value=prob_closed)
             )
 
     return (
@@ -141,11 +140,11 @@ def probabilities_chart(prs, windows):
     )
 
 
-def build_survival_curve(prs, window_start, window_end):
+def build_survival_curve(prs, window):
     observation_flags = []
     durations = []
 
-    for day in dates.iter_days(window_start + ONE_DAY, window_end):
+    for day in window.days():
         for pr in prs[day]:
             if pr.was_merged():
                 # Uncensored observation
@@ -176,13 +175,22 @@ def datapoint(date, **kwargs):
     return dict(date=date.isoformat(), **kwargs)
 
 
+@dataclass
+class Window:
+    start: datetime.datetime
+    end: datetime.datetime
+
+    def days(self):
+        return dates.iter_days(self.start + ONE_DAY, self.end)
+
+
 def build_windows(start_date, end_date, length_days):
     window_size = datetime.timedelta(days=length_days)
     window_start_exclusive = start_date - ONE_DAY
 
     windows = []
     while (window_end_inclusive := window_start_exclusive + window_size) <= end_date:
-        windows.append((window_start_exclusive, window_end_inclusive))
+        windows.append(Window(window_start_exclusive, window_end_inclusive))
         window_start_exclusive += ONE_DAY
     return windows
 
