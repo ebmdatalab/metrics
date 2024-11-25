@@ -59,9 +59,9 @@ class Repo:
 class PR:
     repo: Repo
     author: str
-    created_on: datetime.date
-    merged_on: datetime.date
-    closed_on: datetime.date
+    created_on: datetime.datetime
+    merged_on: datetime.datetime
+    closed_on: datetime.datetime
     is_draft: bool
     is_content: bool
 
