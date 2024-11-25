@@ -39,7 +39,7 @@ def main():
         scatter_chart(interesting_prs),
         count_chart("Opened per day", prs_opened_by_day, windows),
         count_chart("Open at end of day", prs_open_by_day, windows),
-        probabilities_chart(unabandoned_prs, windows),
+        probabilities_chart(prs_opened_by_day, windows),
     )
 
 
@@ -144,8 +144,9 @@ def probabilities_chart(prs, windows):
 def build_survival_curve(prs, window_start, window_end):
     observation_flags = []
     durations = []
-    for pr in prs:
-        if pr.was_opened_in_period(window_start, window_end):
+
+    for day in dates.iter_days(window_start + ONE_DAY, window_end):
+        for pr in prs[day]:
             if pr.was_merged():
                 # Uncensored observation
                 observation_flags.append(True)
