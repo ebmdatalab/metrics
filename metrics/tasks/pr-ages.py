@@ -72,54 +72,39 @@ def scatter_chart(prs):
 
 
 def queue_length_chart(prs, windows):
-    queue_lengths = dict()
-
-    for day in dates.iter_days(START_DATE, END_DATE):
-        queue_lengths[day] = len([pr for pr in prs if pr.was_open_at_end_of(day)])
-
-    queue_data = list()
-
-    for window_start_exc, window_end_inc in windows:
-        window_queue_lengths = list()
-        for day in dates.iter_days(window_start_exc + ONE_DAY, window_end_inc):
-            window_queue_lengths.append(queue_lengths[day])
-        queue_data.append(
-            datapoint(window_end_inc, count=statistics.mean(window_queue_lengths))
-        )
-
-    return (
-        altair.Chart(altair.Data(values=queue_data), width=600, height=100)
-        .mark_line()
-        .encode(
-            x=altair.X("date:T", title=f"{WINDOW_WEEKS}-week window end"),
-            y=altair.Y("count:Q", title="Open at end of day"),
-        )
+    return count_chart(
+        "Open at end of day", lambda pr, day: pr.was_open_at_end_of(day), prs, windows
     )
 
 
 def opened_chart(prs, windows):
-    opened_counts = dict()
+    return count_chart(
+        "Opened per day", lambda pr, day: pr.was_opened_on(day), prs, windows
+    )
+
+
+def count_chart(title, predicate, prs, windows):
+    day_counts = dict()
 
     for day in dates.iter_days(START_DATE, END_DATE):
-        opened_counts[day] = len([pr for pr in prs if pr.was_opened_on(day)])
+        day_counts[day] = len([pr for pr in prs if predicate(pr, day)])
 
-    # print(opened_counts)
-    opened_count_data = list()
+    count_data = list()
 
     for window_start_exc, window_end_inc in windows:
-        window_opened_counts = list()
+        window_counts = list()
         for day in dates.iter_days(window_start_exc + ONE_DAY, window_end_inc):
-            window_opened_counts.append(opened_counts[day])
-        opened_count_data.append(
-            datapoint(window_end_inc, count=statistics.mean(window_opened_counts))
+            window_counts.append(day_counts[day])
+        count_data.append(
+            datapoint(window_end_inc, count=statistics.mean(window_counts))
         )
 
     return (
-        altair.Chart(altair.Data(values=opened_count_data), width=600, height=100)
+        altair.Chart(altair.Data(values=count_data), width=600, height=100)
         .mark_line()
         .encode(
             x=altair.X("date:T", title=f"{WINDOW_WEEKS}-week window end"),
-            y=altair.Y("count:Q", title="Opened per day"),
+            y=altair.Y("count:Q", title=title),
         )
     )
 
