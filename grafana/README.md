@@ -69,7 +69,7 @@ GRANT CONNECT ON database jobserver TO grafanareader;
 ```sql
 GRANT SELECT ON applications_application, applications_cmoprioritylistpage, applications_commercialinvolvementpage, applications_datasetspage, applications_legalbasispage, applications_previousehrexperiencepage, applications_recordleveldatapage, applications_referencespage, applications_researcherregistration, applications_sharingcodepage, applications_shortdatareportpage, applications_sponsordetailspage, applications_studydatapage, applications_studyfundingpage, applications_studyinformationpage, applications_studypurposepage, applications_teamdetailspage, applications_typeofstudypage, interactive_analysisrequest, jobserver_backend, jobserver_backendmembership, jobserver_job, jobserver_jobrequest, jobserver_org, jobserver_orgmembership, jobserver_project, jobserver_projectcollaboration, jobserver_projectmembership, jobserver_publishrequest, jobserver_release, jobserver_releasefile, jobserver_releasefilereview, jobserver_repo, jobserver_report, jobserver_snapshot, jobserver_snapshot_files, jobserver_stats, jobserver_workspace, redirects_redirect TO grafanareader;
 
-CREATE VIEW jobserver_user_grafana AS SELECT id,last_login,username,is_active,date_joined,fullname,created_by_id,login_token_expires_at,pat_expires_at,roles FROM jobserver_user;
+CREATE VIEW jobserver_user_grafana AS SELECT id,last_login,username,date_joined,fullname,created_by_id,login_token_expires_at,pat_expires_at,roles FROM jobserver_user;
 
 GRANT SELECT ON jobserver_user_grafana TO grafanareader;
 ```
