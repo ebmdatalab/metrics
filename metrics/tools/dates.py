@@ -8,6 +8,13 @@ def date_from_iso(value):
     return datetime.fromisoformat(value).date()
 
 
+def datetime_from_iso(value):
+    if value is None:
+        return None
+
+    return datetime.fromisoformat(value)
+
+
 def iter_days(start, end):
     """
     Days from start to end, inclusive.

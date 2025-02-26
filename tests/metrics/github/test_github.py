@@ -12,6 +12,7 @@ TOMORROW = datetime.date(year=2023, month=6, day=11)
 
 LONG_AGO = datetime.date.min
 
+FIVE_DAYS = datetime.timedelta(days=5)
 SIX_DAYS = datetime.timedelta(days=6)
 ONE_WEEK = datetime.timedelta(weeks=1)
 
@@ -169,20 +170,23 @@ def test_correctly_labels_non_tech_prs_from_content_repos(patch):
 
 def test_is_old():
     # A PR is old if it was created a week or more ago.
-    assert pr(created_on=LONG_AGO).was_old_on(TODAY)
-    assert pr(created_on=TODAY - ONE_WEEK).was_old_on(TODAY)
-    assert not pr(created_on=TODAY - SIX_DAYS).was_old_on(TODAY)
-    assert not pr(created_on=TODAY).was_old_on(TODAY)
+    assert pr(created_on=LONG_AGO).was_old_at_end_of(TODAY)
+    assert pr(created_on=TODAY - ONE_WEEK).was_old_at_end_of(TODAY)
+    assert pr(created_on=TODAY - SIX_DAYS).was_old_at_end_of(TODAY)
+    assert not pr(created_on=TODAY - FIVE_DAYS).was_old_at_end_of(TODAY)
+    assert not pr(created_on=TODAY).was_old_at_end_of(TODAY)
 
     # PRs that have not yet opened are not old. (This is a real case because we
     # calculate metrics for historic dates.)
-    assert not pr(created_on=TODAY + ONE_WEEK).was_old_on(TODAY)
+    assert not pr(created_on=TODAY + ONE_WEEK).was_old_at_end_of(TODAY)
 
     # Closed PRs are not considered old, as long as they were closed on or before
     # the date that we're interested in.
-    assert not pr(created_on=LONG_AGO, closed_on=TODAY - ONE_WEEK).was_old_on(TODAY)
-    assert not pr(created_on=LONG_AGO, closed_on=TODAY).was_old_on(TODAY)
-    assert pr(created_on=LONG_AGO, closed_on=TODAY + ONE_WEEK).was_old_on(TODAY)
+    assert not pr(created_on=LONG_AGO, closed_on=TODAY - ONE_WEEK).was_old_at_end_of(
+        TODAY
+    )
+    assert not pr(created_on=LONG_AGO, closed_on=TODAY).was_old_at_end_of(TODAY)
+    assert pr(created_on=LONG_AGO, closed_on=TODAY + ONE_WEEK).was_old_at_end_of(TODAY)
 
 
 def test_was_merged_in_on():
@@ -215,10 +219,15 @@ def pr_data(author="author"):
 
 
 def pr(created_on=TODAY, closed_on=None, merged_on=None, is_content=False):
+    midnight = datetime.time(0, 0, 0, tzinfo=datetime.UTC)
+    if closed_on:
+        closed_on = datetime.datetime.combine(closed_on, midnight)
+    if merged_on:
+        merged_on = datetime.datetime.combine(merged_on, midnight)
     return PR(
         repo("org", "repo", "team"),
         "author",
-        created_on,
+        datetime.datetime.combine(created_on, midnight),
         merged_on,
         closed_on,
         is_content,
