@@ -155,6 +155,10 @@ metrics *args: devenv
     $BIN/python -m $MODULE
 
 
+streamlit: devenv
+    $BIN/streamlit run streamlit-app.py
+
+
 docker-build env="dev": _env
     #!/usr/bin/env bash
     set -euo pipefail

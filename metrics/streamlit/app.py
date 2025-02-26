@@ -6,6 +6,7 @@ from dataclasses import dataclass
 import altair
 import numpy
 import sksurv.nonparametric
+import streamlit as st
 
 from metrics.github.github import tech_prs
 from metrics.tools import dates
@@ -19,7 +20,7 @@ START_DATE = datetime.date(2021, 1, 1)
 END_DATE = datetime.date.today()
 
 
-def main():
+def display():
     all_prs = tech_prs()
 
     interesting_prs = [
@@ -168,7 +169,7 @@ def build_survival_curve(prs, window):
 
 
 def write_charts(*charts):
-    altair.vconcat(*charts).resolve_scale(color="independent").save("prs.html")
+    st.altair_chart(altair.vconcat(*charts).resolve_scale(color="independent"))
 
 
 def datapoint(date, **kwargs):
@@ -194,7 +195,3 @@ def build_windows(start_date, end_date, length_days):
         end -= ONE_DAY
 
     return list(reversed(windows))
-
-
-if __name__ == "__main__":
-    main()

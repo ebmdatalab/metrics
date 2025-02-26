@@ -6,5 +6,6 @@
   scikit-survival
   slack-bolt
   sqlalchemy[postgresql_psycopgbinary]
+  streamlit
   structlog
   sentry-sdk
