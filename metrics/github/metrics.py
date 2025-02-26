@@ -6,7 +6,7 @@ from metrics.tools.dates import iter_days
 
 
 def get_pr_metrics(prs):
-    old_counts = calculate_pr_counts(prs, PR.was_old_on)
+    old_counts = calculate_pr_counts(prs, PR.was_old_at_end_of)
     throughput_counts = calculate_pr_counts(prs, PR.was_merged_on)
 
     count_metrics = convert_pr_counts_to_metrics(old_counts, "queue_older_than_7_days")
@@ -18,8 +18,8 @@ def get_pr_metrics(prs):
 def calculate_pr_counts(prs, predicate):
     counts = defaultdict(int)
     for pr in prs:
-        start = pr.created_on
-        end = pr.closed_on if pr.closed_on else datetime.date.today()
+        start = pr.created_at.date()
+        end = pr.closed_at.date() if pr.closed_at else datetime.date.today()
         for day in iter_days(start, end):
             if predicate(pr, day):
                 counts[(pr.repo.org, pr.repo.name, pr.author, pr.is_content, day)] += 1

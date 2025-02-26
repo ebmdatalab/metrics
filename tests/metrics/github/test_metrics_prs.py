@@ -43,7 +43,7 @@ def test_counts_only_prs_matching_predicate():
         pr(r, author="an-author", merged_on=None),
     ]
 
-    counts = calculate_pr_counts(prs, lambda pr_, _date: pr_.merged_on)
+    counts = calculate_pr_counts(prs, lambda pr_, _date: pr_.merged_at)
     assert counts == {("an-org", "a-repo", "an-author", False, TODAY): 1}
 
 
@@ -117,7 +117,14 @@ def pr(
     author=None,
     is_content=False,
 ):
-    return PR(repo_, author, created_on, merged_on, closed_on, is_content)
+    return PR(
+        repo_,
+        author,
+        datetime.datetime.combine(created_on, datetime.time()),
+        merged_on,
+        closed_on,
+        is_content,
+    )
 
 
 def true(*_args):

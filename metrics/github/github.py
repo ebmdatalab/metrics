@@ -2,7 +2,7 @@ import datetime
 from dataclasses import dataclass
 
 from metrics.github import query
-from metrics.tools.dates import date_from_iso
+from metrics.tools.dates import date_from_iso, datetime_from_iso
 
 
 # Slugs (not names!) of the GitHub entities we're interested in
@@ -59,22 +59,27 @@ class Repo:
 class PR:
     repo: Repo
     author: str
-    created_on: datetime.date
-    merged_on: datetime.date
-    closed_on: datetime.date
+    created_at: datetime.datetime
+    merged_at: datetime.datetime
+    closed_at: datetime.datetime
     is_content: bool
 
-    def was_old_on(self, date):
-        opened = self.created_on
-        closed = self.closed_on if self.closed_on else None
+    def age_at(self, time):
+        return (time - self.created_at) / datetime.timedelta(days=1)
 
-        is_closed = closed and closed <= date
-        opened_more_than_a_week_ago = date - opened >= datetime.timedelta(weeks=1)
+    def age_at_end_of(self, date):
+        midnight = datetime.time(0, 0, 0, tzinfo=datetime.UTC)
+        next_day = date + datetime.timedelta(days=1)
+        return self.age_at(datetime.datetime.combine(next_day, midnight))
 
-        return not is_closed and opened_more_than_a_week_ago
+    def was_closed_at_end_of(self, date):
+        return self.closed_at and self.closed_at.date() <= date
+
+    def was_old_at_end_of(self, date):
+        return not self.was_closed_at_end_of(date) and self.age_at_end_of(date) >= 7
 
     def was_merged_on(self, date):
-        return self.merged_on and date == self.merged_on
+        return self.merged_at and date == self.merged_at.date()
 
     @classmethod
     def from_dict(cls, data, repo, tech_team_members):
@@ -84,9 +89,9 @@ class PR:
         return cls(
             repo,
             author,
-            date_from_iso(data["createdAt"]),
-            date_from_iso(data["mergedAt"]),
-            date_from_iso(data["closedAt"]),
+            datetime_from_iso(data["createdAt"]),
+            datetime_from_iso(data["mergedAt"]),
+            datetime_from_iso(data["closedAt"]),
             is_content,
         )
 
