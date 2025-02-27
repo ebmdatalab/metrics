@@ -1,6 +1,7 @@
 import datetime
 import itertools
 import statistics
+from collections import defaultdict
 from dataclasses import dataclass
 
 import altair
@@ -51,18 +52,20 @@ def load_prs():
 
 
 def categorise_prs(unabandoned_prs):
-    prs_opened_by_day = dict()
-    prs_open_by_day = dict()
-    for day in dates.iter_days(START_DATE, END_DATE):
-        opened_prs = list()
-        open_prs = list()
-        for pr in unabandoned_prs:
+    prs_opened_by_day = defaultdict(list)
+    prs_open_by_day = defaultdict(list)
+
+    for pr in unabandoned_prs:
+        if pr.was_closed():
+            end = pr.closed_at.date()
+        else:
+            end = datetime.date.today()
+        for day in dates.iter_days(pr.created_at.date(), end):
             if pr.was_opened_on(day):
-                opened_prs.append(pr)
+                prs_opened_by_day[day].append(pr)
             if pr.was_open_at_end_of(day):
-                open_prs.append(pr)
-        prs_opened_by_day[day] = opened_prs
-        prs_open_by_day[day] = open_prs
+                prs_open_by_day[day].append(pr)
+
     return prs_open_by_day, prs_opened_by_day
 
 
