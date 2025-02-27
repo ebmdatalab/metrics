@@ -21,7 +21,7 @@ END_DATE = datetime.date.today()
 
 
 def display():
-    all_prs = tech_prs()
+    all_prs = load_prs()
 
     interesting_prs = [
         pr
@@ -43,6 +43,11 @@ def display():
         count_chart("Open at end of day", prs_open_by_day, windows),
         probabilities_chart(prs_opened_by_day, windows),
     )
+
+
+@st.cache_data
+def load_prs():
+    return tech_prs()
 
 
 def categorise_prs(unabandoned_prs):
