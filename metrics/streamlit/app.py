@@ -56,15 +56,15 @@ def categorise_prs(unabandoned_prs):
     prs_open_by_day = defaultdict(list)
 
     for pr in unabandoned_prs:
+        prs_opened_by_day[pr.created_at.date()].append(pr)
+
         if pr.was_closed():
-            end = pr.closed_at.date()
+            end = pr.closed_at.date() - ONE_DAY
         else:
-            end = datetime.date.today()
+            end = datetime.date.today() - ONE_DAY
+
         for day in dates.iter_days(pr.created_at.date(), end):
-            if pr.was_opened_on(day):
-                prs_opened_by_day[day].append(pr)
-            if pr.was_open_at_end_of(day):
-                prs_open_by_day[day].append(pr)
+            prs_open_by_day[day].append(pr)
 
     return prs_open_by_day, prs_opened_by_day
 
