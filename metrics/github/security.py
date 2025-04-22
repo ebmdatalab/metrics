@@ -10,13 +10,19 @@ class Vulnerability:
     created_on: datetime.date
     fixed_on: datetime.date | None
     dismissed_on: datetime.date | None
+    auto_dismissed_on: datetime.date | None
 
     def is_open_on(self, target_date):
         return self.created_on <= target_date and not self.is_closed_on(target_date)
 
     def is_closed_on(self, target_date):
-        return (self.fixed_on is not None and self.fixed_on <= target_date) or (
-            self.dismissed_on is not None and self.dismissed_on <= target_date
+        return (
+            (self.fixed_on is not None and self.fixed_on <= target_date)
+            or (self.dismissed_on is not None and self.dismissed_on <= target_date)
+            or (
+                self.auto_dismissed_on is not None
+                and self.auto_dismissed_on <= target_date
+            )
         )
 
     @staticmethod
@@ -25,6 +31,7 @@ class Vulnerability:
             dates.date_from_iso(my_dict["createdAt"]),
             dates.date_from_iso(my_dict["fixedAt"]),
             dates.date_from_iso(my_dict["dismissedAt"]),
+            dates.date_from_iso(my_dict["autoDismissedAt"]),
         )
 
 
