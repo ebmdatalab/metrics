@@ -56,6 +56,7 @@ def vulnerabilities(org, repo):
               createdAt
               fixedAt
               dismissedAt
+              autoDismissedAt
             }
             pageInfo {
               endCursor
