@@ -1,3 +1,4 @@
+import atexit
 import functools
 import os
 
@@ -155,7 +156,9 @@ def _ensure_table(connection, table):
 
 @functools.cache
 def _get_engine():
-    return create_engine(_get_url())
+    engine = create_engine(_get_url())
+    atexit.register(engine.dispose)
+    return engine
 
 
 def _get_url(database_prefix=None):
