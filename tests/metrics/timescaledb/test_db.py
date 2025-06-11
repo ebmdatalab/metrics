@@ -17,10 +17,13 @@ def module_scoped_engine():
 
     create_database(url)
 
-    yield create_engine(url)
+    engine = create_engine(url)
+    yield engine
 
     # drop the database on test suite exit
     drop_database(url)
+
+    engine.dispose()
 
 
 @pytest.fixture
