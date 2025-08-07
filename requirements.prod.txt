@@ -14,9 +14,9 @@ cattrs==25.1.1 \
     --hash=sha256:1b40b2d3402af7be79a7e7e097a9b4cd16d4c06e6d526644b0b26a063a1cc064 \
     --hash=sha256:c914b734e0f2d59e5b720d145ee010f1fd9a13ee93900922a2f3f9d593b8382c
     # via requests-cache
-certifi==2025.7.14 \
-    --hash=sha256:6b31f564a415d79ee77df69d757bb49a5bb53bd9f756cbbe24394ffd6fc1f4b2 \
-    --hash=sha256:8ea99dbdfaaf2ba2f9bac77b9249ef62ec5218e7c2b2e903378ed5fccf765995
+certifi==2025.8.3 \
+    --hash=sha256:e564105f78ded564e3ae7c923924435e1daa7463faeab5bb932bc53ffae63407 \
+    --hash=sha256:f6c12493cfb1b06ba2ff328595af9350c65d6644968e5d3a2ffd78699af217a5
     # via
     #   requests
     #   sentry-sdk
@@ -275,7 +275,7 @@ slack-sdk==3.36.0 \
     --hash=sha256:6c96887d7175fc1b0b2777b73bb65f39b5b8bee9bd8acfec071d64014f9e2d10 \
     --hash=sha256:8586022bdbdf9f8f8d32f394540436c53b1e7c8da9d21e1eab4560ba70cfcffa
     # via slack-bolt
-sqlalchemy[postgresql-psycopgbinary,postgresql_psycopgbinary]==2.0.42 \
+sqlalchemy[postgresql-psycopgbinary]==2.0.42 \
     --hash=sha256:09637a0872689d3eb71c41e249c6f422e3e18bbd05b4cd258193cfc7a9a50da2 \
     --hash=sha256:0b718011a9d66c0d2f78e1997755cd965f3414563b31867475e9bc6efdc2281d \
     --hash=sha256:160bedd8a5c28765bd5be4dec2d881e109e33b34922e50a3b881a7681773ac5f \
