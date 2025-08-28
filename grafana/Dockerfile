@@ -1,3 +1,3 @@
-FROM grafana/grafana-enterprise:latest@sha256:7bab05c4f18cd75aaae35e01cf53028c5152c0d56643d3fb1b0668dd82927a86
+FROM grafana/grafana-enterprise:latest@sha256:1d6b24fd4121d97bde0dea8aa19a357306a48dbfb7f61303649c4b6db5d327b7
 
 USER grafana
