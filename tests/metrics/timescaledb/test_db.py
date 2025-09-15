@@ -20,10 +20,11 @@ def module_scoped_engine():
     engine = create_engine(url)
     yield engine
 
+    # ensure pooled connections are closed before dropping the DB
+    engine.dispose()
+
     # drop the database on test suite exit
     drop_database(url)
-
-    engine.dispose()
 
 
 @pytest.fixture
