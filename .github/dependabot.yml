@@ -5,8 +5,12 @@ updates:
     directory: "/"
     schedule:
       interval: "monthly"
+    cooldown:
+      default-days: 7
 
   - package-ecosystem: "docker"
     directory: "grafana/"
     schedule:
       interval: "weekly"
+    cooldown:
+      default-days: 7
