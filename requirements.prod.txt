@@ -281,9 +281,9 @@ requests-cache==1.2.1 \
     --hash=sha256:1285151cddf5331067baa82598afe2d47c7495a1334bfe7a7d329b43e9fd3603 \
     --hash=sha256:68abc986fdc5b8d0911318fbb5f7c80eebcd4d01bfacc6685ecf8876052511d1
     # via -r requirements.prod.in
-sentry-sdk==2.42.1 \
-    --hash=sha256:8598cc6edcfe74cb8074ba6a7c15338cdee93d63d3eb9b9943b4b568354ad5b6 \
-    --hash=sha256:f8716b50c927d3beb41bc88439dc6bcd872237b596df5b14613e2ade104aee02
+sentry-sdk==2.43.0 \
+    --hash=sha256:4aacafcf1756ef066d359ae35030881917160ba7f6fc3ae11e0e58b09edc2d5d \
+    --hash=sha256:52ed6e251c5d2c084224d73efee56b007ef5c2d408a4a071270e82131d336e20
     # via -r requirements.prod.in
 slack-bolt==1.26.0 \
     --hash=sha256:b0b806b9dcf009ee50172830c1d170e231cd873c5b819703bbcdc59a0fe5ff3e \
