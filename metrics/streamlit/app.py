@@ -88,7 +88,11 @@ def scatter_chart(prs):
         altair.Chart(altair.Data(values=scatter_data), width=600, height=200)
         .mark_circle()
         .encode(
-            x=altair.X("date:T", title="Date opened"),
+            x=altair.X(
+                "date:T",
+                title="Date opened",
+                axis=altair.Axis(format="%Y", tickCount="year"),
+            ),
             y=altair.Y(
                 "value:Q",
                 # Setting explict tick values because of a bug: https://github.com/vega/vega/issues/2914
@@ -113,7 +117,11 @@ def count_chart(title, prs, windows):
         altair.Chart(altair.Data(values=count_data), width=600, height=100)
         .mark_line()
         .encode(
-            x=altair.X("date:T", title=f"{WINDOW_WEEKS}-week window end"),
+            x=altair.X(
+                "date:T",
+                title=None,
+                axis=altair.Axis(format="%Y", tickCount="year"),
+            ),
             y=altair.Y("count:Q", title=title),
         )
     )
@@ -134,7 +142,11 @@ def probabilities_chart(prs, windows):
         altair.Chart(altair.Data(values=probabilities_data), width=600, height=200)
         .mark_area()
         .encode(
-            x=altair.X("date:T", title=f"{WINDOW_WEEKS}-week window end"),
+            x=altair.X(
+                "date:T",
+                title=None,
+                axis=altair.Axis(format="%Y", tickCount="year"),
+            ),
             y=altair.Y(
                 "value:Q",
                 title="Proportion closed within...",
