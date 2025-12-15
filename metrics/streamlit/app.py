@@ -16,6 +16,7 @@ from metrics.tools import dates
 WINDOW_WEEKS = 6
 WINDOW_DAYS = WINDOW_WEEKS * 7
 ONE_DAY = datetime.timedelta(days=1)
+ONE_WEEK = datetime.timedelta(weeks=1)
 
 START_DATE = datetime.date(2021, 1, 1)
 END_DATE = datetime.date.today()
@@ -200,6 +201,6 @@ def build_windows(start_date, end_date, length_days):
     end = end_date
     while (start := end - window_size) >= start_date:
         windows.append(Window(start, end))
-        end -= ONE_DAY
+        end -= ONE_WEEK
 
     return list(reversed(windows))
