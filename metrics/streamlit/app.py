@@ -43,6 +43,7 @@ def display():
         scatter_chart(interesting_prs),
         count_chart("Opened per day", prs_opened_by_day, windows),
         count_chart("Open at end of day", prs_open_by_day, windows),
+        xmr_chart(prs_opened_by_day, windows),
         probabilities_chart(prs_opened_by_day, windows),
     )
 
@@ -159,6 +160,60 @@ def probabilities_chart(prs, windows):
             ),
             order="days:O",
         )
+    )
+
+
+def xmr_chart(prs, windows):
+    probabilities_data = []
+    for window in windows:
+        prob_of_survival = build_survival_curve(prs, window)
+        prob_closed_within_two_days = 1 - prob_of_survival(2)
+        probabilities_data.append(
+            datapoint(window.end, value=prob_closed_within_two_days)
+        )
+
+    values = [entry["value"] for entry in probabilities_data]
+    moving_ranges = [abs(curr - prev) for prev, curr in itertools.pairwise(values)]
+
+    mean = statistics.mean(values)
+    mean_mr = statistics.mean(moving_ranges)
+    ucl = mean + 2.66 * mean_mr
+    lcl = mean - 2.66 * mean_mr
+
+    limits = [
+        {"limit": lcl, "label": "LCL"},
+        {"limit": mean, "label": "Mean"},
+        {"limit": ucl, "label": "UCL"},
+    ]
+
+    return (
+        altair.layer(
+            altair.Chart(altair.Data(values=probabilities_data))
+            .mark_line(color="#4c78a8")
+            .encode(
+                x=altair.X(
+                    "date:T",
+                    title=None,
+                    axis=altair.Axis(format="%Y", tickCount="year"),
+                ),
+                y=altair.Y("value:Q", title="Closed within 2 days"),
+            ),
+            altair.Chart(altair.Data(values=limits))
+            .mark_rule(strokeDash=[4, 4])
+            .encode(
+                y=altair.Y("limit:Q", title="Closed within 2 days"),
+                color=altair.Color(
+                    "label:N",
+                    legend=None,
+                    scale=altair.Scale(
+                        domain=["Mean", "LCL", "UCL"],
+                        range=["#4c78a8", "#a3c5f4", "#a3c5f4"],
+                    ),
+                ),
+            ),
+        )
+        .properties(width=600, height=100)
+        .resolve_scale(color="independent")
     )
 
 
