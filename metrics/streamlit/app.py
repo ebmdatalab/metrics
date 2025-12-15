@@ -18,6 +18,12 @@ WINDOW_DAYS = WINDOW_WEEKS * 7
 ONE_DAY = datetime.timedelta(days=1)
 ONE_WEEK = datetime.timedelta(weeks=1)
 
+DEFAULT_WIDTH = 600
+SCATTER_HEIGHT = 300
+COUNT_HEIGHT = 150
+PROB_HEIGHT = 300
+XMR_HEIGHT = 150
+
 START_DATE = datetime.date(2021, 1, 1)
 END_DATE = datetime.date.today()
 
@@ -86,7 +92,9 @@ def scatter_chart(prs):
         scatter_data.append(datapoint(pr.created_at, value=age, category=category))
 
     return (
-        altair.Chart(altair.Data(values=scatter_data), width=600, height=200)
+        altair.Chart(
+            altair.Data(values=scatter_data), width=DEFAULT_WIDTH, height=SCATTER_HEIGHT
+        )
         .mark_circle()
         .encode(
             x=altair.X(
@@ -115,7 +123,9 @@ def count_chart(title, prs, windows):
         count_data.append(datapoint(window.end, count=statistics.mean(window_counts)))
 
     return (
-        altair.Chart(altair.Data(values=count_data), width=600, height=100)
+        altair.Chart(
+            altair.Data(values=count_data), width=DEFAULT_WIDTH, height=COUNT_HEIGHT
+        )
         .mark_line()
         .encode(
             x=altair.X(
@@ -140,7 +150,11 @@ def probabilities_chart(prs, windows):
             )
 
     return (
-        altair.Chart(altair.Data(values=probabilities_data), width=600, height=200)
+        altair.Chart(
+            altair.Data(values=probabilities_data),
+            width=DEFAULT_WIDTH,
+            height=PROB_HEIGHT,
+        )
         .mark_area()
         .encode(
             x=altair.X(
@@ -212,7 +226,7 @@ def xmr_chart(prs, windows):
                 ),
             ),
         )
-        .properties(width=600, height=100)
+        .properties(width=DEFAULT_WIDTH, height=XMR_HEIGHT)
         .resolve_scale(color="independent")
     )
 
@@ -245,7 +259,14 @@ def build_survival_curve(prs, window):
 
 
 def write_charts(*charts):
-    st.altair_chart(altair.vconcat(*charts).resolve_scale(color="independent"))
+    combined = (
+        altair.vconcat(*charts)
+        .resolve_scale(color="independent")
+        .configure_axis(labelFontSize=18, titleFontSize=18)
+        .configure_legend(labelFontSize=18, titleFontSize=18)
+        .configure_title(fontSize=18)
+    )
+    st.altair_chart(combined, use_container_width=False)
 
 
 def datapoint(date, **kwargs):
