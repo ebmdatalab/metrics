@@ -19,10 +19,9 @@ ONE_DAY = datetime.timedelta(days=1)
 ONE_WEEK = datetime.timedelta(weeks=1)
 
 DEFAULT_WIDTH = 600
+DEFAULT_HEIGHT = 150
 SCATTER_HEIGHT = 300
-COUNT_HEIGHT = 150
 PROB_HEIGHT = 300
-XMR_HEIGHT = 150
 
 START_DATE = datetime.date(2021, 1, 1)
 END_DATE = datetime.date.today()
@@ -49,7 +48,7 @@ def display():
         scatter_chart(interesting_prs),
         count_chart("Opened per day", prs_opened_by_day, windows),
         count_chart("Open at end of day", prs_open_by_day, windows),
-        xmr_chart(prs_opened_by_day, windows),
+        two_day_chart(prs_opened_by_day, windows),
         probabilities_chart(prs_opened_by_day, windows),
     )
 
@@ -122,46 +121,11 @@ def count_chart(title, prs, windows):
             window_counts.append(len(prs[day]))
         count_data.append(datapoint(window.end, count=statistics.mean(window_counts)))
 
-    values = [item["count"] for item in count_data]
-    moving_ranges = [abs(curr - prev) for prev, curr in itertools.pairwise(values)]
-    mean = statistics.mean(values)
-    mean_mr = statistics.mean(moving_ranges) if moving_ranges else 0.0
-    ucl = mean + 2.66 * mean_mr
-    lcl = max(0.0, mean - 2.66 * mean_mr)
-
-    limits = [
-        {"limit": lcl, "label": "LCL"},
-        {"limit": mean, "label": "Mean"},
-        {"limit": ucl, "label": "UCL"},
-    ]
-
-    return altair.layer(
-        altair.Chart(
-            altair.Data(values=count_data), width=DEFAULT_WIDTH, height=COUNT_HEIGHT
-        )
-        .mark_line(color="#4c78a8")
-        .encode(
-            x=altair.X(
-                "date:T",
-                title=None,
-                axis=altair.Axis(format="%Y", tickCount="year"),
-            ),
-            y=altair.Y("count:Q", title=title),
-        ),
-        altair.Chart(altair.Data(values=limits))
-        .mark_rule(strokeDash=[4, 4])
-        .encode(
-            y=altair.Y("limit:Q", title=title),
-            color=altair.Color(
-                "label:N",
-                legend=None,
-                scale=altair.Scale(
-                    domain=["Mean", "LCL", "UCL"],
-                    range=["#4c78a8", "#a3c5f4", "#a3c5f4"],
-                ),
-            ),
-        ),
-    ).resolve_scale(color="independent")
+    return xmr_chart_from_series(
+        count_data,
+        value_field="count",
+        y_title=title,
+    )
 
 
 def probabilities_chart(prs, windows):
@@ -203,7 +167,7 @@ def probabilities_chart(prs, windows):
     )
 
 
-def xmr_chart(prs, windows):
+def two_day_chart(prs, windows):
     probabilities_data = []
     for window in windows:
         prob_of_survival = build_survival_curve(prs, window)
@@ -212,9 +176,16 @@ def xmr_chart(prs, windows):
             datapoint(window.end, value=prob_closed_within_two_days)
         )
 
-    values = [entry["value"] for entry in probabilities_data]
-    moving_ranges = [abs(curr - prev) for prev, curr in itertools.pairwise(values)]
+    return xmr_chart_from_series(
+        probabilities_data,
+        value_field="value",
+        y_title="Closed within 2 days",
+    )
 
+
+def xmr_chart_from_series(data, value_field, y_title):
+    values = [item[value_field] for item in data]
+    moving_ranges = [abs(curr - prev) for prev, curr in itertools.pairwise(values)]
     mean = statistics.mean(values)
     mean_mr = statistics.mean(moving_ranges)
     ucl = mean + 2.66 * mean_mr
@@ -226,35 +197,33 @@ def xmr_chart(prs, windows):
         {"limit": ucl, "label": "UCL"},
     ]
 
-    return (
-        altair.layer(
-            altair.Chart(altair.Data(values=probabilities_data))
-            .mark_line(color="#4c78a8")
-            .encode(
-                x=altair.X(
-                    "date:T",
-                    title=None,
-                    axis=altair.Axis(format="%Y", tickCount="year"),
-                ),
-                y=altair.Y("value:Q", title="Closed within 2 days"),
-            ),
-            altair.Chart(altair.Data(values=limits))
-            .mark_rule(strokeDash=[4, 4])
-            .encode(
-                y=altair.Y("limit:Q", title="Closed within 2 days"),
-                color=altair.Color(
-                    "label:N",
-                    legend=None,
-                    scale=altair.Scale(
-                        domain=["Mean", "LCL", "UCL"],
-                        range=["#4c78a8", "#a3c5f4", "#a3c5f4"],
-                    ),
-                ),
-            ),
+    return altair.layer(
+        altair.Chart(
+            altair.Data(values=data), width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT
         )
-        .properties(width=DEFAULT_WIDTH, height=XMR_HEIGHT)
-        .resolve_scale(color="independent")
-    )
+        .mark_line(color="#4c78a8")
+        .encode(
+            x=altair.X(
+                "date:T",
+                title=None,
+                axis=altair.Axis(format="%Y", tickCount="year"),
+            ),
+            y=altair.Y(f"{value_field}:Q", title=y_title),
+        ),
+        altair.Chart(altair.Data(values=limits))
+        .mark_rule(strokeDash=[4, 4])
+        .encode(
+            y=altair.Y("limit:Q", title=y_title),
+            color=altair.Color(
+                "label:N",
+                legend=None,
+                scale=altair.Scale(
+                    domain=["Mean", "LCL", "UCL"],
+                    range=["#4c78a8", "#a3c5f4", "#a3c5f4"],
+                ),
+            ),
+        ),
+    ).resolve_scale(color="independent")
 
 
 def build_survival_curve(prs, window):
