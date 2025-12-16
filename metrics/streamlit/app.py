@@ -122,11 +122,24 @@ def count_chart(title, prs, windows):
             window_counts.append(len(prs[day]))
         count_data.append(datapoint(window.end, count=statistics.mean(window_counts)))
 
-    return (
+    values = [item["count"] for item in count_data]
+    moving_ranges = [abs(curr - prev) for prev, curr in itertools.pairwise(values)]
+    mean = statistics.mean(values)
+    mean_mr = statistics.mean(moving_ranges) if moving_ranges else 0.0
+    ucl = mean + 2.66 * mean_mr
+    lcl = max(0.0, mean - 2.66 * mean_mr)
+
+    limits = [
+        {"limit": lcl, "label": "LCL"},
+        {"limit": mean, "label": "Mean"},
+        {"limit": ucl, "label": "UCL"},
+    ]
+
+    return altair.layer(
         altair.Chart(
             altair.Data(values=count_data), width=DEFAULT_WIDTH, height=COUNT_HEIGHT
         )
-        .mark_line()
+        .mark_line(color="#4c78a8")
         .encode(
             x=altair.X(
                 "date:T",
@@ -134,8 +147,21 @@ def count_chart(title, prs, windows):
                 axis=altair.Axis(format="%Y", tickCount="year"),
             ),
             y=altair.Y("count:Q", title=title),
-        )
-    )
+        ),
+        altair.Chart(altair.Data(values=limits))
+        .mark_rule(strokeDash=[4, 4])
+        .encode(
+            y=altair.Y("limit:Q", title=title),
+            color=altair.Color(
+                "label:N",
+                legend=None,
+                scale=altair.Scale(
+                    domain=["Mean", "LCL", "UCL"],
+                    range=["#4c78a8", "#a3c5f4", "#a3c5f4"],
+                ),
+            ),
+        ),
+    ).resolve_scale(color="independent")
 
 
 def probabilities_chart(prs, windows):
