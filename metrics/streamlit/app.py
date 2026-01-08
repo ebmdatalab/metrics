@@ -49,6 +49,7 @@ def display():
         count_chart("Opened per day", prs_opened_by_day, windows),
         count_chart("Open at end of day", prs_open_by_day, windows),
         two_day_chart(prs_opened_by_day, windows),
+        team_two_day_chart(prs_opened_by_day, windows),
         probabilities_chart(prs_opened_by_day, windows),
     )
 
@@ -180,6 +181,44 @@ def two_day_chart(prs, windows):
         probabilities_data,
         value_field="value",
         y_title="Closed within 2 days",
+    )
+
+
+def team_two_day_chart(day_to_prs, windows):
+    team_to_day_to_prs = defaultdict(lambda: defaultdict(list))
+    for day, day_prs in day_to_prs.items():
+        for pr in day_prs:
+            if pr.repo.team == "tech-shared":
+                continue
+            team_to_day_to_prs[pr.repo.team][day].append(pr)
+
+    series = []
+    for window in windows:
+        for team, day_to_team_prs in team_to_day_to_prs.items():
+            prob_of_survival = build_survival_curve(day_to_team_prs, window)
+            prob_closed_within_two_days = 1 - prob_of_survival(2)
+            series.append(
+                datapoint(
+                    window.end,
+                    value=prob_closed_within_two_days,
+                    team=team,
+                )
+            )
+
+    return (
+        altair.Chart(
+            altair.Data(values=series), width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT
+        )
+        .mark_line()
+        .encode(
+            x=altair.X(
+                "date:T",
+                title=None,
+                axis=altair.Axis(format="%Y", tickCount="year"),
+            ),
+            y=altair.Y("value:Q", title="Closed within 2 days"),
+            color=altair.Color("team:N", legend=altair.Legend(title="Team")),
+        )
     )
 
 
