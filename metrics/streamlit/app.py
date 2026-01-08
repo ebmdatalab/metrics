@@ -35,6 +35,7 @@ def display():
         for pr in all_prs
         if pr.created_at.date() > START_DATE
         and "dependabot" not in pr.author
+        and "opensafely-core-create-pr" not in pr.author
         and not pr.is_draft
         and not pr.is_content
     ]
