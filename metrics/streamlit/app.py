@@ -324,6 +324,6 @@ def build_windows(start_date, end_date, length_days):
     end = end_date
     while (start := end - window_size) >= start_date:
         windows.append(Window(start, end))
-        end -= ONE_WEEK
+        end -= datetime.timedelta(weeks=4)
 
     return list(reversed(windows))
