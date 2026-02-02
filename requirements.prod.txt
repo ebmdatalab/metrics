@@ -189,7 +189,9 @@ greenlet==3.3.1 \
     --hash=sha256:e2e7e882f83149f0a71ac822ebf156d902e7a5d22c9045e3e0d1daf59cee2cc9 \
     --hash=sha256:e84b51cbebf9ae573b5fbd15df88887815e3253fc000a7d0ff95170e8f7e9729 \
     --hash=sha256:ed6b402bc74d6557a705e197d47f9063733091ed6357b3de33619d8a8d93ac53
-    # via -r requirements.prod.in
+    # via
+    #   -r requirements.prod.in
+    #   sqlalchemy
 idna==3.11 \
     --hash=sha256:771a87f49d9defaf64091e6e6fe9c18d4833f140bd19464795bc32d966ca37ea \
     --hash=sha256:795dafcc9c04ed0c1fb032c2aa73654d8e8c5023a7df64a53f39190ada629902
@@ -271,9 +273,9 @@ requests-cache==1.2.1 \
     --hash=sha256:1285151cddf5331067baa82598afe2d47c7495a1334bfe7a7d329b43e9fd3603 \
     --hash=sha256:68abc986fdc5b8d0911318fbb5f7c80eebcd4d01bfacc6685ecf8876052511d1
     # via -r requirements.prod.in
-sentry-sdk==2.50.0 \
-    --hash=sha256:0ef0ed7168657ceb5a0be081f4102d92042a125462d1d1a29277992e344e749e \
-    --hash=sha256:873437a989ee1b8b25579847bae8384515bf18cfed231b06c591b735c1781fe3
+sentry-sdk==2.51.0 \
+    --hash=sha256:b89d64577075fd8c13088bc3609a2ce77a154e5beb8cba7cc16560b0539df4f7 \
+    --hash=sha256:e21016d318a097c2b617bb980afd9fc737e1efc55f9b4f0cdc819982c9717d5f
     # via -r requirements.prod.in
 slack-bolt==1.27.0 \
     --hash=sha256:3db91d64e277e176a565c574ae82748aa8554f19e41a4fceadca4d65374ce1e0 \
