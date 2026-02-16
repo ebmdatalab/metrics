@@ -198,9 +198,9 @@ idna==3.11 \
     # via
     #   requests
     #   url-normalize
-platformdirs==4.5.1 \
-    --hash=sha256:61d5cdcc6065745cdd94f0f878977f8de9437be93de97c1c12f853c9c0cdcbda \
-    --hash=sha256:d03afa3963c806a9bed9d5125c8f4cb2fdaf74a55ab60e5d59b3fde758104d31
+platformdirs==4.9.2 \
+    --hash=sha256:9170634f126f8efdae22fb58ae8a0eaa86f38365bc57897a6c4f781d1f5875bd \
+    --hash=sha256:9a33809944b9db043ad67ca0db94b14bf452cc6aeaac46a88ea55b26e2e9d291
     # via requests-cache
 psycopg[binary]==3.3.2 \
     --hash=sha256:3e94bc5f4690247d734599af56e51bae8e0db8e4311ea413f801fef82b14a99b \
@@ -281,9 +281,9 @@ slack-bolt==1.27.0 \
     --hash=sha256:3db91d64e277e176a565c574ae82748aa8554f19e41a4fceadca4d65374ce1e0 \
     --hash=sha256:c43c94bf34740f2adeb9b55566c83f1e73fed6ba2878bd346cdfd6fd8ad22360
     # via -r requirements.prod.in
-slack-sdk==3.39.0 \
-    --hash=sha256:6a56be10dc155c436ff658c6b776e1c082e29eae6a771fccf8b0a235822bbcb1 \
-    --hash=sha256:b1556b2f5b8b12b94e5ea3f56c4f2c7f04462e4e1013d325c5764ff118044fa8
+slack-sdk==3.40.0 \
+    --hash=sha256:87b9a79d1d6e19a2b1877727a0ec6f016d82d30a6a410389fba87c221c99f10e \
+    --hash=sha256:f2bada5ed3adb10a01e154e90db01d6d8938d0461b5790c12bcb807b2d28bbe2
     # via slack-bolt
 sqlalchemy[postgresql-psycopgbinary]==2.0.46 \
     --hash=sha256:09168817d6c19954d3b7655da6ba87fcb3a62bb575fb396a81a8b6a9fadfe8b5 \
