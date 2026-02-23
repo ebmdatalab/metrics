@@ -23,6 +23,7 @@ DEFAULT_WIDTH = 600
 DEFAULT_HEIGHT = 150
 SCATTER_HEIGHT = 300
 PROB_HEIGHT = 300
+LABEL_WIDTH = 60
 
 START_DATE = datetime.date(2021, 1, 1)
 END_DATE = datetime.date.today()
@@ -48,10 +49,26 @@ def display():
     prs_open_by_day, prs_opened_by_day = categorise_prs(unabandoned_prs)
 
     write_charts(
-        scatter_chart(interesting_prs),
-        count_chart_weekly("Opened per day", prs_opened_by_day, weekly_windows),
-        open_end_of_day_chart_weekly(prs_open_by_day, weekly_windows),
-        closed_within_days_chart(prs_opened_by_day, weekly_windows, days=2),
+        with_y_label(
+            scatter_chart(interesting_prs),
+            "Age (days)",
+            SCATTER_HEIGHT,
+        ),
+        with_y_label(
+            count_chart_weekly("Opened per day", prs_opened_by_day, weekly_windows),
+            "Opened per day",
+            DEFAULT_HEIGHT,
+        ),
+        with_y_label(
+            open_end_of_day_chart_weekly(prs_open_by_day, weekly_windows),
+            "Open at end of day",
+            DEFAULT_HEIGHT,
+        ),
+        with_y_label(
+            closed_within_days_chart(prs_opened_by_day, weekly_windows, days=2),
+            "Closed within 2 days",
+            DEFAULT_HEIGHT,
+        ),
     )
 
 
@@ -112,7 +129,7 @@ def scatter_chart(prs):
                     titleBaseline="middle",
                     titleAnchor="middle",
                 ),
-                title="Age (days)",
+                title=None,
             ).scale(type="symlog"),
             color=altair.Color("category:N", legend=altair.Legend(title="Outcome")),
         )
@@ -125,7 +142,7 @@ def count_chart(title, prs, windows):
     return xmr_chart_from_series(
         count_data,
         value_field="count",
-        y_title=title,
+        y_label=title,
     )
 
 
@@ -135,7 +152,7 @@ def count_chart_weekly(title, prs, windows):
     return xmr_chart_from_series(
         count_data,
         value_field="count",
-        y_title=title,
+        y_label=title,
     )
 
 
@@ -145,7 +162,7 @@ def open_end_of_day_chart_weekly(prs, windows):
     return xmr_chart_from_series(
         count_data,
         value_field="count",
-        y_title="Open at end of day",
+        y_label="Open at end of day",
     )
 
 
@@ -174,7 +191,7 @@ def closed_within_days_chart(prs, windows, days):
     return xmr_chart_from_series(
         probabilities_data,
         value_field="value",
-        y_title=f"Closed within {days} days",
+        y_label=f"Closed within {days} days",
     )
 
 
@@ -231,7 +248,7 @@ def closed_within_days_datapoints(prs, windows, days):
     return probabilities_data
 
 
-def xmr_chart_from_series(data, value_field, y_title):
+def xmr_chart_from_series(data, value_field, y_label):
     values = [item[value_field] for item in data]
     moving_ranges = [abs(curr - prev) for prev, curr in itertools.pairwise(values)]
     mean = statistics.mean(values)
@@ -258,7 +275,7 @@ def xmr_chart_from_series(data, value_field, y_title):
             ),
             y=altair.Y(
                 f"{value_field}:Q",
-                title=y_title,
+                title=None,
                 axis=altair.Axis(
                     titleY=DEFAULT_HEIGHT / 2,
                     titleBaseline="middle",
@@ -273,7 +290,7 @@ def xmr_chart_from_series(data, value_field, y_title):
                 ),
                 altair.Tooltip(
                     f"{value_field}:Q",
-                    title=y_title,
+                    title=y_label,
                     format=".3f",
                 ),
             ],
@@ -281,7 +298,7 @@ def xmr_chart_from_series(data, value_field, y_title):
         altair.Chart(altair.Data(values=limits))
         .mark_rule(strokeDash=[4, 4])
         .encode(
-            y=altair.Y("limit:Q", title=y_title),
+            y=altair.Y("limit:Q", title=None),
             color=altair.Color(
                 "label:N",
                 legend=None,
@@ -292,6 +309,18 @@ def xmr_chart_from_series(data, value_field, y_title):
             ),
         ),
     ).resolve_scale(color="independent")
+
+
+def y_label_chart(label, height):
+    return (
+        altair.Chart(altair.Data(values=[{}]), width=LABEL_WIDTH, height=height)
+        .mark_text(angle=270, align="center", baseline="middle")
+        .encode(text=altair.value(label))
+    )
+
+
+def with_y_label(chart, label, height):
+    return altair.hconcat(y_label_chart(label, height), chart, spacing=5)
 
 
 def build_survival_curve(prs, window):

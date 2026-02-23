@@ -106,7 +106,7 @@ def test_closed_within_days_chart_title(monkeypatch):
     chart = app.closed_within_days_chart({}, [], days=4)
     spec = chart.to_dict()
 
-    assert spec["layer"][0]["encoding"]["y"]["title"] == "Closed within 4 days"
+    assert spec["layer"][0]["encoding"]["y"]["title"] is None
 
 
 def test_working_days_between_excludes_weekends():
