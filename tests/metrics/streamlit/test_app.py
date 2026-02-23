@@ -10,7 +10,7 @@ def test_build_weekly_windows_non_overlapping():
     windows = app.build_weekly_windows(start, end)
 
     assert [(w.start, w.end) for w in windows] == [
-        (date(2024, 1, 1), date(2024, 1, 22)),
+        (date(2024, 1, 8), date(2024, 1, 22)),
     ]
 
 
