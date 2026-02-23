@@ -252,6 +252,18 @@ def xmr_chart_from_series(data, value_field, y_title):
                 axis=altair.Axis(format="%Y", tickCount="year"),
             ),
             y=altair.Y(f"{value_field}:Q", title=y_title),
+            tooltip=[
+                altair.Tooltip(
+                    "date:T",
+                    title="Bucket end",
+                    format="%d %b %Y",
+                ),
+                altair.Tooltip(
+                    f"{value_field}:Q",
+                    title=y_title,
+                    format=".3f",
+                ),
+            ],
         ),
         altair.Chart(altair.Data(values=limits))
         .mark_rule(strokeDash=[4, 4])
@@ -353,6 +365,7 @@ def write_charts(*charts):
         altair.vconcat(*charts)
         .resolve_scale(color="independent")
         .configure_axis(labelFontSize=18, titleFontSize=18)
+        .configure_axisY(titleAlign="left", titleX=-60, titlePadding=10)
         .configure_legend(labelFontSize=18, titleFontSize=18)
         .configure_title(fontSize=18)
     )
