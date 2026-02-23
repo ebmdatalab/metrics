@@ -50,19 +50,14 @@ def display():
 
     write_charts(
         scatter_chart(interesting_prs),
-        count_chart("Opened per day", prs_opened_by_day, windows),
         count_chart_weekly(
-            "Opened per day (weekly buckets)",
+            "Opened per day",
             prs_opened_by_day,
             weekly_windows,
             min_prs=MIN_PRS_PER_WINDOW,
         ),
-        count_chart("Open at end of day", prs_open_by_day, windows),
-        two_day_chart(prs_opened_by_day, windows),
-        two_day_chart_censored(prs_opened_by_day, windows),
+        open_end_of_day_chart_weekly(prs_open_by_day, weekly_windows),
         two_day_chart_weekly(prs_opened_by_day, weekly_windows),
-        team_two_day_chart(prs_opened_by_day, windows),
-        probabilities_chart(prs_opened_by_day, windows),
     )
 
 
