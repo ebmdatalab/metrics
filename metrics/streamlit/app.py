@@ -44,14 +44,23 @@ def display():
     unabandoned_prs = [pr for pr in interesting_prs if not pr.was_abandoned()]
 
     windows = build_windows(START_DATE, END_DATE, length_days=WINDOW_DAYS)
+    weekly_windows = build_weekly_windows(START_DATE, END_DATE - ONE_DAY)
 
     prs_open_by_day, prs_opened_by_day = categorise_prs(unabandoned_prs)
 
     write_charts(
         scatter_chart(interesting_prs),
         count_chart("Opened per day", prs_opened_by_day, windows),
+        count_chart_weekly(
+            "Opened per day (weekly buckets)",
+            prs_opened_by_day,
+            weekly_windows,
+            min_prs=MIN_PRS_PER_WINDOW,
+        ),
         count_chart("Open at end of day", prs_open_by_day, windows),
         two_day_chart(prs_opened_by_day, windows),
+        two_day_chart_censored(prs_opened_by_day, windows),
+        two_day_chart_weekly(prs_opened_by_day, weekly_windows),
         team_two_day_chart(prs_opened_by_day, windows),
         probabilities_chart(prs_opened_by_day, windows),
     )
@@ -118,6 +127,18 @@ def scatter_chart(prs):
 
 def count_chart(title, prs, windows):
     count_data = window_count_datapoints(prs, windows)
+
+    return xmr_chart_from_series(
+        count_data,
+        value_field="count",
+        y_title=title,
+    )
+
+
+def count_chart_weekly(title, prs, windows, min_prs):
+    count_data = window_count_datapoints(prs, windows, min_prs=min_prs)
+    if len(count_data) < 2:
+        return empty_chart()
 
     return xmr_chart_from_series(
         count_data,
@@ -194,6 +215,34 @@ def two_day_chart(prs, windows):
     )
 
 
+def two_day_chart_censored(prs, windows):
+    probabilities_data = two_day_datapoints_censored(
+        prs, windows, min_prs=MIN_PRS_PER_WINDOW
+    )
+    if len(probabilities_data) < 2:
+        return empty_chart()
+
+    return xmr_chart_from_series(
+        probabilities_data,
+        value_field="value",
+        y_title="Closed within 2 days (censoring-fixed)",
+    )
+
+
+def two_day_chart_weekly(prs, windows):
+    probabilities_data = two_day_datapoints_censored(
+        prs, windows, min_prs=MIN_PRS_PER_WINDOW
+    )
+    if len(probabilities_data) < 2:
+        return empty_chart()
+
+    return xmr_chart_from_series(
+        probabilities_data,
+        value_field="value",
+        y_title="Closed within 2 days (weekly buckets)",
+    )
+
+
 def two_day_datapoints_censored(prs, windows, min_prs=None):
     probabilities_data = []
     for window in windows:
@@ -246,6 +295,17 @@ def team_two_day_chart(day_to_prs, windows):
             ),
             y=altair.Y("value:Q", title="Closed within 2 days"),
             color=altair.Color("team:N", legend=altair.Legend(title="Team")),
+        )
+    )
+
+
+def empty_chart(height=DEFAULT_HEIGHT):
+    return (
+        altair.Chart(altair.Data(values=[]), width=DEFAULT_WIDTH, height=height)
+        .mark_line()
+        .encode(
+            x=altair.X("date:T", title=None),
+            y=altair.Y("value:Q", title=None),
         )
     )
 

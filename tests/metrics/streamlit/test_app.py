@@ -77,3 +77,40 @@ def test_two_day_censored_skips_small_windows(monkeypatch):
     data = app.two_day_datapoints_censored(prs_by_day, [window], min_prs=5)
 
     assert data == []
+
+
+def test_count_chart_weekly_returns_empty_for_small_windows(monkeypatch):
+    day = date(2024, 1, 1)
+    window = app.Window(day - timedelta(days=7), day)
+
+    prs_by_day = {
+        day: [DummyPR(datetime(2024, 1, 1, 0, 0, 0)) for _ in range(4)],
+    }
+
+    def fake_xmr(*args, **kwargs):
+        raise AssertionError("xmr_chart_from_series should not be called")
+
+    monkeypatch.setattr(app, "xmr_chart_from_series", fake_xmr)
+    monkeypatch.setattr(app, "empty_chart", lambda: "empty")
+
+    chart = app.count_chart_weekly(
+        "Opened per day (weekly buckets)",
+        prs_by_day,
+        [window],
+        min_prs=5,
+    )
+
+    assert chart == "empty"
+
+
+def test_two_day_chart_weekly_returns_empty_for_small_windows(monkeypatch):
+    def fake_xmr(*args, **kwargs):
+        raise AssertionError("xmr_chart_from_series should not be called")
+
+    monkeypatch.setattr(app, "two_day_datapoints_censored", lambda *args, **kwargs: [])
+    monkeypatch.setattr(app, "xmr_chart_from_series", fake_xmr)
+    monkeypatch.setattr(app, "empty_chart", lambda: "empty")
+
+    chart = app.two_day_chart_weekly({}, [])
+
+    assert chart == "empty"
