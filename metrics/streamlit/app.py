@@ -314,7 +314,13 @@ def xmr_chart_from_series(data, value_field, y_label):
 def y_label_chart(label, height):
     return (
         altair.Chart(altair.Data(values=[{}]), width=LABEL_WIDTH, height=height)
-        .mark_text(angle=270, align="center", baseline="middle")
+        .mark_text(
+            angle=270,
+            align="center",
+            baseline="middle",
+            fontSize=18,
+            color="#6b6b6b",
+        )
         .encode(text=altair.value(label))
     )
 
