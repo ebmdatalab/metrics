@@ -15,8 +15,7 @@ from metrics.tools import dates
 
 WINDOW_WEEKS = 6
 WINDOW_DAYS = WINDOW_WEEKS * 7
-WEEKLY_BUCKET_DAYS = 14
-MIN_PRS_PER_WINDOW = 5
+WEEKLY_BUCKET_DAYS = 21
 ONE_DAY = datetime.timedelta(days=1)
 ONE_WEEK = datetime.timedelta(weeks=1)
 
@@ -50,15 +49,13 @@ def display():
 
     write_charts(
         scatter_chart(interesting_prs),
-        count_chart_weekly(
-            "Opened per day",
-            prs_opened_by_day,
-            weekly_windows,
-            min_prs=MIN_PRS_PER_WINDOW,
-        ),
+        count_chart_weekly("Opened per day", prs_opened_by_day, weekly_windows),
         open_end_of_day_chart_weekly(prs_open_by_day, weekly_windows),
-        two_day_chart_weekly(prs_opened_by_day, weekly_windows),
-        weekly_bucket_histogram_chart(prs_opened_by_day, weekly_windows),
+        closed_within_days_chart(prs_opened_by_day, weekly_windows, days=1),
+        closed_within_days_chart(prs_opened_by_day, weekly_windows, days=2),
+        closed_within_days_chart(prs_opened_by_day, weekly_windows, days=3),
+        closed_within_days_chart(prs_opened_by_day, weekly_windows, days=4),
+        closed_within_days_chart(prs_opened_by_day, weekly_windows, days=5),
     )
 
 
@@ -131,10 +128,8 @@ def count_chart(title, prs, windows):
     )
 
 
-def count_chart_weekly(title, prs, windows, min_prs):
-    count_data = window_count_datapoints(prs, windows, min_prs=min_prs)
-    if len(count_data) < 2:
-        return empty_chart()
+def count_chart_weekly(title, prs, windows):
+    count_data = window_count_datapoints(prs, windows)
 
     return xmr_chart_from_series(
         count_data,
@@ -144,11 +139,7 @@ def count_chart_weekly(title, prs, windows, min_prs):
 
 
 def open_end_of_day_chart_weekly(prs, windows):
-    count_data = window_open_end_of_day_datapoints(
-        prs, windows, min_prs=MIN_PRS_PER_WINDOW
-    )
-    if len(count_data) < 2:
-        return empty_chart()
+    count_data = window_open_end_of_day_datapoints(prs, windows)
 
     return xmr_chart_from_series(
         count_data,
@@ -157,36 +148,11 @@ def open_end_of_day_chart_weekly(prs, windows):
     )
 
 
-def weekly_bucket_histogram_chart(prs_by_day, windows):
-    totals = weekly_bucket_totals(prs_by_day, windows)
-    bins = histogram_bins(totals)
-    data = [
-        {"count": count, "frequency": frequency}
-        for count, frequency in bins.items()
-    ]
-
-    return (
-        altair.Chart(altair.Data(values=data), width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT)
-        .mark_bar()
-        .encode(
-            x=altair.X(
-                "count:O",
-                title="PRs opened per bucket",
-                sort="ascending",
-            ),
-            y=altair.Y("frequency:Q", title="Number of buckets"),
-        )
-    )
-
-
 def window_count_datapoints(prs, windows, min_prs=None):
     count_data = []
 
     for window in windows:
         window_counts = [len(prs.get(day, [])) for day in window.days()]
-        window_total = sum(window_counts)
-        if min_prs is not None and window_total < min_prs:
-            continue
         count_data.append(datapoint(window.end, count=statistics.mean(window_counts)))
 
     return count_data
@@ -197,26 +163,18 @@ def window_open_end_of_day_datapoints(prs, windows, min_prs=None):
 
     for window in windows:
         window_counts = [len(prs.get(day, [])) for day in window.days()]
-        window_total = sum(window_counts)
-        if min_prs is not None and window_total < min_prs:
-            continue
         count_data.append(datapoint(window.end, count=statistics.mean(window_counts)))
 
     return count_data
 
 
-def weekly_bucket_totals(prs_by_day, windows):
-    totals = []
-    for window in windows:
-        totals.append(sum(len(prs_by_day.get(day, [])) for day in window.days()))
-    return totals
-
-
-def histogram_bins(values):
-    counts = defaultdict(int)
-    for value in values:
-        counts[int(value)] += 1
-    return dict(sorted(counts.items()))
+def closed_within_days_chart(prs, windows, days):
+    probabilities_data = closed_within_days_datapoints(prs, windows, days)
+    return xmr_chart_from_series(
+        probabilities_data,
+        value_field="value",
+        y_title=f"Closed within {days} days",
+    )
 
 
 def probabilities_chart(prs, windows):
@@ -258,115 +216,18 @@ def probabilities_chart(prs, windows):
     )
 
 
-def two_day_chart(prs, windows):
+def closed_within_days_datapoints(prs, windows, days):
     probabilities_data = []
     for window in windows:
-        prob_of_survival = build_survival_curve(prs, window)
-        prob_closed_within_two_days = 1 - prob_of_survival(2)
-        probabilities_data.append(
-            datapoint(window.end, value=prob_closed_within_two_days)
-        )
-
-    return xmr_chart_from_series(
-        probabilities_data,
-        value_field="value",
-        y_title="Closed within 2 days",
-    )
-
-
-def two_day_chart_censored(prs, windows):
-    probabilities_data = two_day_datapoints_censored(
-        prs, windows, min_prs=MIN_PRS_PER_WINDOW
-    )
-    if len(probabilities_data) < 2:
-        return empty_chart()
-
-    return xmr_chart_from_series(
-        probabilities_data,
-        value_field="value",
-        y_title="Closed within 2 days (censoring-fixed)",
-    )
-
-
-def two_day_chart_weekly(prs, windows):
-    probabilities_data = two_day_datapoints_censored(
-        prs, windows, min_prs=MIN_PRS_PER_WINDOW
-    )
-    if len(probabilities_data) < 2:
-        return empty_chart()
-
-    return xmr_chart_from_series(
-        probabilities_data,
-        value_field="value",
-        y_title="Closed within 2 days",
-    )
-
-
-def two_day_datapoints_censored(prs, windows, min_prs=None):
-    probabilities_data = []
-    for window in windows:
-        window_total = sum(len(prs.get(day, [])) for day in window.days())
-        if min_prs is not None and window_total < min_prs:
-            continue
-
         prob_of_survival = build_survival_curve_with_censor_date(
             prs, window, window.end
         )
-        prob_closed_within_two_days = 1 - prob_of_survival(2)
+        prob_closed_within_days = 1 - prob_of_survival(days)
         probabilities_data.append(
-            datapoint(window.end, value=prob_closed_within_two_days)
+            datapoint(window.end, value=prob_closed_within_days)
         )
 
     return probabilities_data
-
-
-def team_two_day_chart(day_to_prs, windows):
-    team_to_day_to_prs = defaultdict(lambda: defaultdict(list))
-    for day, day_prs in day_to_prs.items():
-        for pr in day_prs:
-            if pr.repo.team == "tech-shared":
-                continue
-            team_to_day_to_prs[pr.repo.team][day].append(pr)
-
-    series = []
-    for window in windows:
-        for team, day_to_team_prs in team_to_day_to_prs.items():
-            prob_of_survival = build_survival_curve(day_to_team_prs, window)
-            prob_closed_within_two_days = 1 - prob_of_survival(2)
-            series.append(
-                datapoint(
-                    window.end,
-                    value=prob_closed_within_two_days,
-                    team=team,
-                )
-            )
-
-    return (
-        altair.Chart(
-            altair.Data(values=series), width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT
-        )
-        .mark_line()
-        .encode(
-            x=altair.X(
-                "date:T",
-                title=None,
-                axis=altair.Axis(format="%Y", tickCount="year"),
-            ),
-            y=altair.Y("value:Q", title="Closed within 2 days"),
-            color=altair.Color("team:N", legend=altair.Legend(title="Team")),
-        )
-    )
-
-
-def empty_chart(height=DEFAULT_HEIGHT):
-    return (
-        altair.Chart(altair.Data(values=[]), width=DEFAULT_WIDTH, height=height)
-        .mark_line()
-        .encode(
-            x=altair.X("date:T", title=None),
-            y=altair.Y("value:Q", title=None),
-        )
-    )
 
 
 def xmr_chart_from_series(data, value_field, y_title):
