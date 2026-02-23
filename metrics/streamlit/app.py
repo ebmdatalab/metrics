@@ -13,24 +13,20 @@ from metrics.github.github import tech_prs
 from metrics.tools import dates
 
 
-WINDOW_WEEKS = 6
-WINDOW_DAYS = WINDOW_WEEKS * 7
 WEEKLY_BUCKET_DAYS = 21
 ONE_DAY = datetime.timedelta(days=1)
-ONE_WEEK = datetime.timedelta(weeks=1)
 
 DEFAULT_WIDTH = 600
 DEFAULT_HEIGHT = 150
 SCATTER_HEIGHT = 300
-PROB_HEIGHT = 300
 LABEL_WIDTH = 60
 AXIS_LABEL_COLOR = "#6b6b6b"
 
 START_DATE = datetime.date(2021, 1, 1)
-END_DATE = datetime.date.today()
 
 
 def display():
+    today = datetime.date.today()
     all_prs = load_prs()
 
     interesting_prs = [
@@ -44,24 +40,23 @@ def display():
     ]
     unabandoned_prs = [pr for pr in interesting_prs if not pr.was_abandoned()]
 
-    windows = build_windows(START_DATE, END_DATE, length_days=WINDOW_DAYS)
-    weekly_windows = build_weekly_windows(START_DATE, END_DATE - ONE_DAY)
+    weekly_windows = build_weekly_windows(START_DATE, today - ONE_DAY)
 
-    prs_open_by_day, prs_opened_by_day = categorise_prs(unabandoned_prs)
+    prs_open_by_day, prs_opened_by_day = categorise_prs(unabandoned_prs, today=today)
 
     write_charts(
         with_y_label(
-            scatter_chart(interesting_prs),
+            scatter_chart(interesting_prs, today),
             "Age (days)",
             SCATTER_HEIGHT,
         ),
         with_y_label(
-            count_chart_weekly("Opened per day", prs_opened_by_day, weekly_windows),
+            count_chart("Opened per day", prs_opened_by_day, weekly_windows),
             "Opened per day",
             DEFAULT_HEIGHT,
         ),
         with_y_label(
-            open_end_of_day_chart_weekly(prs_open_by_day, weekly_windows),
+            count_chart("Open at end of day", prs_open_by_day, weekly_windows),
             "Open at end of day",
             DEFAULT_HEIGHT,
         ),
@@ -78,7 +73,7 @@ def load_prs():
     return tech_prs()
 
 
-def categorise_prs(unabandoned_prs):
+def categorise_prs(unabandoned_prs, today):
     prs_opened_by_day = defaultdict(list)
     prs_open_by_day = defaultdict(list)
 
@@ -88,7 +83,7 @@ def categorise_prs(unabandoned_prs):
         if pr.was_closed():
             end = pr.closed_at.date() - ONE_DAY
         else:
-            end = datetime.date.today() - ONE_DAY
+            end = today - ONE_DAY
 
         for day in dates.iter_days(pr.created_at.date(), end):
             prs_open_by_day[day].append(pr)
@@ -96,12 +91,12 @@ def categorise_prs(unabandoned_prs):
     return prs_open_by_day, prs_opened_by_day
 
 
-def scatter_chart(prs):
+def scatter_chart(prs, today):
     scatter_data = list()
     for pr in prs:
         if not pr.was_closed():
             category = "open"
-            age = pr.age_at_end_of(END_DATE)
+            age = pr.age_at_end_of(today)
         elif pr.was_abandoned():
             category = "abandoned"
             age = pr.age_when_closed()
@@ -147,37 +142,7 @@ def count_chart(title, prs, windows):
     )
 
 
-def count_chart_weekly(title, prs, windows):
-    count_data = window_count_datapoints(prs, windows)
-
-    return xmr_chart_from_series(
-        count_data,
-        value_field="count",
-        y_label=title,
-    )
-
-
-def open_end_of_day_chart_weekly(prs, windows):
-    count_data = window_open_end_of_day_datapoints(prs, windows)
-
-    return xmr_chart_from_series(
-        count_data,
-        value_field="count",
-        y_label="Open at end of day",
-    )
-
-
-def window_count_datapoints(prs, windows, min_prs=None):
-    count_data = []
-
-    for window in windows:
-        window_counts = [len(prs.get(day, [])) for day in window.days()]
-        count_data.append(datapoint(window.end, count=statistics.mean(window_counts)))
-
-    return count_data
-
-
-def window_open_end_of_day_datapoints(prs, windows, min_prs=None):
+def window_count_datapoints(prs, windows):
     count_data = []
 
     for window in windows:
@@ -196,45 +161,6 @@ def closed_within_days_chart(prs, windows, days):
     )
 
 
-def probabilities_chart(prs, windows):
-    probabilities_data = []
-    for window in windows:
-        prob_of_survival = build_survival_curve(prs, window)
-
-        for span_start, span_end in itertools.pairwise([0, 1, 3, 7, 14, 28]):
-            prob_closed = prob_of_survival(span_start) - prob_of_survival(span_end)
-            probabilities_data.append(
-                datapoint(window.end, days=span_end, value=prob_closed)
-            )
-
-    return (
-        altair.Chart(
-            altair.Data(values=probabilities_data),
-            width=DEFAULT_WIDTH,
-            height=PROB_HEIGHT,
-        )
-        .mark_area()
-        .encode(
-            x=altair.X(
-                "date:T",
-                title=None,
-                axis=altair.Axis(format="%Y", tickCount="year"),
-            ),
-            y=altair.Y(
-                "value:Q",
-                title="Proportion closed within...",
-                scale=altair.Scale(domain=[0.0, 1.0]),
-            ),
-            color=altair.Color(
-                "days:O",
-                legend=altair.Legend(title="Number of days"),
-                sort="descending",
-            ),
-            order="days:O",
-        )
-    )
-
-
 def closed_within_days_datapoints(prs, windows, days):
     probabilities_data = []
     for window in windows:
@@ -242,14 +168,16 @@ def closed_within_days_datapoints(prs, windows, days):
             prs, window, window.end
         )
         prob_closed_within_days = 1 - prob_of_survival(days)
-        probabilities_data.append(
-            datapoint(window.end, value=prob_closed_within_days)
-        )
+        probabilities_data.append(datapoint(window.end, value=prob_closed_within_days))
 
     return probabilities_data
 
 
 def xmr_chart_from_series(data, value_field, y_label):
+    assert len(data) >= 2, "xmr_chart_from_series requires at least 2 datapoints"
+    assert all(
+        value_field in item for item in data
+    ), f"xmr_chart_from_series data missing field {value_field!r}"
     values = [item[value_field] for item in data]
     moving_ranges = [abs(curr - prev) for prev, curr in itertools.pairwise(values)]
     mean = statistics.mean(values)
@@ -330,33 +258,6 @@ def with_y_label(chart, label, height):
     return altair.hconcat(y_label_chart(label, height), chart, spacing=5)
 
 
-def build_survival_curve(prs, window):
-    observation_flags = []
-    durations = []
-
-    for day in window.days():
-        for pr in prs[day]:
-            if pr.was_merged():
-                # Uncensored observation
-                observation_flags.append(True)
-                durations.append(pr.age_when_merged())
-            else:
-                # Censored observation
-                observation_flags.append(False)
-                durations.append(pr.age_at_end_of(END_DATE))
-
-    times, probs = sksurv.nonparametric.kaplan_meier_estimator(
-        observation_flags, durations
-    )
-
-    def prob_of_surviving_for_days(days):
-        if days == 0:
-            return 1.0
-        return numpy.interp([days], times, probs)[0]
-
-    return prob_of_surviving_for_days
-
-
 def build_survival_curve_with_censor_date(prs, window, censor_date):
     observation_flags = []
     durations = []
@@ -432,23 +333,11 @@ def datapoint(date, **kwargs):
 
 @dataclass
 class Window:
-    start: datetime.datetime  # exclusive
-    end: datetime.datetime  # inclusive
+    start: datetime.date  # exclusive
+    end: datetime.date  # inclusive
 
     def days(self):
         return dates.iter_days(self.start + ONE_DAY, self.end)
-
-
-def build_windows(start_date, end_date, length_days):
-    window_size = datetime.timedelta(days=length_days)
-
-    windows = []
-    end = end_date
-    while (start := end - window_size) >= start_date:
-        windows.append(Window(start, end))
-        end -= datetime.timedelta(weeks=4)
-
-    return list(reversed(windows))
 
 
 def build_weekly_windows(start_date, end_date):

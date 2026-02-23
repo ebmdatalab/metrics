@@ -1,6 +1,8 @@
 from collections import defaultdict
 from datetime import date, datetime, timedelta
 
+import pytest
+
 import metrics.streamlit.app as app
 
 
@@ -25,7 +27,9 @@ class DummyPR:
 
     def age_at_end_of(self, date_value):
         next_day = date_value + timedelta(days=1)
-        return (datetime.combine(next_day, datetime.min.time()) - self.created_at) / timedelta(days=1)
+        return (
+            datetime.combine(next_day, datetime.min.time()) - self.created_at
+        ) / timedelta(days=1)
 
 
 def test_build_survival_curve_uses_censor_date(monkeypatch):
@@ -65,7 +69,7 @@ def test_window_count_datapoints_average():
     assert data == [app.datapoint(window.end, count=3 / 7)]
 
 
-def test_window_open_end_of_day_datapoints_average():
+def test_window_count_datapoints_average_for_open_counts():
     day = date(2024, 1, 1)
     window = app.Window(day - timedelta(days=7), day)
 
@@ -74,9 +78,36 @@ def test_window_open_end_of_day_datapoints_average():
         day - timedelta(days=1): [DummyPR(datetime(2023, 12, 31, 0, 0, 0))],
     }
 
-    data = app.window_open_end_of_day_datapoints(prs_by_day, [window])
+    data = app.window_count_datapoints(prs_by_day, [window])
 
     assert data == [app.datapoint(window.end, count=2 / 7)]
+
+
+def test_xmr_chart_from_series_requires_two_points():
+    with pytest.raises(AssertionError):
+        app.xmr_chart_from_series(
+            [app.datapoint(date(2024, 1, 1), value=0.5)],
+            value_field="value",
+            y_label="Closed within 2 days",
+        )
+
+
+def test_categorise_prs_uses_supplied_today():
+    class OpenPR:
+        def __init__(self, created_at):
+            self.created_at = created_at
+
+        def was_closed(self):
+            return False
+
+    created = datetime(2024, 1, 1, 12, 0, 0)
+    pr = OpenPR(created)
+    supplied_today = date(2024, 1, 3)
+
+    prs_open_by_day, _ = app.categorise_prs([pr], today=supplied_today)
+
+    assert created.date() in prs_open_by_day
+    assert date(2024, 1, 2) in prs_open_by_day
 
 
 def test_closed_within_days_datapoints(monkeypatch):
@@ -102,7 +133,9 @@ def test_closed_within_days_chart_title(monkeypatch):
         app.datapoint(date(2024, 1, 8), value=0.2),
     ]
 
-    monkeypatch.setattr(app, "closed_within_days_datapoints", lambda *args, **kwargs: data)
+    monkeypatch.setattr(
+        app, "closed_within_days_datapoints", lambda *args, **kwargs: data
+    )
     chart = app.closed_within_days_chart({}, [], days=4)
     spec = chart.to_dict()
 
@@ -111,7 +144,7 @@ def test_closed_within_days_chart_title(monkeypatch):
 
 def test_working_days_between_excludes_weekends():
     start = datetime(2024, 1, 5, 12, 0, 0)  # Friday noon
-    end = datetime(2024, 1, 8, 12, 0, 0)    # Monday noon
+    end = datetime(2024, 1, 8, 12, 0, 0)  # Monday noon
 
     assert app.working_days_between(start, end) == 1.0
 
