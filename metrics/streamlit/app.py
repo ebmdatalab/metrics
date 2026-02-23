@@ -24,6 +24,7 @@ DEFAULT_HEIGHT = 150
 SCATTER_HEIGHT = 300
 PROB_HEIGHT = 300
 LABEL_WIDTH = 60
+AXIS_LABEL_COLOR = "#6b6b6b"
 
 START_DATE = datetime.date(2021, 1, 1)
 END_DATE = datetime.date.today()
@@ -319,7 +320,7 @@ def y_label_chart(label, height):
             align="center",
             baseline="middle",
             fontSize=18,
-            color="#6b6b6b",
+            color=AXIS_LABEL_COLOR,
         )
         .encode(text=altair.value(label))
     )
@@ -412,7 +413,12 @@ def write_charts(*charts):
     combined = (
         altair.vconcat(*charts)
         .resolve_scale(color="independent")
-        .configure_axis(labelFontSize=18, titleFontSize=18)
+        .configure_axis(
+            labelFontSize=18,
+            titleFontSize=18,
+            labelColor=AXIS_LABEL_COLOR,
+            titleColor=AXIS_LABEL_COLOR,
+        )
         .configure_axisY(titleAlign="left", titleX=-60, titlePadding=10)
         .configure_legend(labelFontSize=18, titleFontSize=18)
         .configure_title(fontSize=18)
