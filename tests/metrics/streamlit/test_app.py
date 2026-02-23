@@ -173,6 +173,7 @@ def test_histogram_chart_uses_integer_bins(monkeypatch):
     assert spec["mark"]["type"] == "bar"
     assert spec["encoding"]["x"]["title"] == "PRs opened per bucket"
     assert spec["encoding"]["y"]["title"] == "Number of buckets"
+    assert spec["encoding"]["x"]["type"] == "ordinal"
 
 
 def test_two_day_chart_weekly_title(monkeypatch):

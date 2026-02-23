@@ -169,7 +169,11 @@ def weekly_bucket_histogram_chart(prs_by_day, windows):
         altair.Chart(altair.Data(values=data), width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT)
         .mark_bar()
         .encode(
-            x=altair.X("count:Q", title="PRs opened per bucket", bin=False),
+            x=altair.X(
+                "count:O",
+                title="PRs opened per bucket",
+                sort="ascending",
+            ),
             y=altair.Y("frequency:Q", title="Number of buckets"),
         )
     )
