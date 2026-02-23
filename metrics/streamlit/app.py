@@ -194,6 +194,24 @@ def two_day_chart(prs, windows):
     )
 
 
+def two_day_datapoints_censored(prs, windows, min_prs=None):
+    probabilities_data = []
+    for window in windows:
+        window_total = sum(len(prs.get(day, [])) for day in window.days())
+        if min_prs is not None and window_total < min_prs:
+            continue
+
+        prob_of_survival = build_survival_curve_with_censor_date(
+            prs, window, window.end
+        )
+        prob_closed_within_two_days = 1 - prob_of_survival(2)
+        probabilities_data.append(
+            datapoint(window.end, value=prob_closed_within_two_days)
+        )
+
+    return probabilities_data
+
+
 def team_two_day_chart(day_to_prs, windows):
     team_to_day_to_prs = defaultdict(lambda: defaultdict(list))
     for day, day_prs in day_to_prs.items():

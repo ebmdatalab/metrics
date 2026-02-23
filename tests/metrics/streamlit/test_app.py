@@ -59,3 +59,21 @@ def test_window_counts_skip_small_windows():
     data = app.window_count_datapoints(prs_by_day, [window], min_prs=5)
 
     assert data == []
+
+
+def test_two_day_censored_skips_small_windows(monkeypatch):
+    day = date(2024, 1, 1)
+    window = app.Window(day - timedelta(days=7), day)
+
+    prs_by_day = {
+        day: [DummyPR(datetime(2024, 1, 1, 0, 0, 0)) for _ in range(4)],
+    }
+
+    def fake_km(flags, durations):
+        return [0, 1], [1.0, 1.0]
+
+    monkeypatch.setattr(app.sksurv.nonparametric, "kaplan_meier_estimator", fake_km)
+
+    data = app.two_day_datapoints_censored(prs_by_day, [window], min_prs=5)
+
+    assert data == []
