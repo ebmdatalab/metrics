@@ -61,6 +61,19 @@ def test_window_counts_skip_small_windows():
     assert data == []
 
 
+def test_window_open_end_of_day_datapoints_average():
+    day = date(2024, 1, 1)
+    window = app.Window(day - timedelta(days=7), day)
+
+    prs_by_day = {
+        day: [DummyPR(datetime(2024, 1, 1, 0, 0, 0)) for _ in range(4)],
+    }
+
+    data = app.window_open_end_of_day_datapoints(prs_by_day, [window], min_prs=5)
+
+    assert data == []
+
+
 def test_two_day_censored_skips_small_windows(monkeypatch):
     day = date(2024, 1, 1)
     window = app.Window(day - timedelta(days=7), day)

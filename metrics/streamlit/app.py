@@ -160,6 +160,19 @@ def window_count_datapoints(prs, windows, min_prs=None):
     return count_data
 
 
+def window_open_end_of_day_datapoints(prs, windows, min_prs=None):
+    count_data = []
+
+    for window in windows:
+        window_counts = [len(prs.get(day, [])) for day in window.days()]
+        window_total = sum(window_counts)
+        if min_prs is not None and window_total < min_prs:
+            continue
+        count_data.append(datapoint(window.end, count=statistics.mean(window_counts)))
+
+    return count_data
+
+
 def probabilities_chart(prs, windows):
     probabilities_data = []
     for window in windows:
