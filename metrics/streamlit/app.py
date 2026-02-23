@@ -15,7 +15,7 @@ from metrics.tools import dates
 
 WINDOW_WEEKS = 6
 WINDOW_DAYS = WINDOW_WEEKS * 7
-WEEKLY_BUCKET_DAYS = 14
+WEEKLY_BUCKET_DAYS = 21
 MIN_PRS_PER_WINDOW = 5
 ONE_DAY = datetime.timedelta(days=1)
 ONE_WEEK = datetime.timedelta(weeks=1)
