@@ -1,6 +1,7 @@
 *.egg-info/
 .coverage
 .env
+.worktrees/
 .pytest-cache/
 .venv/
 __pycache__/
