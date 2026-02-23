@@ -109,6 +109,8 @@ def scatter_chart(prs):
                 axis=altair.Axis(
                     values=[1, 2, 5, 10, 20, 50, 100, 200, 500],
                     titleY=SCATTER_HEIGHT / 2,
+                    titleBaseline="middle",
+                    titleAnchor="middle",
                 ),
                 title="Age (days)",
             ).scale(type="symlog"),
@@ -257,7 +259,11 @@ def xmr_chart_from_series(data, value_field, y_title):
             y=altair.Y(
                 f"{value_field}:Q",
                 title=y_title,
-                axis=altair.Axis(titleY=DEFAULT_HEIGHT / 2),
+                axis=altair.Axis(
+                    titleY=DEFAULT_HEIGHT / 2,
+                    titleBaseline="middle",
+                    titleAnchor="middle",
+                ),
             ),
             tooltip=[
                 altair.Tooltip(
