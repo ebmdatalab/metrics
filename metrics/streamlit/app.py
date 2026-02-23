@@ -295,6 +295,31 @@ def build_survival_curve(prs, window):
     return prob_of_surviving_for_days
 
 
+def build_survival_curve_with_censor_date(prs, window, censor_date):
+    observation_flags = []
+    durations = []
+
+    for day in window.days():
+        for pr in prs[day]:
+            if pr.was_merged():
+                observation_flags.append(True)
+                durations.append(pr.age_when_merged())
+            else:
+                observation_flags.append(False)
+                durations.append(pr.age_at_end_of(censor_date))
+
+    times, probs = sksurv.nonparametric.kaplan_meier_estimator(
+        observation_flags, durations
+    )
+
+    def prob_of_surviving_for_days(days):
+        if days == 0:
+            return 1.0
+        return numpy.interp([days], times, probs)[0]
+
+    return prob_of_surviving_for_days
+
+
 def write_charts(*charts):
     combined = (
         altair.vconcat(*charts)
