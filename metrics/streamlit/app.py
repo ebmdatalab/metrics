@@ -106,7 +106,10 @@ def scatter_chart(prs):
             y=altair.Y(
                 "value:Q",
                 # Setting explict tick values because of a bug: https://github.com/vega/vega/issues/2914
-                axis=altair.Axis(values=[1, 2, 5, 10, 20, 50, 100, 200, 500]),
+                axis=altair.Axis(
+                    values=[1, 2, 5, 10, 20, 50, 100, 200, 500],
+                    titleY=SCATTER_HEIGHT / 2,
+                ),
                 title="Age (days)",
             ).scale(type="symlog"),
             color=altair.Color("category:N", legend=altair.Legend(title="Outcome")),
@@ -251,7 +254,11 @@ def xmr_chart_from_series(data, value_field, y_title):
                 title=None,
                 axis=altair.Axis(format="%Y", tickCount="year"),
             ),
-            y=altair.Y(f"{value_field}:Q", title=y_title),
+            y=altair.Y(
+                f"{value_field}:Q",
+                title=y_title,
+                axis=altair.Axis(titleY=DEFAULT_HEIGHT / 2),
+            ),
             tooltip=[
                 altair.Tooltip(
                     "date:T",
