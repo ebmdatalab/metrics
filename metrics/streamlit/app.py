@@ -261,7 +261,7 @@ def two_day_chart_weekly(prs, windows):
     return xmr_chart_from_series(
         probabilities_data,
         value_field="value",
-        y_title="Closed within 2 days (weekly buckets)",
+        y_title="Closed within 2 days",
     )
 
 

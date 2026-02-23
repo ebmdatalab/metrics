@@ -144,3 +144,16 @@ def test_open_end_of_day_chart_weekly_returns_empty_for_small_windows(monkeypatc
     chart = app.open_end_of_day_chart_weekly({}, [])
 
     assert chart == "empty"
+
+
+def test_two_day_chart_weekly_title(monkeypatch):
+    data = [
+        app.datapoint(date(2024, 1, 1), value=0.1),
+        app.datapoint(date(2024, 1, 8), value=0.2),
+    ]
+
+    monkeypatch.setattr(app, "two_day_datapoints_censored", lambda *args, **kwargs: data)
+    chart = app.two_day_chart_weekly({}, [])
+    spec = chart.to_dict()
+
+    assert spec["layer"][0]["encoding"]["y"]["title"] == "Closed within 2 days"
