@@ -15,6 +15,8 @@ from metrics.tools import dates
 
 WINDOW_WEEKS = 6
 WINDOW_DAYS = WINDOW_WEEKS * 7
+WEEKLY_BUCKET_DAYS = 7
+MIN_PRS_PER_WINDOW = 5
 ONE_DAY = datetime.timedelta(days=1)
 ONE_WEEK = datetime.timedelta(weeks=1)
 
@@ -325,5 +327,17 @@ def build_windows(start_date, end_date, length_days):
     while (start := end - window_size) >= start_date:
         windows.append(Window(start, end))
         end -= datetime.timedelta(weeks=4)
+
+    return list(reversed(windows))
+
+
+def build_weekly_windows(start_date, end_date):
+    window_size = datetime.timedelta(days=WEEKLY_BUCKET_DAYS)
+
+    windows = []
+    end = end_date
+    while (start := end - window_size) >= start_date:
+        windows.append(Window(start, end))
+        end -= window_size
 
     return list(reversed(windows))
