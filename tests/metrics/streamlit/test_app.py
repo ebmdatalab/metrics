@@ -127,3 +127,20 @@ def test_two_day_chart_weekly_returns_empty_for_small_windows(monkeypatch):
     chart = app.two_day_chart_weekly({}, [])
 
     assert chart == "empty"
+
+
+def test_open_end_of_day_chart_weekly_returns_empty_for_small_windows(monkeypatch):
+    def fake_xmr(*args, **kwargs):
+        raise AssertionError("xmr_chart_from_series should not be called")
+
+    monkeypatch.setattr(
+        app,
+        "window_open_end_of_day_datapoints",
+        lambda *args, **kwargs: [],
+    )
+    monkeypatch.setattr(app, "xmr_chart_from_series", fake_xmr)
+    monkeypatch.setattr(app, "empty_chart", lambda: "empty")
+
+    chart = app.open_end_of_day_chart_weekly({}, [])
+
+    assert chart == "empty"

@@ -147,6 +147,20 @@ def count_chart_weekly(title, prs, windows, min_prs):
     )
 
 
+def open_end_of_day_chart_weekly(prs, windows):
+    count_data = window_open_end_of_day_datapoints(
+        prs, windows, min_prs=MIN_PRS_PER_WINDOW
+    )
+    if len(count_data) < 2:
+        return empty_chart()
+
+    return xmr_chart_from_series(
+        count_data,
+        value_field="count",
+        y_title="Open at end of day",
+    )
+
+
 def window_count_datapoints(prs, windows, min_prs=None):
     count_data = []
 
