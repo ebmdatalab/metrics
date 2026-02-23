@@ -58,6 +58,7 @@ def display():
         ),
         open_end_of_day_chart_weekly(prs_open_by_day, weekly_windows),
         two_day_chart_weekly(prs_opened_by_day, weekly_windows),
+        weekly_bucket_histogram_chart(prs_opened_by_day, weekly_windows),
     )
 
 
@@ -156,6 +157,24 @@ def open_end_of_day_chart_weekly(prs, windows):
     )
 
 
+def weekly_bucket_histogram_chart(prs_by_day, windows):
+    totals = weekly_bucket_totals(prs_by_day, windows)
+    bins = histogram_bins(totals)
+    data = [
+        {"count": count, "frequency": frequency}
+        for count, frequency in bins.items()
+    ]
+
+    return (
+        altair.Chart(altair.Data(values=data), width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT)
+        .mark_bar()
+        .encode(
+            x=altair.X("count:Q", title="PRs opened per bucket", bin=False),
+            y=altair.Y("frequency:Q", title="Number of buckets"),
+        )
+    )
+
+
 def window_count_datapoints(prs, windows, min_prs=None):
     count_data = []
 
@@ -180,6 +199,20 @@ def window_open_end_of_day_datapoints(prs, windows, min_prs=None):
         count_data.append(datapoint(window.end, count=statistics.mean(window_counts)))
 
     return count_data
+
+
+def weekly_bucket_totals(prs_by_day, windows):
+    totals = []
+    for window in windows:
+        totals.append(sum(len(prs_by_day.get(day, [])) for day in window.days()))
+    return totals
+
+
+def histogram_bins(values):
+    counts = defaultdict(int)
+    for value in values:
+        counts[int(value)] += 1
+    return dict(sorted(counts.items()))
 
 
 def probabilities_chart(prs, windows):

@@ -146,6 +146,35 @@ def test_open_end_of_day_chart_weekly_returns_empty_for_small_windows(monkeypatc
     assert chart == "empty"
 
 
+def test_weekly_bucket_totals_and_histogram_bins():
+    day = date(2024, 1, 1)
+    windows = [
+        app.Window(day - timedelta(days=7), day),
+        app.Window(day - timedelta(days=14), day - timedelta(days=7)),
+    ]
+
+    prs_by_day = {
+        day: [DummyPR(datetime(2024, 1, 1, 0, 0, 0)) for _ in range(3)],
+        day - timedelta(days=7): [DummyPR(datetime(2023, 12, 25, 0, 0, 0))],
+    }
+
+    totals = app.weekly_bucket_totals(prs_by_day, windows)
+    assert totals == [3, 1]
+
+    bins = app.histogram_bins(totals)
+    assert bins == {1: 1, 3: 1}
+
+
+def test_histogram_chart_uses_integer_bins(monkeypatch):
+    monkeypatch.setattr(app, "weekly_bucket_totals", lambda *args, **kwargs: [1, 1, 2])
+    chart = app.weekly_bucket_histogram_chart({}, [])
+    spec = chart.to_dict()
+
+    assert spec["mark"]["type"] == "bar"
+    assert spec["encoding"]["x"]["title"] == "PRs opened per bucket"
+    assert spec["encoding"]["y"]["title"] == "Number of buckets"
+
+
 def test_two_day_chart_weekly_title(monkeypatch):
     data = [
         app.datapoint(date(2024, 1, 1), value=0.1),
