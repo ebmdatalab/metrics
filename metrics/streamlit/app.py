@@ -117,19 +117,26 @@ def scatter_chart(prs):
 
 
 def count_chart(title, prs, windows):
-    count_data = list()
-
-    for window in windows:
-        window_counts = list()
-        for day in window.days():
-            window_counts.append(len(prs[day]))
-        count_data.append(datapoint(window.end, count=statistics.mean(window_counts)))
+    count_data = window_count_datapoints(prs, windows)
 
     return xmr_chart_from_series(
         count_data,
         value_field="count",
         y_title=title,
     )
+
+
+def window_count_datapoints(prs, windows, min_prs=None):
+    count_data = []
+
+    for window in windows:
+        window_counts = [len(prs.get(day, [])) for day in window.days()]
+        window_total = sum(window_counts)
+        if min_prs is not None and window_total < min_prs:
+            continue
+        count_data.append(datapoint(window.end, count=statistics.mean(window_counts)))
+
+    return count_data
 
 
 def probabilities_chart(prs, windows):

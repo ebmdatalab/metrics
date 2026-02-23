@@ -46,3 +46,16 @@ def test_build_survival_curve_uses_censor_date(monkeypatch):
     app.build_survival_curve_with_censor_date({day: [pr]}, window, censor_date)
 
     assert called["durations"] == [pr.age_at_end_of(censor_date)]
+
+
+def test_window_counts_skip_small_windows():
+    day = date(2024, 1, 1)
+    window = app.Window(day - timedelta(days=7), day)
+
+    prs_by_day = {
+        day: [DummyPR(datetime(2024, 1, 1, 0, 0, 0)) for _ in range(4)],
+    }
+
+    data = app.window_count_datapoints(prs_by_day, [window], min_prs=5)
+
+    assert data == []
