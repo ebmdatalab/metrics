@@ -51,11 +51,7 @@ def display():
         scatter_chart(interesting_prs),
         count_chart_weekly("Opened per day", prs_opened_by_day, weekly_windows),
         open_end_of_day_chart_weekly(prs_open_by_day, weekly_windows),
-        closed_within_days_chart(prs_opened_by_day, weekly_windows, days=1),
         closed_within_days_chart(prs_opened_by_day, weekly_windows, days=2),
-        closed_within_days_chart(prs_opened_by_day, weekly_windows, days=3),
-        closed_within_days_chart(prs_opened_by_day, weekly_windows, days=4),
-        closed_within_days_chart(prs_opened_by_day, weekly_windows, days=5),
     )
 
 
@@ -308,10 +304,14 @@ def build_survival_curve_with_censor_date(prs, window, censor_date):
         for pr in prs[day]:
             if pr.was_merged():
                 observation_flags.append(True)
-                durations.append(pr.age_when_merged())
+                durations.append(working_days_between(pr.created_at, pr.merged_at))
             else:
                 observation_flags.append(False)
-                durations.append(pr.age_at_end_of(censor_date))
+                end_midnight = datetime.time(0, 0, 0, tzinfo=pr.created_at.tzinfo)
+                censor_end = datetime.datetime.combine(
+                    censor_date + ONE_DAY, end_midnight
+                )
+                durations.append(working_days_between(pr.created_at, censor_end))
 
     times, probs = sksurv.nonparametric.kaplan_meier_estimator(
         observation_flags, durations
@@ -323,6 +323,29 @@ def build_survival_curve_with_censor_date(prs, window, censor_date):
         return numpy.interp([days], times, probs)[0]
 
     return prob_of_surviving_for_days
+
+
+def working_days_between(start, end):
+    if end <= start:
+        return 0.0
+
+    total_seconds = 0.0
+    current = start
+    while current.date() <= end.date():
+        day_start = datetime.datetime.combine(
+            current.date(), datetime.time(0, 0, 0, tzinfo=current.tzinfo)
+        )
+        day_end = day_start + ONE_DAY
+
+        segment_start = max(current, day_start)
+        segment_end = min(end, day_end)
+
+        if segment_start < segment_end and segment_start.weekday() < 5:
+            total_seconds += (segment_end - segment_start).total_seconds()
+
+        current = day_end
+
+    return total_seconds / ONE_DAY.total_seconds()
 
 
 def write_charts(*charts):

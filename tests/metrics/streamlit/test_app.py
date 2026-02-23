@@ -18,6 +18,7 @@ def test_build_weekly_windows_non_overlapping():
 class DummyPR:
     def __init__(self, created_at):
         self.created_at = created_at
+        self.merged_at = None
 
     def was_merged(self):
         return False
@@ -44,7 +45,10 @@ def test_build_survival_curve_uses_censor_date(monkeypatch):
 
     app.build_survival_curve_with_censor_date({day: [pr]}, window, censor_date)
 
-    assert called["durations"] == [pr.age_at_end_of(censor_date)]
+    expected = app.working_days_between(
+        created, datetime.combine(censor_date + timedelta(days=1), datetime.min.time())
+    )
+    assert called["durations"] == [expected]
 
 
 def test_window_count_datapoints_average():
@@ -103,3 +107,36 @@ def test_closed_within_days_chart_title(monkeypatch):
     spec = chart.to_dict()
 
     assert spec["layer"][0]["encoding"]["y"]["title"] == "Closed within 4 days"
+
+
+def test_working_days_between_excludes_weekends():
+    start = datetime(2024, 1, 5, 12, 0, 0)  # Friday noon
+    end = datetime(2024, 1, 8, 12, 0, 0)    # Monday noon
+
+    assert app.working_days_between(start, end) == 1.0
+
+
+def test_build_survival_curve_uses_working_days(monkeypatch):
+    created = datetime(2024, 1, 5, 12, 0, 0)
+    merged = datetime(2024, 1, 8, 12, 0, 0)
+
+    class PRStub(DummyPR):
+        def was_merged(self):
+            return True
+
+    pr = PRStub(created)
+    pr.merged_at = merged
+    day = created.date()
+    window = app.Window(day - timedelta(days=1), day)
+
+    called = {}
+
+    def fake_km(flags, durations):
+        called["durations"] = durations
+        return [0, 1], [1.0, 1.0]
+
+    monkeypatch.setattr(app.sksurv.nonparametric, "kaplan_meier_estimator", fake_km)
+
+    app.build_survival_curve_with_censor_date({day: [pr]}, window, day)
+
+    assert called["durations"] == [1.0]
