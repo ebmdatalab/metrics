@@ -209,6 +209,7 @@ def xmr_chart_from_series(data, value_field, y_label):
                     titleY=DEFAULT_HEIGHT / 2,
                     titleBaseline="middle",
                     titleAnchor="middle",
+                    labelFlush=False,
                 ),
             ),
             tooltip=[

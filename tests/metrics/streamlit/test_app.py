@@ -92,6 +92,20 @@ def test_xmr_chart_from_series_requires_two_points():
         )
 
 
+def test_xmr_chart_from_series_disables_y_axis_label_flush():
+    chart = app.xmr_chart_from_series(
+        [
+            app.datapoint(date(2024, 1, 1), value=1.0),
+            app.datapoint(date(2024, 1, 8), value=2.0),
+        ],
+        value_field="value",
+        y_label="Closed within 2 days",
+    )
+    spec = chart.to_dict()
+
+    assert spec["layer"][0]["encoding"]["y"]["axis"].get("labelFlush") is False
+
+
 def test_categorise_prs_uses_supplied_today():
     class OpenPR:
         def __init__(self, created_at):
