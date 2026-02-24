@@ -106,6 +106,47 @@ def test_xmr_chart_from_series_disables_y_axis_label_flush():
     assert spec["layer"][0]["encoding"]["y"]["axis"].get("labelFlush") is False
 
 
+def test_detect_spc_signals_flags_run_of_8_on_one_side():
+    values = [1, 2, 3, 4, 5, 6, 7, 8]
+    signals = app.detect_spc_signals(values, mean=0)
+
+    assert all(app.SPC_RULE_RUN_8_SAME_SIDE in item for item in signals)
+
+
+def test_detect_spc_signals_flags_trend_of_6():
+    values = [9, 8, 7, 6, 5, 4]
+    signals = app.detect_spc_signals(values, mean=0)
+
+    assert all(app.SPC_RULE_TREND_6 in item for item in signals)
+
+
+def test_xmr_chart_from_series_includes_highlight_layer_for_signals():
+    chart = app.xmr_chart_from_series(
+        [
+            app.datapoint(date(2024, 1, 1), value=1.0),
+            app.datapoint(date(2024, 1, 8), value=2.0),
+            app.datapoint(date(2024, 1, 15), value=3.0),
+            app.datapoint(date(2024, 1, 22), value=4.0),
+            app.datapoint(date(2024, 1, 29), value=5.0),
+            app.datapoint(date(2024, 2, 5), value=6.0),
+            app.datapoint(date(2024, 2, 12), value=7.0),
+            app.datapoint(date(2024, 2, 19), value=8.0),
+        ],
+        value_field="value",
+        y_label="Closed within 2 days",
+    )
+    spec = chart.to_dict()
+
+    highlight_layers = [
+        layer
+        for layer in spec["layer"]
+        if isinstance(layer.get("mark"), dict) and layer["mark"].get("type") == "point"
+    ]
+
+    assert len(highlight_layers) == 1
+    assert highlight_layers[0]["encoding"]["tooltip"][-1]["field"] == "signal_rules"
+
+
 def test_categorise_prs_uses_supplied_today():
     class OpenPR:
         def __init__(self, created_at):

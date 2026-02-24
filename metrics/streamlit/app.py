@@ -24,6 +24,9 @@ AXIS_LABEL_COLOR = "#6b6b6b"
 
 START_DATE = datetime.date(2021, 1, 1)
 
+SPC_RULE_RUN_8_SAME_SIDE = "8 consecutive on same side of mean"
+SPC_RULE_TREND_6 = "6 consecutive increasing/decreasing"
+
 
 def display():
     today = datetime.date.today()
@@ -184,6 +187,16 @@ def xmr_chart_from_series(data, value_field, y_label):
     mean_mr = statistics.mean(moving_ranges)
     ucl = mean + 2.66 * mean_mr
     lcl = mean - 2.66 * mean_mr
+    signal_rules_by_point = detect_spc_signals(values, mean)
+    annotated_data = []
+    for item, signal_rules in zip(data, signal_rules_by_point):
+        annotated_data.append(
+            {
+                **item,
+                "signal": bool(signal_rules),
+                "signal_rules": ", ".join(sorted(signal_rules)),
+            }
+        )
 
     limits = [
         {"limit": lcl, "label": "LCL"},
@@ -193,7 +206,9 @@ def xmr_chart_from_series(data, value_field, y_label):
 
     return altair.layer(
         altair.Chart(
-            altair.Data(values=data), width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT
+            altair.Data(values=annotated_data),
+            width=DEFAULT_WIDTH,
+            height=DEFAULT_HEIGHT,
         )
         .mark_line(color="#4c78a8")
         .encode(
@@ -223,6 +238,33 @@ def xmr_chart_from_series(data, value_field, y_label):
                     title=y_label,
                     format=".3f",
                 ),
+                altair.Tooltip(
+                    "signal_rules:N",
+                    title="SPC signals",
+                ),
+            ],
+        ),
+        altair.Chart(altair.Data(values=annotated_data))
+        .mark_point(color="#e45756", size=60, filled=True)
+        .transform_filter("datum.signal")
+        .encode(
+            x=altair.X("date:T", title=None),
+            y=altair.Y(f"{value_field}:Q", title=None),
+            tooltip=[
+                altair.Tooltip(
+                    "date:T",
+                    title="Bucket end",
+                    format="%d %b %Y",
+                ),
+                altair.Tooltip(
+                    f"{value_field}:Q",
+                    title=y_label,
+                    format=".3f",
+                ),
+                altair.Tooltip(
+                    "signal_rules:N",
+                    title="SPC signals",
+                ),
             ],
         ),
         altair.Chart(altair.Data(values=limits))
@@ -239,6 +281,54 @@ def xmr_chart_from_series(data, value_field, y_label):
             ),
         ),
     ).resolve_scale(color="independent")
+
+
+def detect_spc_signals(values, mean):
+    signals = [set() for _ in values]
+    _mark_run_of_8_same_side(values, mean, signals)
+    _mark_trend_of_6(values, signals)
+    return signals
+
+
+def _mark_run_of_8_same_side(values, mean, signals):
+    run_sign = 0
+    run_start = 0
+
+    for index, value in enumerate(values):
+        sign = 1 if value > mean else -1 if value < mean else 0
+        if sign == 0:
+            run_sign = 0
+            run_start = index + 1
+            continue
+
+        if sign != run_sign:
+            run_sign = sign
+            run_start = index
+
+        if index - run_start + 1 >= 8:
+            for marked_index in range(run_start, index + 1):
+                signals[marked_index].add(SPC_RULE_RUN_8_SAME_SIDE)
+
+
+def _mark_trend_of_6(values, signals):
+    increasing_start = 0
+    decreasing_start = 0
+
+    for index in range(1, len(values)):
+        if values[index] > values[index - 1]:
+            if index == 1 or values[index - 1] <= values[index - 2]:
+                increasing_start = index - 1
+
+            if index - increasing_start + 1 >= 6:
+                for marked_index in range(increasing_start, index + 1):
+                    signals[marked_index].add(SPC_RULE_TREND_6)
+        elif values[index] < values[index - 1]:
+            if index == 1 or values[index - 1] >= values[index - 2]:
+                decreasing_start = index - 1
+
+            if index - decreasing_start + 1 >= 6:
+                for marked_index in range(decreasing_start, index + 1):
+                    signals[marked_index].add(SPC_RULE_TREND_6)
 
 
 def y_label_chart(label, height):
