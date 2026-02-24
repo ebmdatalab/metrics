@@ -26,6 +26,13 @@ START_DATE = datetime.date(2021, 1, 1)
 
 SPC_RULE_RUN_8_SAME_SIDE = "8 consecutive on same side of mean"
 SPC_RULE_TREND_6 = "6 consecutive increasing/decreasing"
+SPC_RULE_POINT_BEYOND_LIMITS = "point beyond control limits"
+SPC_RULE_2_OF_3_BEYOND_2SIGMA = "2 of 3 beyond 2 sigma on same side"
+SPC_RULE_4_OF_5_BEYOND_1SIGMA = "4 of 5 beyond 1 sigma on same side"
+SPC_RULE_15_WITHIN_1SIGMA = "15 consecutive within 1 sigma"
+SPC_RULE_8_OUTSIDE_1SIGMA = "8 consecutive outside 1 sigma"
+SPC_RULE_14_ALTERNATING = "14 consecutive alternating up/down"
+SPC_RULE_8_NO_ZONE_C_BOTH_SIDES = "8 consecutive with no zone C and both sides"
 
 
 def display():
@@ -187,7 +194,7 @@ def xmr_chart_from_series(data, value_field, y_label):
     mean_mr = statistics.mean(moving_ranges)
     ucl = mean + 2.66 * mean_mr
     lcl = mean - 2.66 * mean_mr
-    signal_rules_by_point = detect_spc_signals(values, mean)
+    signal_rules_by_point = detect_spc_signals(values, mean=mean, ucl=ucl, lcl=lcl)
     annotated_data = []
     for item, signal_rules in zip(data, signal_rules_by_point):
         annotated_data.append(
@@ -283,11 +290,26 @@ def xmr_chart_from_series(data, value_field, y_label):
     ).resolve_scale(color="independent")
 
 
-def detect_spc_signals(values, mean):
+def detect_spc_signals(values, mean, ucl, lcl):
     signals = [set() for _ in values]
+    _mark_points_beyond_limits(values, ucl, lcl, signals)
     _mark_run_of_8_same_side(values, mean, signals)
     _mark_trend_of_6(values, signals)
+    sigma = (ucl - mean) / 3
+    if sigma > 0:
+        _mark_2_of_3_beyond_2sigma(values, mean, sigma, signals)
+        _mark_4_of_5_beyond_1sigma(values, mean, sigma, signals)
+        _mark_15_within_1sigma(values, mean, sigma, signals)
+        _mark_8_outside_1sigma(values, mean, sigma, signals)
+        _mark_8_no_zone_c_both_sides(values, mean, sigma, signals)
+    _mark_14_alternating(values, signals)
     return signals
+
+
+def _mark_points_beyond_limits(values, ucl, lcl, signals):
+    for index, value in enumerate(values):
+        if value > ucl or value < lcl:
+            signals[index].add(SPC_RULE_POINT_BEYOND_LIMITS)
 
 
 def _mark_run_of_8_same_side(values, mean, signals):
@@ -329,6 +351,80 @@ def _mark_trend_of_6(values, signals):
             if index - decreasing_start + 1 >= 6:
                 for marked_index in range(decreasing_start, index + 1):
                     signals[marked_index].add(SPC_RULE_TREND_6)
+
+
+def _mark_2_of_3_beyond_2sigma(values, mean, sigma, signals):
+    threshold = 2 * sigma
+    for start in range(len(values) - 2):
+        window_indexes = range(start, start + 3)
+        above_indexes = [i for i in window_indexes if values[i] > mean + threshold]
+        below_indexes = [i for i in window_indexes if values[i] < mean - threshold]
+        if len(above_indexes) >= 2:
+            for index in above_indexes:
+                signals[index].add(SPC_RULE_2_OF_3_BEYOND_2SIGMA)
+        if len(below_indexes) >= 2:
+            for index in below_indexes:
+                signals[index].add(SPC_RULE_2_OF_3_BEYOND_2SIGMA)
+
+
+def _mark_4_of_5_beyond_1sigma(values, mean, sigma, signals):
+    for start in range(len(values) - 4):
+        window_indexes = range(start, start + 5)
+        above_indexes = [i for i in window_indexes if values[i] > mean + sigma]
+        below_indexes = [i for i in window_indexes if values[i] < mean - sigma]
+        if len(above_indexes) >= 4:
+            for index in above_indexes:
+                signals[index].add(SPC_RULE_4_OF_5_BEYOND_1SIGMA)
+        if len(below_indexes) >= 4:
+            for index in below_indexes:
+                signals[index].add(SPC_RULE_4_OF_5_BEYOND_1SIGMA)
+
+
+def _mark_15_within_1sigma(values, mean, sigma, signals):
+    for start in range(len(values) - 14):
+        window_indexes = list(range(start, start + 15))
+        if all(abs(values[i] - mean) < sigma for i in window_indexes):
+            for index in window_indexes:
+                signals[index].add(SPC_RULE_15_WITHIN_1SIGMA)
+
+
+def _mark_8_outside_1sigma(values, mean, sigma, signals):
+    run_start = 0
+    run_length = 0
+    for index, value in enumerate(values):
+        if abs(value - mean) > sigma:
+            if run_length == 0:
+                run_start = index
+            run_length += 1
+            if run_length >= 8:
+                for marked_index in range(run_start, index + 1):
+                    signals[marked_index].add(SPC_RULE_8_OUTSIDE_1SIGMA)
+        else:
+            run_length = 0
+
+
+def _mark_14_alternating(values, signals):
+    for start in range(len(values) - 13):
+        window = values[start : start + 14]
+        deltas = [curr - prev for prev, curr in itertools.pairwise(window)]
+        if any(delta == 0 for delta in deltas):
+            continue
+        if all(prev * curr < 0 for prev, curr in itertools.pairwise(deltas)):
+            for index in range(start, start + 14):
+                signals[index].add(SPC_RULE_14_ALTERNATING)
+
+
+def _mark_8_no_zone_c_both_sides(values, mean, sigma, signals):
+    for start in range(len(values) - 7):
+        window_indexes = list(range(start, start + 8))
+        window_values = [values[i] for i in window_indexes]
+        if not all(abs(value - mean) > sigma for value in window_values):
+            continue
+        has_above = any(value > mean for value in window_values)
+        has_below = any(value < mean for value in window_values)
+        if has_above and has_below:
+            for index in window_indexes:
+                signals[index].add(SPC_RULE_8_NO_ZONE_C_BOTH_SIDES)
 
 
 def y_label_chart(label, height):

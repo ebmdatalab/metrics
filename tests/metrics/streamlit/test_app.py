@@ -108,16 +108,73 @@ def test_xmr_chart_from_series_disables_y_axis_label_flush():
 
 def test_detect_spc_signals_flags_run_of_8_on_one_side():
     values = [1, 2, 3, 4, 5, 6, 7, 8]
-    signals = app.detect_spc_signals(values, mean=0)
+    signals = app.detect_spc_signals(values, mean=0, ucl=3, lcl=-3)
 
     assert all(app.SPC_RULE_RUN_8_SAME_SIDE in item for item in signals)
 
 
 def test_detect_spc_signals_flags_trend_of_6():
     values = [9, 8, 7, 6, 5, 4]
-    signals = app.detect_spc_signals(values, mean=0)
+    signals = app.detect_spc_signals(values, mean=0, ucl=3, lcl=-3)
 
     assert all(app.SPC_RULE_TREND_6 in item for item in signals)
+
+
+def test_detect_spc_signals_flags_points_beyond_limits():
+    values = [0.0, 3.5, -3.2]
+    signals = app.detect_spc_signals(values, mean=0, ucl=3, lcl=-3)
+
+    assert app.SPC_RULE_POINT_BEYOND_LIMITS not in signals[0]
+    assert app.SPC_RULE_POINT_BEYOND_LIMITS in signals[1]
+    assert app.SPC_RULE_POINT_BEYOND_LIMITS in signals[2]
+
+
+def test_detect_spc_signals_flags_2_of_3_beyond_2sigma():
+    values = [2.2, 2.3, 0.4]
+    signals = app.detect_spc_signals(values, mean=0, ucl=3, lcl=-3)
+
+    assert app.SPC_RULE_2_OF_3_BEYOND_2SIGMA in signals[0]
+    assert app.SPC_RULE_2_OF_3_BEYOND_2SIGMA in signals[1]
+    assert app.SPC_RULE_2_OF_3_BEYOND_2SIGMA not in signals[2]
+
+
+def test_detect_spc_signals_flags_4_of_5_beyond_1sigma():
+    values = [1.2, 1.3, 0.2, 1.4, 1.5]
+    signals = app.detect_spc_signals(values, mean=0, ucl=3, lcl=-3)
+
+    assert app.SPC_RULE_4_OF_5_BEYOND_1SIGMA in signals[0]
+    assert app.SPC_RULE_4_OF_5_BEYOND_1SIGMA in signals[1]
+    assert app.SPC_RULE_4_OF_5_BEYOND_1SIGMA not in signals[2]
+    assert app.SPC_RULE_4_OF_5_BEYOND_1SIGMA in signals[3]
+    assert app.SPC_RULE_4_OF_5_BEYOND_1SIGMA in signals[4]
+
+
+def test_detect_spc_signals_flags_15_within_1sigma():
+    values = [0.1] * 15
+    signals = app.detect_spc_signals(values, mean=0, ucl=3, lcl=-3)
+
+    assert all(app.SPC_RULE_15_WITHIN_1SIGMA in item for item in signals)
+
+
+def test_detect_spc_signals_flags_8_outside_1sigma():
+    values = [1.2, -1.2, 1.3, -1.3, 1.4, -1.4, 1.5, -1.5]
+    signals = app.detect_spc_signals(values, mean=0, ucl=3, lcl=-3)
+
+    assert all(app.SPC_RULE_8_OUTSIDE_1SIGMA in item for item in signals)
+
+
+def test_detect_spc_signals_flags_14_alternating():
+    values = [0, 1] * 7
+    signals = app.detect_spc_signals(values, mean=0, ucl=3, lcl=-3)
+
+    assert all(app.SPC_RULE_14_ALTERNATING in item for item in signals)
+
+
+def test_detect_spc_signals_flags_8_no_zone_c_both_sides():
+    values = [1.2, -1.2, 1.3, -1.3, 1.4, -1.4, 1.5, -1.5]
+    signals = app.detect_spc_signals(values, mean=0, ucl=3, lcl=-3)
+
+    assert all(app.SPC_RULE_8_NO_ZONE_C_BOTH_SIDES in item for item in signals)
 
 
 def test_xmr_chart_from_series_includes_highlight_layer_for_signals():
