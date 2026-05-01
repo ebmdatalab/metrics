@@ -19,7 +19,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v6
-      - uses: "opensafely-core/setup-action@v1"
+      - uses: "opensafely-core/setup-action@v1.6.1"
         with:
           python-version: "3.12"
           install-just: true
@@ -48,7 +48,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v6
-      - uses: "opensafely-core/setup-action@v1"
+      - uses: "opensafely-core/setup-action@v1.6.1"
         with:
           python-version: "3.12"
           install-just: true
@@ -78,7 +78,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v6
-      - uses: "opensafely-core/setup-action@v1"
+      - uses: "opensafely-core/setup-action@v1.6.1"
         with:
           python-version: "3.12"
           install-just: true
@@ -97,7 +97,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v6
-      - uses: "opensafely-core/setup-action@v1"
+      - uses: "opensafely-core/setup-action@v1.6.1"
         with:
           install-just: true
 
@@ -152,7 +152,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v6
-      - uses: "opensafely-core/setup-action@v1"
+      - uses: "opensafely-core/setup-action@v1.6.1"
         with:
           install-just: true
 
