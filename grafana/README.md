@@ -21,6 +21,13 @@ dokku$ dokku docker-options:add grafana deploy "--user 1013"
 dokku$ dokku docker-options:add grafana run "--user 1013"
 dokku$ dokku storage:ensure-directory grafana
 
+# add a unified storage index path _per container_
+# this allows blue/green deployments without encountering lock errors on this index
+# "Please note that sharing the same index_path between multiple running Grafana instances is not supported."
+# reference: https://github.com/grafana/grafana/blob/e845cd74ee32e71f62aa7f3824e118bdc50feff0/conf/defaults.ini#L2449-L2454
+myuser$ dokku docker-options:add grafana deploy "--tmpfs /var/lib/grafana/unified-search:uid=1013"
+myuser$ dokku docker-options:add grafana run "--tmpfs /var/lib/grafana/unified-search:uid=1013"
+
 myuser$ sudo chown -R dokku:dokku /var/lib/dokku/data/storage/grafana
 
 dokku$ dokku storage:mount grafana /var/lib/dokku/data/storage/grafana:/var/lib/grafana
