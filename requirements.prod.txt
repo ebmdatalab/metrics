@@ -311,21 +311,21 @@ requests==2.34.2 \
     # via
     #   -r requirements.prod.in
     #   requests-cache
-requests-cache==1.3.2 \
-    --hash=sha256:bdc3680931f98a1dea509d339ea6b45cea526945b47b250ce63ffd2744ee0b14 \
-    --hash=sha256:c52666c76b08daa94d05a99327dd24afc46f405abc044e8c2267b540f90673d0
+requests-cache==1.3.3 \
+    --hash=sha256:79b72d5ac5143992d1836ad78f4d8e65666061dd44e220548caab3723089826b \
+    --hash=sha256:c8df20ff874ebfc026959e3874e6c12bd6724934cdb10925915908453d4b17e4
     # via -r requirements.prod.in
-sentry-sdk==2.63.0 \
-    --hash=sha256:2a1502bf864769275dbc8c2c9fc7a0f7f5e18358180b615d262d13a31ffba216 \
-    --hash=sha256:3a9b5ddd403f79eb73bd670f75f04485819db53d28f76ced7bc09041cb0dfd6a
+sentry-sdk==2.64.0 \
+    --hash=sha256:68be2c29e14ae310f8a39e1a79916b6d85c6cb41dcce789d14ff05fe293e4c55 \
+    --hash=sha256:715ea91ca860a819e8d8a50a7bde3a80d0df3b4ed7b6660a20fb9a2d084188f1
     # via -r requirements.prod.in
-slack-bolt==1.28.0 \
-    --hash=sha256:738d1ca5e7c7039b6e18103d29267ced6e18c2517053eff18991fdd593acce5c \
-    --hash=sha256:bfe367d867e8fb157a057248ebd4ac2d7f43acac6d0700fa31381db1e10f3b0f
+slack-bolt==1.29.0 \
+    --hash=sha256:1835b66b778158f3af0da77603aa18d7dfd82fd9b9a985e25c752f95050ab826 \
+    --hash=sha256:b6271ba0a9b71e319c86b40632e6cb6240aacd0433773615b76b890b9a574762
     # via -r requirements.prod.in
-slack-sdk==3.42.0 \
-    --hash=sha256:873db9e1f632ac650ffdbf9d8ba825f3e9e7e576a1e4f9604ccb2a15b3727e3d \
-    --hash=sha256:eb39aff97e476e10cc5a8ac29bd2e79a9959e880d9fe0c03b4e8f05b2ac996ff
+slack-sdk==3.43.0 \
+    --hash=sha256:0553152e46c4259eb69f7464cdadc35ba4802ca10f9f5a849c92cf03d6c2ba07 \
+    --hash=sha256:4b6557c65577fc172f685af218b811f9f3b4909e24cddd839ada09565f10c585
     # via slack-bolt
 sqlalchemy[postgresql-psycopgbinary]==2.0.51 \
     --hash=sha256:0378d055e9e8cd6ce4d8dff683bdd3d7d413533c4ee51d67a2b1e0f9eacc0f23 \
@@ -391,9 +391,9 @@ structlog==26.1.0 \
     --hash=sha256:e081a26d6c373e6d201eca24eede26d8ffab07f88f477822e679183428d3d91e \
     --hash=sha256:f63a716cbd1b1291cf7661de7794b455acfa4c43c5bcf1630e6ad5ddc1adb3b7
     # via -r requirements.prod.in
-typing-extensions==4.15.0 \
-    --hash=sha256:0cea48d173cc12fa28ecabc3b837ea3cf6f38c6d1136f85cbaaf598984861466 \
-    --hash=sha256:f0fa19c6845758ab08074a0cfa8b7aecb71c999ca73d62883bc25cc018c4e548
+typing-extensions==4.16.0 \
+    --hash=sha256:481caa481374e813c1b176ada14e97f1f67a4539ce9cfeb3f350d78d6370c2e8 \
+    --hash=sha256:dc983d19a509c94dba722ee6abd33940f7c05a89e243c47e907eb4db6f1a43e5
     # via
     #   cattrs
     #   psycopg
