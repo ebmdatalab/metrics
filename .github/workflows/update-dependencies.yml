@@ -24,4 +24,3 @@ jobs:
     - uses: bennettoxford/update-dependencies-action@v1
       with:
         token: ${{ steps.generate-token.outputs.token }}
-        automerge: false
