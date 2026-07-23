@@ -30,3 +30,15 @@ updates:
       timezone: "Europe/London"
     cooldown:
       default-days: 7
+
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "08:00"
+      timezone: "Europe/London"
+    # Setting this to 0 means that we get dependabot PRs for security updates only
+    open-pull-requests-limit: 0
+    cooldown:
+      default-days: 7
