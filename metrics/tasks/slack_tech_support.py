@@ -22,7 +22,8 @@ def main():
 
     rows = []
     for date, messages in itertools.groupby(
-        messages, lambda m: datetime.fromtimestamp(float(m["ts"])).date()
+        messages,
+        lambda m: datetime.fromtimestamp(float(m["ts"]), tz=datetime.UTC).date(),
     ):
         rows.append(
             {
