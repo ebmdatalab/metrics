@@ -19,7 +19,11 @@ def calculate_pr_counts(prs, predicate):
     counts = defaultdict(int)
     for pr in prs:
         start = pr.created_on
-        end = pr.closed_on if pr.closed_on else datetime.date.today()
+        end = (
+            pr.closed_on
+            if pr.closed_on
+            else datetime.datetime.now(tz=datetime.UTC).date()
+        )
         for day in iter_days(start, end):
             if predicate(pr, day):
                 counts[(pr.repo.org, pr.repo.name, pr.author, pr.is_content, day)] += 1
@@ -54,7 +58,11 @@ def calculate_issue_counts(issues):
     counts = defaultdict(int)
     for issue in issues:
         start = issue.created_on
-        end = issue.closed_on if issue.closed_on else datetime.date.today()
+        end = (
+            issue.closed_on
+            if issue.closed_on
+            else datetime.datetime.now(tz=datetime.UTC).date()
+        )
         for day in iter_days(start, end):
             counts[(issue.repo.org, issue.repo.name, issue.author, day)] += 1
     return dict(counts)
