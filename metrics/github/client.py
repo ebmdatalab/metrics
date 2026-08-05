@@ -96,11 +96,7 @@ class GitHubClient:
         check_response(response)
         results = response.json()
 
-        if (
-            "data" not in results
-            or not results["data"]
-            or (results.get("errors"))
-        ):
+        if not results.get("data") or results.get("errors"):
             msg = textwrap.dedent(
                 f"""
                 graphql query failed
