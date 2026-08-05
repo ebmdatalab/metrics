@@ -14,7 +14,7 @@ def main():
     repos = all_repos()
     log.info("Got repos")
 
-    data = [dict(organisation=r.org, repo=r.name, owner=r.team) for r in repos]
+    data = [{"organisation": r.org, "repo": r.name, "owner": r.team} for r in repos]
 
     log.info("Writing data")
     db.reset_table(tables.GitHubRepos)
