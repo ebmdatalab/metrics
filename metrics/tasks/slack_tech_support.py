@@ -21,14 +21,14 @@ def main():
     messages = iter_messages(app, tech_support_channel_id)
 
     rows = []
-    for date, messages in itertools.groupby(
+    for date, daily_messages in itertools.groupby(
         messages,
         lambda m: datetime.fromtimestamp(float(m["ts"]), tz=datetime.UTC).date(),
     ):
         rows.append(
             {
                 "time": datetime.combine(date, time()),
-                "value": len(list(messages)),
+                "value": len(list(daily_messages)),
                 "name": "requests",
             }
         )
