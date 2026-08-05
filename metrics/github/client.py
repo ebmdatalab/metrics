@@ -99,7 +99,7 @@ class GitHubClient:
         if (
             "data" not in results
             or not results["data"]
-            or ("errors" in results and results["errors"])
+            or (results.get("errors"))
         ):
             msg = textwrap.dedent(
                 f"""
