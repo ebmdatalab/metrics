@@ -22,5 +22,5 @@ for _, modname, _ in pkgutil.iter_modules(metrics.tasks.__path__):
             monitor.error(error)
         except Exception as exc:
             log.error(f"Failed to run {modname} because because an error occurred.")
-            log.exception(exc)
+            log.exception()
             monitor.error(exc)

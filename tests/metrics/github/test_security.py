@@ -77,36 +77,36 @@ def test_vulnerabilities(monkeypatch):
 
     def fake_vulnerabilities(org, repo):
         return [
-            dict(
-                createdAt="2023-10-13T00:00:00Z",
-                fixedAt="2023-10-20T00:00:00Z",
-                dismissedAt=None,
-                autoDismissedAt=None,
-            ),
-            dict(
-                createdAt="2023-10-13T00:00:00Z",
-                fixedAt=None,
-                dismissedAt="2023-10-21T00:00:00Z",
-                autoDismissedAt=None,
-            ),
-            dict(
-                createdAt="2023-10-13T00:00:00Z",
-                fixedAt=None,
-                dismissedAt=None,
-                autoDismissedAt="2023-10-22T00:00:00Z",
-            ),
-            dict(
-                createdAt="2023-10-26T00:00:00Z",
-                fixedAt=None,
-                dismissedAt=None,
-                autoDismissedAt=None,
-            ),
-            dict(
-                createdAt="2023-10-29T00:00:00Z",
-                fixedAt=None,
-                dismissedAt=None,
-                autoDismissedAt=None,
-            ),
+            {
+                "createdAt": "2023-10-13T00:00:00Z",
+                "fixedAt": "2023-10-20T00:00:00Z",
+                "dismissedAt": None,
+                "autoDismissedAt": None,
+            },
+            {
+                "createdAt": "2023-10-13T00:00:00Z",
+                "fixedAt": None,
+                "dismissedAt": "2023-10-21T00:00:00Z",
+                "autoDismissedAt": None,
+            },
+            {
+                "createdAt": "2023-10-13T00:00:00Z",
+                "fixedAt": None,
+                "dismissedAt": None,
+                "autoDismissedAt": "2023-10-22T00:00:00Z",
+            },
+            {
+                "createdAt": "2023-10-26T00:00:00Z",
+                "fixedAt": None,
+                "dismissedAt": None,
+                "autoDismissedAt": None,
+            },
+            {
+                "createdAt": "2023-10-29T00:00:00Z",
+                "fixedAt": None,
+                "dismissedAt": None,
+                "autoDismissedAt": None,
+            },
         ]
 
     monkeypatch.setattr(security.query, "vulnerabilities", fake_vulnerabilities)

@@ -2,7 +2,7 @@ import sys
 
 import structlog
 
-import metrics.github.github as github
+from metrics.github import github
 from metrics.github.metrics import convert_codespaces_to_dicts
 from metrics.timescaledb import db, tables
 

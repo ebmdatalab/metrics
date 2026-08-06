@@ -43,8 +43,8 @@ def test_codespaces(patch):
                 {
                     "owner": {"login": "testuser"},
                     "repository": {"name": "testrepo"},
-                    "created_at": datetime.datetime.now().isoformat(),
-                    "last_used_at": datetime.datetime.now().isoformat(),
+                    "created_at": datetime.datetime.now(tz=datetime.UTC).isoformat(),
+                    "last_used_at": datetime.datetime.now(tz=datetime.UTC).isoformat(),
                 },
             ]
         },
@@ -193,12 +193,14 @@ def test_was_merged_in_on():
 
 
 def repo_data(name, is_archived=False):
-    return dict(
-        name=name,
-        createdAt=datetime.datetime.min.isoformat(),
-        archivedAt=datetime.datetime.now().isoformat() if is_archived else None,
-        hasVulnerabilityAlertsEnabled=False,
-    )
+    return {
+        "name": name,
+        "createdAt": datetime.datetime.min.replace(tzinfo=datetime.UTC).isoformat(),
+        "archivedAt": datetime.datetime.now(tz=datetime.UTC).isoformat()
+        if is_archived
+        else None,
+        "hasVulnerabilityAlertsEnabled": False,
+    }
 
 
 def repo(org, name, team):
@@ -206,12 +208,12 @@ def repo(org, name, team):
 
 
 def pr_data(author="author"):
-    return dict(
-        author=dict(login=author),
-        createdAt=datetime.datetime.min.isoformat(),
-        mergedAt=None,
-        closedAt=None,
-    )
+    return {
+        "author": {"login": author},
+        "createdAt": datetime.datetime.min.replace(tzinfo=datetime.UTC).isoformat(),
+        "mergedAt": None,
+        "closedAt": None,
+    }
 
 
 def pr(created_on=TODAY, closed_on=None, merged_on=None, is_content=False):

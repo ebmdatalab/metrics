@@ -34,8 +34,9 @@ class GitHubClient:
             for key in path:
                 try:
                     result = result[key]
-                except TypeError:
-                    raise Exception(f"Couldn't find {path} in {data}")
+                except TypeError as e:
+                    e.add_note(f"Couldn't find {path} in {data}")
+                    raise
             return result
 
         more_pages = True
@@ -96,11 +97,7 @@ class GitHubClient:
         check_response(response)
         results = response.json()
 
-        if (
-            "data" not in results
-            or not results["data"]
-            or ("errors" in results and results["errors"])
-        ):
+        if not results.get("data") or results.get("errors"):
             msg = textwrap.dedent(
                 f"""
                 graphql query failed
