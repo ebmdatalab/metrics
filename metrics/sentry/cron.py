@@ -31,7 +31,7 @@ class Cron:
 
     def get_monitor(self, modname):
         monitor_slug = f"metrics-{modname}"
-        return self.Monitor(monitor_slug, _MONITOR_CONFIG)
+        return Monitor(monitor_slug, _MONITOR_CONFIG)
 
 
 class Monitor:
