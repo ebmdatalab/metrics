@@ -97,6 +97,7 @@ CMD ["/opt/venv/bin/python", "-m", "metrics.tasks.smoke_test"]
 ENV PYTHONPATH=/app
 
 # switch to running as the user
+# hadolint ignore=DL3066
 USER metrics
 
 
@@ -137,6 +138,7 @@ LABEL org.opencontainers.image.revision=$GITREF
 FROM metrics-base as metrics-dev
 
 # switch back to root to run the install of dev requirements.txt
+# hadolint ignore=DL3066
 USER root
 
 # install development requirements
@@ -158,4 +160,5 @@ RUN grep -q ":$DEV_GROUPID:" /etc/group || groupmod -g $DEV_GROUPID metrics
 
 
 # switch back to metrics
+# hadolint ignore=DL3066
 USER metrics
