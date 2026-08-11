@@ -86,7 +86,6 @@ include = ["metrics*"]
 
 [tool.uv]
 required-version = ">=0.9"
-exclude-newer = "7 days"
 exclude-newer-package = {}
 no-build = true
 no-binary-package = ["metrics"]
