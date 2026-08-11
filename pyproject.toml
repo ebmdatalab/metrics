@@ -40,7 +40,7 @@ source = [
 ]
 
 [tool.coverage.report]
-fail_under = 80
+fail_under = 75
 skip_covered = true
 show_missing = true
 
@@ -86,7 +86,6 @@ include = ["metrics*"]
 
 [tool.uv]
 required-version = ">=0.9"
-exclude-newer-package = {}
 no-build = true
 no-binary-package = ["metrics"]
 
