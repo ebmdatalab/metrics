@@ -25,6 +25,7 @@ jobs:
         with:
           python-version: "3.12"
           install-just: true
+          install-uv: true
       - name: Check formatting, linting and import sorting
         run: just check
 
@@ -39,6 +40,7 @@ jobs:
         with:
           python-version: "3.12"
           install-just: true
+          install-uv: true
 
       - name: Start database
         run: docker compose up -d --build --wait db
