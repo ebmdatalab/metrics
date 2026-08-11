@@ -1,12 +1,6 @@
 # Load .env files by default
 set dotenv-load := true
-
-export VIRTUAL_ENV  := env_var_or_default("VIRTUAL_ENV", ".venv")
-
-export BIN := VIRTUAL_ENV + if os_family() == "unix" { "/bin" } else { "/Scripts" }
-export PIP := BIN + if os_family() == "unix" { "/python -m pip" } else { "/python.exe -m pip" }
-
-export DEFAULT_PYTHON := if os_family() == "unix" { "python3.12" } else { "python" }
+set positional-arguments := true
 
 export DEV_USERID := `id -u`
 export DEV_GROUPID := `id -g`
@@ -16,137 +10,128 @@ export DEV_GROUPID := `id -g`
 default:
     @"{{ just_executable() }}" --list
 
+# Create a valid .env if none exists
+_dotenv:
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    if [[ ! -f .env ]]; then
+      echo "No '.env' file found; creating a default '.env' from 'dotenv-sample'"
+      cp dotenv-sample .env
+    fi
+
+# Check if a .env exists
+# Use this (rather than _dotenv or devenv) for recipes that require that a .env file exists.
+# just will not pick up environment variables from a .env that it's just created,
+# and there isn't an easy way to load those into the environment, so we just
+# prompt the user to run just devenv to set up their local environment properly.
+_checkenv:
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    if [[ ! -f .env ]]; then
+        echo "No '.env' file found; run 'just devenv' to create one"
+        exit 1
+    fi
 
 # clean up temporary files
 clean:
     rm -rf .venv
 
+# Install production requirements into and remove extraneous packages from venv
+prodenv:
+    uv sync --no-dev
 
-_env:
-    #!/usr/bin/env bash
-    set -euo pipefail
+# Install dev requirements into venv without removing extraneous packages
+devenv: _dotenv && install-precommit
+    uv sync --inexact
 
-    test -f .env || cp dotenv-sample .env
-
-
-# ensure valid virtualenv
-virtualenv: _env
-    #!/usr/bin/env bash
-    set -euo pipefail
-
-    # allow users to specify python version in .env
-    PYTHON_VERSION=${PYTHON_VERSION:-$DEFAULT_PYTHON}
-
-    # create venv and upgrade pip
-    test -d $VIRTUAL_ENV || { $PYTHON_VERSION -m venv $VIRTUAL_ENV && $PIP install --upgrade pip; }
-
-    # ensure we have pip-tools so we can run pip-compile
-    test -e $BIN/pip-compile || $PIP install pip-tools
-
-
-_compile src dst *args: virtualenv
-    #!/usr/bin/env bash
-    set -euo pipefail
-
-    # exit if src file is older than dst file (-nt = 'newer than', but we negate with || to avoid error exit code)
-    test "${FORCE:-}" = "true" -o {{ src }} -nt {{ dst }} || exit 0
-    $BIN/pip-compile --allow-unsafe --generate-hashes --output-file={{ dst }} {{ src }} {{ args }}
-
-
-# update requirements.prod.txt if requirements.prod.in has changed
-requirements-prod *args:
-    "{{ just_executable() }}" _compile requirements.prod.in requirements.prod.txt {{ args }}
-
-
-# update requirements.dev.txt if requirements.dev.in has changed
-requirements-dev *args: requirements-prod
-    "{{ just_executable() }}" _compile requirements.dev.in requirements.dev.txt {{ args }}
-
-
-# ensure prod requirements installed and up to date
-prodenv: requirements-prod
-    #!/usr/bin/env bash
-    set -euo pipefail
-
-    # exit if .txt file has not changed since we installed them (-nt == "newer than', but we negate with || to avoid error exit code)
-    test requirements.prod.txt -nt $VIRTUAL_ENV/.prod || exit 0
-
-    $PIP install -r requirements.prod.txt
-    touch $VIRTUAL_ENV/.prod
-
-
-# && dependencies are run after the recipe has run. Needs just>=0.9.9. This is
-# a killer feature over Makefiles.
-#
-# ensure dev requirements installed and up to date
-devenv: prodenv requirements-dev && install-precommit
-    #!/usr/bin/env bash
-    set -euo pipefail
-
-    # exit if .txt file has not changed since we installed them (-nt == "newer than', but we negate with || to avoid error exit code)
-    test requirements.dev.txt -nt $VIRTUAL_ENV/.dev || exit 0
-
-    $PIP install -r requirements.dev.txt
-    touch $VIRTUAL_ENV/.dev
-
-
-# ensure precommit is installed
+# Ensure precommit is installed
 install-precommit:
     #!/usr/bin/env bash
     set -euo pipefail
 
     BASE_DIR=$(git rev-parse --show-toplevel)
-    test -f $BASE_DIR/.git/hooks/pre-commit || $BIN/pre-commit install
+    test -f $BASE_DIR/.git/hooks/pre-commit || uv run pre-commit install
 
+# Upgrade a single package
+upgrade-package package: && uvmirror devenv
+    uv lock --upgrade-package {{ package }}
 
-# upgrade dev or prod dependencies (specify package to upgrade single package, all by default)
-upgrade env package="": virtualenv
+# Upgrade all packages to the latest versions (with cooldown)
+upgrade-all cooldown="7 days ago": && uvmirror devenv
+    uv lock --upgrade --exclude-newer "{{ cooldown }}"
+
+# update the uv mirror requirements file
+uvmirror file="requirements.uvmirror":
+    rm -f {{ file }}
+    uv export --format requirements-txt --frozen --no-hashes --all-groups --all-extras > {{ file }}
+
+# This is the default input command to update-dependencies action
+# https://github.com/bennettoxford/update-dependencies-action
+update-dependencies: upgrade-all
+
+# *args is variadic, 0 or more. This allows us to do `just test -k match`, for example.
+
+# Run the tests
+test *args:
+    uv run coverage run --module pytest "$@"
+    uv run coverage report || uv run coverage html
+
+format *args:
+    uv run ruff format --diff --quiet "$@"
+
+lint *args:
+    uv run ruff check "$@" .
+
+lint-actions:
+    docker run --rm -v $(pwd):/repo:ro --workdir /repo rhysd/actionlint:1.7.8@sha256:96d4a8c87dbbfb3bdd324f8fdc285fc3df5261e2decc619a4dd7e8ee52bbfd46 -color
+
+# Run the various dev checks but does not change any files
+check:
     #!/usr/bin/env bash
     set -euo pipefail
 
-    opts="--upgrade"
-    test -z "{{ package }}" || opts="--upgrade-package {{ package }}"
-    FORCE=true "{{ just_executable() }}" requirements-{{ env }} $opts
+    failed=0
 
+    check() {
+      echo -e "\e[1m=> ${1}\e[0m"
+      rc=0
+      # Run it
+      eval $1 || rc=$?
+      # Increment the counter on failure
+      if [[ $rc != 0 ]]; then
+        failed=$((failed + 1))
+        # Add spacing to separate the error output from the next check
+        echo -e "\n"
+      fi
+    }
 
-update-dependencies: virtualenv
-    just upgrade prod
-    just upgrade dev
+    check "just check-lockfile"
+    check "just format"
+    check "just lint"
+    test -d docker/ && check "just docker/lint"
 
+    if [[ $failed > 0 ]]; then
+      echo -en "\e[1;31m"
+      echo "   $failed checks failed"
+      echo -e "\e[0m"
+      exit 1
+    fi
 
-# *args is variadic, 0 or more. This allows us to do `just test -k match`, for example.
-# Run the tests
-test *args: devenv
-    $BIN/pytest {{ args }}
+# validate uv.lock
+check-lockfile:
+    uv lock --check
 
-
-coverage: devenv
-    $BIN/coverage run --module pytest
-    $BIN/coverage report || $BIN/coverage html
-
-
-format *args=".": devenv
-    $BIN/ruff format --check {{ args }}
-
-
-lint *args=".": devenv
-    $BIN/ruff check {{ args }}
-
-
-# run the various dev checks but does not change any files
-check: format lint
-
-
-# fix formatting and import sort ordering
-fix: devenv
-    $BIN/ruff check --fix .
-    $BIN/ruff format .
-
+# Fix formatting, import sort ordering, and justfile
+fix:
+    -uv run ruff check --fix .
+    -uv run ruff format .
+    -just --fmt --unstable
 
 # Run the grafana stack
 grafana:
     docker compose up grafana
-
 
 # Run a metrics task (defaults to running all tasks)
 metrics *args: devenv
@@ -154,10 +139,9 @@ metrics *args: devenv
     set -euo pipefail
 
     MODULE="metrics.tasks{{ if args == "" { "" } else { "." + args } }}"
-    $BIN/python -m $MODULE
+    uv run python -m $MODULE
 
-
-docker-build env="dev": _env
+docker-build env="dev": _dotenv
     #!/usr/bin/env bash
     set -euo pipefail
 
@@ -172,7 +156,7 @@ docker-build env="dev": _env
 
 
 # run command in dev|prod container
-docker-run env="dev" *args="": _env
+docker-run env="dev" *args="": _dotenv
     {{ just_executable() }} docker-build {{ env }}
     docker compose run --rm metrics-{{ env }} {{ args }}
 
