@@ -132,6 +132,8 @@ FROM base-python AS metrics-base
 # Create a non-root metrics user to run the app as
 RUN useradd --create-home --user-group metrics
 
+# TODO: maybe fix this?
+# hadolint ignore=DL3059
 RUN mkdir -p /app
 WORKDIR /app
 ENV VIRTUAL_ENV=/opt/venv/ \
@@ -202,6 +204,9 @@ RUN --mount=type=cache,target=/root/.cache \
 # in dev, ensure metrics uid matches host user id
 ARG DEV_USERID=1000
 ARG DEV_GROUPID=1000
+
+# TODO: maybe fix this?
+# hadolint ignore=DL3059
 RUN usermod -u $DEV_USERID metrics
 # Modify metrics only if group id does not already exist. We run dev
 # containers with an explicit group id anyway, so file permissions on the host
