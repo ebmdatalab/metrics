@@ -127,7 +127,7 @@ RUN --mount=type=cache,target=/root/.cache \
 # 2) Ensures we *have* to mount the volume for dev image, as there's no embedded
 #    version of the code. Otherwise, we could end up accidentally using the
 #    version of the code included when the prod image was built.
-FROM base-python as metrics-base
+FROM base-python AS metrics-base
 
 # Create a non-root metrics user to run the app as
 RUN useradd --create-home --user-group metrics
@@ -155,7 +155,7 @@ USER metrics
 # Production image
 #
 # Copy code in, add proper metadata
-FROM metrics-base as metrics-prod
+FROM metrics-base AS metrics-prod
 
 # Adjust this metadata to fit project. Note that the base-docker image does set
 # some basic metadata.
@@ -182,7 +182,7 @@ LABEL org.opencontainers.image.revision=$GITREF
 # installing dev dependencies and matching local UID/GID. It is expected that
 # the current code will be mounted in /app when this is run
 #
-FROM metrics-base as metrics-dev
+FROM metrics-base AS metrics-dev
 
 # switch back to root to run the install of dev requirements.txt
 # hadolint ignore=DL3066
