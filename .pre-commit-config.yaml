@@ -4,15 +4,9 @@ default_language_version:
 repos:
   - repo: local
     hooks:
-    - id: format
-      name: format
-      entry: just format
-      language: system
-      types: [python]
-      require_serial: true
-    - id: lint
-      name: lint
-      entry: just lint
+    - id: check
+      name: check
+      entry: just check
       language: system
       types: [python]
       require_serial: true
