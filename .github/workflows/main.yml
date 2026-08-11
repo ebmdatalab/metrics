@@ -100,7 +100,7 @@ jobs:
       - name: Run the smoke test on the prod image
         run: |
             docker compose up -d timescaledb
-            SKIP_BUILD=1 just docker/test
+            SKIP_BUILD=1 just docker-run dev
 
   docker-build-prod:
     runs-on: ubuntu-latest
