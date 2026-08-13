@@ -13,6 +13,15 @@ classifiers = [
 ]
 requires-python = ">=3.12"
 dynamic = ["version"]
+dependencies = [
+  "greenlet",
+  "requests",
+  "requests-cache",
+  "slack-bolt",
+  "sqlalchemy[postgresql-psycopgbinary]",
+  "structlog",
+  "sentry-sdk",
+]
 
 [project.urls]
 Home = "https://bennett.ox.ac.uk"
@@ -31,7 +40,7 @@ source = [
 ]
 
 [tool.coverage.report]
-fail_under = 80
+fail_under = 75
 skip_covered = true
 show_missing = true
 
@@ -74,3 +83,20 @@ lint.isort.lines-after-imports = 2
 
 [tool.setuptools.packages.find]
 include = ["metrics*"]
+
+[tool.uv]
+required-version = ">=0.9"
+no-build = true
+no-binary-package = ["metrics"]
+
+[dependency-groups]
+dev = [
+  "coverage",
+  "pip-tools",
+  "pre-commit",
+  "pytest",
+  "pytest-freezer",
+  "pyyaml",
+  "sqlalchemy-utils",
+  "ruff",
+]

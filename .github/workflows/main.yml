@@ -25,6 +25,7 @@ jobs:
         with:
           python-version: "3.12"
           install-just: true
+          install-uv: true
       - name: Check formatting, linting and import sorting
         run: just check
 
@@ -56,6 +57,7 @@ jobs:
         with:
           python-version: "3.12"
           install-just: true
+          install-uv: true
 
       - name: Run tests
         env:
@@ -98,7 +100,7 @@ jobs:
       - name: Run the smoke test on the prod image
         run: |
             docker compose up -d timescaledb
-            SKIP_BUILD=1 just docker/test
+            SKIP_BUILD=1 just docker-run dev
 
   docker-build-prod:
     runs-on: ubuntu-latest

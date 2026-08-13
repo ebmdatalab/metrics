@@ -4,8 +4,8 @@ default_language_version:
 repos:
   - repo: local
     hooks:
-    - id: ruff
-      name: ruff
+    - id: check
+      name: check
       entry: just check
       language: system
       types: [python]

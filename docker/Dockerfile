@@ -1,30 +1,85 @@
-# syntax=docker/dockerfile:1.2
+# syntax=docker/dockerfile:1
+# check=error=true
+#################################################
+#
+# Images are structured as shown in this diagram:
+# ┌──────────────────┐            ┌──────────────────┐
+# │   base-python    ├────────────►     builder      │
+# └────────┬─────────┘            └──────────┬───────┘
+#          │                                 │
+#          │                                 │COPY FROM
+#          │     ┌──────────────────┐        │
+#          └─────► new-project-base ◄────────┘
+#                └────────┬─┬───────┘
+#                         │ │
+#                         │ │
+# ┌──────────────────┐    │ │     ┌──────────────────┐
+# │ new-project-prod ◄────┘ └─────► new-project-dev  │
+# └──────────────────┘            └──────────────────┘
+# The goal of this stages structure is to a) minimise the size of the *prod* image by
+# not including build dependencies and b) to make rebuilding the *dev* fast in local
+# development, by avoiding invalidating the layer cache every time we change python
+# code.
+#
 #################################################
 #
 # Create base image with python installed.
-#
+# All Dockerfiles should start from the base-docker image
+# These build args have defaults, but are usually set from docker/.env. They
+# are used in FROM lines, so need to be declared globally and have defaults
+# set.
+ARG UBUNTU_VERSION=22.04
+ARG UV_VERSION=0.9
+
 # DL3007 ignored because base-docker we specifically always want to build on
 # the latest base image, by design.
-#
 # hadolint ignore=DL3007
-FROM ghcr.io/opensafely-core/base-docker:22.04 as base-python
+FROM ghcr.io/opensafely-core/base-action:${UBUNTU_VERSION} AS base-python
 
 # we are going to use an apt cache on the host, so disable the default debian
 # docker clean up that deletes that cache on every apt install
 RUN rm -f /etc/apt/apt.conf.d/docker-clean
 
-# ensure fully working base python3.12 installation using deadsnakes ppa
+# use deadsnakes ppa to install a fully working base python installation
 # see: https://gist.github.com/tiran/2dec9e03c6f901814f6d1e8dad09528e
 # use space efficient utility from base image
-RUN --mount=type=cache,target=/var/cache/apt \
-    echo "deb https://ppa.launchpadcontent.net/deadsnakes/ppa/ubuntu jammy main" > /etc/apt/sources.list.d/deadsnakes-ppa.list &&\
-    /usr/lib/apt/apt-helper download-file 'https://keyserver.ubuntu.com/pks/lookup?op=get&search=0xf23c5a6cf475977595c89f51ba6932366a755776' /etc/apt/trusted.gpg.d/deadsnakes.asc
+RUN --mount=type=cache,target=/var/cache/apt <<'EOF'
+UBUNTU_CODENAME=$(. /etc/os-release && echo "$VERSION_CODENAME")
+KEY_PATH=/usr/share/keyrings/deadsnakes.asc
+KEY_URL='https://keyserver.ubuntu.com/pks/lookup?op=get&search=0xf23c5a6cf475977595c89f51ba6932366a755776'
+/usr/lib/apt/apt-helper download-file "$KEY_URL" "$KEY_PATH"
+echo "deb [signed-by=$KEY_PATH] https://ppa.launchpadcontent.net/deadsnakes/ppa/ubuntu ${UBUNTU_CODENAME} main" > /etc/apt/sources.list.d/deadsnakes-ppa.list
+EOF
 
 # install any additional system dependencies
-COPY docker/dependencies.txt /tmp/dependencies.txt
+# NOTE: ensure .python-version is not excluded in .dockerignore
 RUN --mount=type=cache,target=/var/cache/apt \
-    /root/docker-apt-install.sh /tmp/dependencies.txt
+    --mount=type=bind,source=docker/dependencies.txt,target=/dependencies.txt \
+    --mount=type=bind,source=.python-version,target=/.python-version \
+    /root/docker-apt-install.sh /dependencies.txt "python$(cat /.python-version)"
 
+# uv env var documentation: https://docs.astral.sh/uv/reference/environment/
+# copy files rather than symlink since the cache and the target are on different filesystems
+ENV UV_LINK_MODE=copy
+# compile at installation time, not import time
+ENV UV_COMPILE_BYTECODE=1
+# we are providing python via deadsnakes ppa
+# (as we require dynamic linking of openssl for security reasons)
+ENV UV_PYTHON_DOWNLOADS=never
+# set the directory for the venv
+ENV UV_PROJECT_ENVIRONMENT="/opt/venv"
+
+##################################################
+#
+# Reusable uv CLI layer
+#
+# This allows us to specify the version in one place, and also works around
+# a limitation that you cannot use build args directly in `COPY --from`.
+#
+# See: https://github.com/moby/buildkit/issues/2412 for more info
+#
+#
+FROM ghcr.io/astral-sh/uv:${UV_VERSION} AS uv-cli
 
 ##################################################
 #
@@ -36,28 +91,26 @@ RUN --mount=type=cache,target=/var/cache/apt \
 #
 # We use a separate, disposable build image to avoid carrying the build
 # dependencies into the production image.
-FROM base-python as builder
+FROM base-python AS builder
 
 # Install any system build dependencies
-COPY docker/build-dependencies.txt /tmp/build-dependencies.txt
 RUN --mount=type=cache,target=/var/cache/apt \
-    /root/docker-apt-install.sh /tmp/build-dependencies.txt
+    --mount=type=bind,source=docker/dependencies-build.txt,target=/dependencies-build.txt \
+    /root/docker-apt-install.sh /dependencies-build.txt
+
+# Pull in the binaries from our pinned uv-cli stage
+COPY --from=uv-cli /uv /uvx /usr/local/bin/
 
 # Install everything in venv for isolation from system python libraries
-RUN python3.12 -m venv /opt/venv
-ENV VIRTUAL_ENV=/opt/venv/ PATH="/opt/venv/bin:$PATH"
+RUN uv venv
 
 # The cache mount means a) /root/.cache is not in the image, and b) it's preserved
 # between docker builds locally, for faster dev rebuild.
-COPY requirements.prod.txt /tmp/requirements.prod.txt
-
-# DL3042: using cache mount instead
-# DL3013: we always want latest pip/setuptools/wheel, at least for now
-# hadolint ignore=DL3042,DL3013
+# Setting --directory /root lets `uv` detect the pyproject.toml, uv.lock etc.
 RUN --mount=type=cache,target=/root/.cache \
-    /opt/venv/bin/python -m pip install -U pip setuptools wheel && \
-    /opt/venv/bin/python -m pip install --no-deps --require-hashes --requirement /tmp/requirements.prod.txt
-
+    --mount=type=bind,source=pyproject.toml,target=/root/pyproject.toml \
+    --mount=type=bind,source=uv.lock,target=/root/uv.lock \
+    uv sync --frozen --no-dev --no-install-project --directory /root
 
 ##################################################
 #
@@ -74,39 +127,37 @@ RUN --mount=type=cache,target=/root/.cache \
 # 2) Ensures we *have* to mount the volume for dev image, as there's no embedded
 #    version of the code. Otherwise, we could end up accidentally using the
 #    version of the code included when the prod image was built.
-FROM base-python as metrics-base
+FROM base-python AS metrics-base
 
 # Create a non-root metrics user to run the app as
 RUN useradd --create-home --user-group metrics
+
+# TODO: maybe fix this?
+# hadolint ignore=DL3059
+RUN mkdir -p /app
+WORKDIR /app
+ENV VIRTUAL_ENV=/opt/venv/ \
+    PATH="/opt/venv/bin:$PATH" \
+    PYTHONPATH=/app
 
 # copy venv over from builder image. These will have root:root ownership, but
 # are readable by all.
 COPY --from=builder /opt/venv /opt/venv
 
-# Ensure we're using the venv by default
-ENV VIRTUAL_ENV=/opt/venv/ PATH="/opt/venv/bin:$PATH"
-
-RUN mkdir /app
-WORKDIR /app
-
 # We set command rather than entrypoint, to make it easier to run different
 # things from the cli
 CMD ["/opt/venv/bin/python", "-m", "metrics.tasks.smoke_test"]
 
-# This may not be necessary, but it probably doesn't hurt
-ENV PYTHONPATH=/app
-
 # switch to running as the user
 # hadolint ignore=DL3066
 USER metrics
-
 
 ##################################################
 #
 # Production image
 #
 # Copy code in, add proper metadata
-FROM metrics-base as metrics-prod
+FROM metrics-base AS metrics-prod
 
 # Adjust this metadata to fit project. Note that the base-docker image does set
 # some basic metadata.
@@ -125,8 +176,6 @@ LABEL org.opencontainers.image.created=$BUILD_DATE
 ARG GITREF=unknown
 LABEL org.opencontainers.image.revision=$GITREF
 
-
-
 ##################################################
 #
 # Dev image
@@ -135,29 +184,35 @@ LABEL org.opencontainers.image.revision=$GITREF
 # installing dev dependencies and matching local UID/GID. It is expected that
 # the current code will be mounted in /app when this is run
 #
-FROM metrics-base as metrics-dev
+FROM metrics-base AS metrics-dev
 
 # switch back to root to run the install of dev requirements.txt
 # hadolint ignore=DL3066
 USER root
 
+# Pull in the binaries from our pinned uv-cli stage
+COPY --from=uv-cli /uv /uvx /bin/
+
 # install development requirements
-COPY requirements.dev.txt /tmp/requirements.dev.txt
-# using cache mount instead
-# hadolint ignore=DL3042
+# we want to additionally sync dev dependencies into the venv;
+# prod dependencies are already installed and we don't want to remove them.
 RUN --mount=type=cache,target=/root/.cache \
-    python -m pip install --requirement /tmp/requirements.dev.txt
+    --mount=type=bind,source=pyproject.toml,target=/root/pyproject.toml \
+    --mount=type=bind,source=uv.lock,target=/root/uv.lock \
+    uv sync --frozen --no-install-project --directory /root
 
 # in dev, ensure metrics uid matches host user id
 ARG DEV_USERID=1000
 ARG DEV_GROUPID=1000
+
+# TODO: maybe fix this?
+# hadolint ignore=DL3059
 RUN usermod -u $DEV_USERID metrics
 # Modify metrics only if group id does not already exist. We run dev
 # containers with an explicit group id anyway, so file permissions on the host
 # will be correct, and we do not actually rely on named metrics group access to
 # anything.
 RUN grep -q ":$DEV_GROUPID:" /etc/group || groupmod -g $DEV_GROUPID metrics
-
 
 # switch back to metrics
 # hadolint ignore=DL3066
