@@ -11,7 +11,9 @@ log = structlog.get_logger()
 
 
 def main():
-    yesterday = datetime.date.now(tz=datetime.UTC).date() - datetime.timedelta(days=1)
+    yesterday = datetime.datetime.now(tz=datetime.UTC).date() - datetime.timedelta(
+        days=1
+    )
 
     log.info("Fetching vulnerabilities")
     vulns = vulnerabilities(yesterday)

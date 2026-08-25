@@ -1,7 +1,7 @@
+import datetime
 import itertools
 import os
 import sys
-from datetime import datetime, time
 
 import structlog
 
@@ -23,11 +23,13 @@ def main():
     rows = []
     for date, daily_messages in itertools.groupby(
         messages,
-        lambda m: datetime.fromtimestamp(float(m["ts"]), tz=datetime.UTC).date(),
+        lambda m: datetime.datetime.fromtimestamp(
+            float(m["ts"]), tz=datetime.UTC
+        ).date(),
     ):
         rows.append(
             {
-                "time": datetime.combine(date, time()),
+                "time": datetime.datetime.combine(date, datetime.time()),
                 "value": len(list(daily_messages)),
                 "name": "requests",
             }
