@@ -1,7 +1,7 @@
-  greenlet
-  requests
-  requests-cache
-  slack-bolt
-  sqlalchemy[postgresql_psycopgbinary]
-  structlog
-  sentry-sdk
+greenlet
+requests
+requests-cache
+slack-bolt
+sqlalchemy[postgresql_psycopgbinary]<2.1
+structlog
+sentry-sdk
