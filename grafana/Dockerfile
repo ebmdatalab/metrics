@@ -1,4 +1,4 @@
-FROM grafana/grafana-enterprise:latest@sha256:a297072de9f2f02e52166cf853281d1478e94d738e4e1905938c4257f59d88b3
+FROM grafana/grafana-enterprise:latest@sha256:3865fe366013be675e8e80e4b8d7f5828e40b3f132f53cee32d8890d9a0dd27b
 
 # hadolint ignore=DL3066
 USER grafana
