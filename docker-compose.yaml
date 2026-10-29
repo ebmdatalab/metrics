@@ -1,6 +1,6 @@
 services:
   db:
-    image: "postgres:16"
+    image: "postgres:14.24-bookworm@sha256:a389ed49344afc8f4444efd4eb512965df07aaa6ed84b239b54a23246e9fe347"
     environment:
       POSTGRES_USER: user
       POSTGRES_PASSWORD: pass
