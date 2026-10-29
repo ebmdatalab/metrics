@@ -1,4 +1,4 @@
-FROM postgres:14.24-bookworm@sha256:a389ed49344afc8f4444efd4eb512965df07aaa6ed84b239b54a23246e9fe347
+FROM postgres:17.11-bookworm@sha256:665dc7b37ac52a17e298511414c21d23ffa4e6a6ef6225b3e5d59c7afb35e994
 
 # Install dependencies for the TimescaleDB APT repository
 RUN apt-get update \
@@ -34,13 +34,12 @@ RUN echo \
     "deb [signed-by=/usr/share/keyrings/timescaledb.gpg] https://packagecloud.io/timescale/timescaledb/debian/ bookworm main" \
     > /etc/apt/sources.list.d/timescaledb.list
 
-# Install TimescaleDB 2.19.3 for PostgreSQL 14
+# Install TimescaleDB 2.30.2 for PostgreSQL 14
 RUN set -eu; \
     apt-get update \
     && apt-get install -y --no-install-recommends \
-        'timescaledb-2-loader-postgresql-14=2.19.3~debian12' \
-        'timescaledb-2-2.12.1-postgresql-14=2.12.1~debian12' \
-        'timescaledb-2-2.19.3-postgresql-14=2.19.3~debian12' \
+        'timescaledb-2-loader-postgresql-17=2.30.2~debian12-1711' \
+        'timescaledb-2-2.30.2-postgresql-17=2.30.2~debian12-1711' \
     && rm -rf /var/lib/apt/lists/*
 
 # Preload TimescaleDB when PostgreSQL starts
