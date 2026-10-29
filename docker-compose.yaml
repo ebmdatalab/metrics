@@ -8,7 +8,7 @@ services:
     ports:
       - "6543:5432"
     volumes:
-      - postgres:/var/lib/postgresql/data/
+      - postgres_pg17:/var/lib/postgresql/data/
 
   grafana:
     # use Dockerfile so that version matches production
@@ -39,7 +39,7 @@ services:
     ports:
       - 5433:5432
     volumes:
-      - timescaledb:/var/lib/postgresql/data
+      - timescaledb_pg17:/var/lib/postgresql/data
 
   metrics-prod:
     # image name, both locally and public
@@ -93,6 +93,10 @@ services:
       - TIMESCALEDB_URL=${TIMESCALEDB_URL:-}
 
 volumes:
-  postgres:
+  postgres_pg17:
+    external: true
+    name: metrics_postgres_pg17
   grafana:
-  timescaledb:
+  timescaledb_pg17:
+    external: true
+    name: metrics_timescaledb_pg17
