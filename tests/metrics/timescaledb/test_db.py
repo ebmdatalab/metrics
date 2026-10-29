@@ -18,6 +18,10 @@ def module_scoped_engine():
     create_database(url)
 
     engine = create_engine(url)
+
+    with engine.begin() as connection:
+        connection.execute(text("CREATE EXTENSION IF NOT EXISTS timescaledb"))
+
     yield engine
 
     # ensure pooled connections are closed before dropping the DB
