@@ -39,7 +39,7 @@ services:
     ports:
       - 5433:5432
     volumes:
-      - timescaledb:/home/postgres/pgdata/data
+      - timescaledb:/var/lib/postgresql/data
 
   metrics-prod:
     # image name, both locally and public
