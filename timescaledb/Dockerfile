@@ -41,7 +41,6 @@ RUN set -eu; \
         'timescaledb-2-loader-postgresql-14=2.19.3~debian12' \
         'timescaledb-2-2.12.1-postgresql-14=2.12.1~debian12' \
         'timescaledb-2-2.19.3-postgresql-14=2.19.3~debian12' \
-        'timescaledb-2-2.19.3-postgresql-17=2.19.3~debian12' \
     && rm -rf /var/lib/apt/lists/*
 
 # Preload TimescaleDB when PostgreSQL starts
