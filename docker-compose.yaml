@@ -36,10 +36,16 @@ services:
       POSTGRES_DB: metrics
       POSTGRES_PASSWORD: pass
       POSTGRES_USER: user
+      TIMESCALEDB_TELEMETRY: off
     ports:
       - 5433:5432
     volumes:
       - timescaledb:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d metrics"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   metrics-prod:
     # image name, both locally and public
