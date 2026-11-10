@@ -1,3 +1,5 @@
+CREATE DATABASE grafana;
+
 CREATE EXTENSION IF NOT EXISTS timescaledb;
 -- set up the grafanareader role with select permissions by default
 CREATE ROLE grafanareader;
