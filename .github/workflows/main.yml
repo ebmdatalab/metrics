@@ -31,23 +31,6 @@ jobs:
   test:
     runs-on: ubuntu-latest
 
-    services:
-      timescaledb:
-        # mirror what's in timescaledb/Dockerfile
-        image: timescale/timescaledb:pg14-latest@sha256:c453fa2d290d578a5983b5823e9ffbf16f478735d8c121620436c4a9c6e55df5
-        env:
-          POSTGRES_USER: user
-          POSTGRES_PASSWORD: password
-          POSTGRES_DB: metrics
-          TIMESCALEDB_TELEMETRY: off
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -57,6 +40,9 @@ jobs:
           python-version: "3.12"
           install-just: true
 
+      - name: Start TimescaleDB
+        run: docker compose up -d --build --wait timescaledb
+
       - name: Run tests
         env:
           GITHUB_EBMDATALAB_TOKEN:
@@ -64,7 +50,7 @@ jobs:
           SLACK_SIGNING_SECRET:
           SLACK_TECH_SUPPORT_CHANNEL_ID:
           SLACK_TOKEN:
-          TIMESCALEDB_URL: postgresql://user:password@localhost/metrics
+          TIMESCALEDB_URL: postgresql://user:pass@localhost:5433/metrics
         run: |
           just test
 
