@@ -43,7 +43,7 @@ RUN set -eu; \
     && rm -rf /var/lib/apt/lists/*
 
 # Run initialization SQL when creating a new database
-COPY timescaledb/init.sql /docker-entrypoint-initdb.d/
+COPY db/init.sql /docker-entrypoint-initdb.d/
 
 USER postgres
 
