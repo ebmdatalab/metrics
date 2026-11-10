@@ -15,7 +15,9 @@ updates:
       - "github_actions"
 
   - package-ecosystem: "docker"
-    directory: "grafana/"
+    directories:
+    - "grafana/"
+    - "db/"
     schedule:
       interval: "weekly"
       day: "monday"
@@ -26,6 +28,14 @@ updates:
     labels:
       - "dependencies"
       - "docker"
+    ignore:
+      # Pin the PostgreSQL version.
+      # We assume that our managed database will be updated
+      # to the latest minor version automatically.
+      # This allows us to keep reasonably in sync with that.
+      - dependency-name: "postgres"
+        update-types:
+          - "version-update:semver-major"
 
   - package-ecosystem: "pre-commit"
     directory: "/"
