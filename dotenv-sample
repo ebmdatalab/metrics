@@ -1,6 +1,9 @@
 # The DSN for access the timescaledb database
 TIMESCALEDB_URL=postgresql://user:pass@localhost:5433/metrics
 
+# Allow developers to configure a database port to not collide with other services
+DB_PORT=
+
 # API tokens for pulling data from Github
 GITHUB_EBMDATALAB_TOKEN=
 GITHUB_OS_CORE_TOKEN=
