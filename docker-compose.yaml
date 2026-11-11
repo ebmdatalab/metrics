@@ -76,7 +76,7 @@ services:
     container_name: metrics-dev
     # running as a specific uid/gid allows files written to mounted volumes by
     # the docker container's default user to match the host user's uid/gid, for
-    # convienience.
+    # convenience.
     user: ${DEV_USERID:-1000}:${DEV_GROUPID:-1000}
     depends_on:
       db:
