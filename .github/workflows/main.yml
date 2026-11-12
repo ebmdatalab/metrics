@@ -40,8 +40,8 @@ jobs:
           python-version: "3.12"
           install-just: true
 
-      - name: Start TimescaleDB
-        run: docker compose up -d --build --wait timescaledb
+      - name: Start database
+        run: docker compose up -d --build --wait db
 
       - name: Run tests
         env:
@@ -83,7 +83,7 @@ jobs:
 
       - name: Run the smoke test on the prod image
         run: |
-            docker compose up -d timescaledb
+            docker compose up -d db
             SKIP_BUILD=1 just docker/test
 
   docker-build-prod:
