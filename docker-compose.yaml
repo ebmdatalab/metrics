@@ -1,6 +1,6 @@
 services:
   db:
-    image: "postgres:16"
+    image: "postgres:17.11-bookworm@sha256:665dc7b37ac52a17e298511414c21d24ffa4e6a6ef6225b3e5d59c7afb35e994"
     environment:
       POSTGRES_USER: user
       POSTGRES_PASSWORD: pass
@@ -36,10 +36,16 @@ services:
       POSTGRES_DB: metrics
       POSTGRES_PASSWORD: pass
       POSTGRES_USER: user
+      TIMESCALEDB_TELEMETRY: off
     ports:
       - 5433:5432
     volumes:
-      - timescaledb:/home/postgres/pgdata/data
+      - timescaledb:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d metrics"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   metrics-prod:
     # image name, both locally and public
