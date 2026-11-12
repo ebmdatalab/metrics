@@ -42,8 +42,10 @@ RUN set -eu; \
         'timescaledb-2-2.30.2-postgresql-17=2.30.2~debian12-1711' \
     && rm -rf /var/lib/apt/lists/*
 
-# Preload TimescaleDB when PostgreSQL starts
-CMD ["postgres", "-c", "shared_preload_libraries=timescaledb"]
-
 # Run initialization SQL when creating a new database
 COPY timescaledb/init.sql /docker-entrypoint-initdb.d/
+
+USER postgres
+
+# Preload TimescaleDB when PostgreSQL starts
+CMD ["postgres", "-c", "shared_preload_libraries=timescaledb"]
