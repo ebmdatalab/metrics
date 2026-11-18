@@ -83,10 +83,10 @@ jobs:
         run: |
             just docker-build dev
 
-      - name: Run the smoke test on the prod image
+      - name: Run the smoke test on the dev image
         run: |
             docker compose up -d db
-            SKIP_BUILD=1 just docker/test
+            SKIP_BUILD=1 just docker-run dev
 
   docker-build-prod:
     runs-on: ubuntu-latest
