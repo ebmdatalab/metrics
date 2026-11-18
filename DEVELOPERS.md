@@ -45,12 +45,31 @@ This will spin up:
 Grafana is available at [http://localhost:3000](http://localhost:3000).
 The default credentials are `admin`/`admin`; Grafana asks you to change these when you first log in, but you can skip the change.
 
-Add a datasource in [Grafana's settings](http://localhost:3000/connections/datasources).
-Copy the details from [production](https://dashboards.opensafely.org/connections/datasources),
-with the exception of the connection details which copy by copied from [docker-compose.yaml](https://github.com/ebmdatalab/metrics/blob/a543e8817898278d663c08243fa26359cdb5230e/docker-compose.yaml#L32-L42)
-(the server address is the service name)
+### Adding a datasource
 
-To add a dashboard:
+1. Go to Connections in the Grafana menu and under that choose "data sources"
+   or navigate directly to <http://localhost:3000/connections/datasources>.
+1. Click the "Add new data source" button.
+1. Choose PostgreSQL.
+1. In the form that appears:
+   1. Enter the host URL:
+      the server address is the service name;
+      refer to `docker-compose.yaml` if needed.
+   1. Use the username and password from `init.sql` for `grafanareader`.
+      (*This mimics how production works,
+      with a read-only user for reading metrics data.*)
+   1. Enter the database name as `metrics`.
+   1. Set TLS/SSL mode to `disable`
+      since we do not have this configured for local development.
+   1. The PostgreSQL version will probably be automatically set for you.
+      If not,
+      set it according to the version in the locally running database.
+   1. Enable the TimescaleDB toggle option.
+1. Click "Save and test" which should work almost immediately.
+   If not,
+   check over the settings, and that the database is running.
+
+### Adding a dashboard
 1. Go to the [production dashboard](https://dashboards.opensafely.org/dashboards) that you want to copy.
 2. Go to the "share" icon on the top row and to the "Export" tab.
 3. Select "Export for sharing externally" and "Save to file".
