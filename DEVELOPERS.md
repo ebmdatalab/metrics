@@ -2,6 +2,10 @@
 
 ## System requirements
 
+* `just` for running development recipes
+* `uv` for managing Python
+* `docker` for running the database and Grafana
+
 ### just
 
 ```sh
