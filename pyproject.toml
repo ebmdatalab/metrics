@@ -92,7 +92,6 @@ no-binary-package = ["metrics"]
 [dependency-groups]
 dev = [
   "coverage",
-  "pip-tools",
   "pre-commit",
   "pytest",
   "pytest-freezer",
