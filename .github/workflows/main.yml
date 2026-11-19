@@ -25,28 +25,12 @@ jobs:
         with:
           python-version: "3.12"
           install-just: true
+          install-uv: true
       - name: Check formatting, linting and import sorting
         run: just check
 
   test:
     runs-on: ubuntu-latest
-
-    services:
-      timescaledb:
-        # mirror what's in timescaledb/Dockerfile
-        image: timescale/timescaledb:pg14-latest@sha256:c453fa2d290d578a5983b5823e9ffbf16f478735d8c121620436c4a9c6e55df5
-        env:
-          POSTGRES_USER: user
-          POSTGRES_PASSWORD: password
-          POSTGRES_DB: metrics
-          TIMESCALEDB_TELEMETRY: off
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -56,6 +40,10 @@ jobs:
         with:
           python-version: "3.12"
           install-just: true
+          install-uv: true
+
+      - name: Start database
+        run: docker compose up -d --build --wait db
 
       - name: Run tests
         env:
@@ -64,7 +52,7 @@ jobs:
           SLACK_SIGNING_SECRET:
           SLACK_TECH_SUPPORT_CHANNEL_ID:
           SLACK_TOKEN:
-          TIMESCALEDB_URL: postgresql://user:password@localhost/metrics
+          TIMESCALEDB_URL: postgresql://user:pass@localhost:5433/metrics
         run: |
           just test
 
@@ -95,10 +83,10 @@ jobs:
         run: |
             just docker-build dev
 
-      - name: Run the smoke test on the prod image
+      - name: Run the smoke test on the dev image
         run: |
-            docker compose up -d timescaledb
-            SKIP_BUILD=1 just docker/test
+            docker compose up -d db
+            SKIP_BUILD=1 just docker-run dev
 
   docker-build-prod:
     runs-on: ubuntu-latest

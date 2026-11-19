@@ -1,14 +1,21 @@
 services:
   db:
-    image: "postgres:16"
+    build:
+      dockerfile: db/Dockerfile
     environment:
-      POSTGRES_USER: user
+      POSTGRES_DB: metrics
       POSTGRES_PASSWORD: pass
-      POSTGRES_DB: grafana
+      POSTGRES_USER: user
+      TIMESCALEDB_TELEMETRY: off
     ports:
-      - "6543:5432"
+      - "5433:5432"
     volumes:
-      - postgres:/var/lib/postgresql/data/
+      - db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d metrics"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   grafana:
     # use Dockerfile so that version matches production
@@ -22,24 +29,12 @@ services:
       GF_DATABASE_PASSWORD: pass
       GF_DATABASE_SSL_MODE: disable
     depends_on:
-      - db
-      - timescaledb
+      db:
+        condition: service_healthy
     ports:
-      - 3000:3000
+      - "3000:3000"
     volumes:
       - grafana:/var/lib/grafana
-
-  timescaledb:
-    build:
-      dockerfile: timescaledb/Dockerfile
-    environment:
-      POSTGRES_DB: metrics
-      POSTGRES_PASSWORD: pass
-      POSTGRES_USER: user
-    ports:
-      - 5433:5432
-    volumes:
-      - timescaledb:/home/postgres/pgdata/data
 
   metrics-prod:
     # image name, both locally and public
@@ -60,6 +55,9 @@ services:
         - GITREF
     # use dockers builitin PID daemon
     init: true
+    depends_on:
+      db:
+        condition: service_healthy
     environment:
       - SLACK_SIGNING_SECRET=dummy
       - SLACK_TECH_SUPPORT_CHANNEL_ID=dummy
@@ -81,8 +79,11 @@ services:
     container_name: metrics-dev
     # running as a specific uid/gid allows files written to mounted volumes by
     # the docker container's default user to match the host user's uid/gid, for
-    # convienience.
+    # convenience.
     user: ${DEV_USERID:-1000}:${DEV_GROUPID:-1000}
+    depends_on:
+      db:
+        condition: service_healthy
     volumes:
       # mount our current code
       - .:/app
@@ -93,6 +94,5 @@ services:
       - TIMESCALEDB_URL=${TIMESCALEDB_URL:-}
 
 volumes:
-  postgres:
   grafana:
-  timescaledb:
+  db:

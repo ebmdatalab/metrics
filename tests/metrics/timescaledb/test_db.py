@@ -18,6 +18,10 @@ def module_scoped_engine():
     create_database(url)
 
     engine = create_engine(url)
+
+    with engine.begin() as connection:
+        connection.execute(text("CREATE EXTENSION IF NOT EXISTS timescaledb"))
+
     yield engine
 
     # ensure pooled connections are closed before dropping the DB
@@ -39,24 +43,15 @@ def get_rows(engine, table):
 
 
 def assert_is_hypertable(connection, engine, table):
-    # check there are timescaledb child tables
-    # https://stackoverflow.com/questions/1461722/how-to-find-child-tables-that-inherit-from-another-table-in-psql
-
     sql = """
-    SELECT
-      count(*)
-    FROM
-      information_schema.triggers
-    WHERE
-      event_object_table = :table_name
-      AND
-      trigger_name = 'ts_insert_blocker';
+    SELECT COUNT(*)
+    FROM timescaledb_information.hypertables
+    WHERE hypertable_name = :table_name
     """
 
-    result = connection.execute(text(sql), {"table_name": table.name}).fetchone()
+    result = connection.execute(text(sql), {"table_name": table.name}).scalar()
 
-    # We should have one trigger called ts_insert_blocker for a hypertable.
-    assert result[0] == 1, result
+    assert result == 1, f"Table {table.name} is not a hypertable"
 
 
 @pytest.fixture
