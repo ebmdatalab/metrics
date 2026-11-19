@@ -55,6 +55,9 @@ services:
         - GITREF
     # use dockers builitin PID daemon
     init: true
+    depends_on:
+      db:
+        condition: service_healthy
     environment:
       - SLACK_SIGNING_SECRET=dummy
       - SLACK_TECH_SUPPORT_CHANNEL_ID=dummy
