@@ -14,11 +14,10 @@ classifiers = [
 requires-python = ">=3.12"
 dynamic = ["version"]
 dependencies = [
-  "greenlet",
   "requests",
   "requests-cache",
   "slack-bolt",
-  "sqlalchemy[postgresql-psycopgbinary]",
+  "sqlalchemy[postgresql-psycopgbinary,asyncio]",
   "structlog",
   "sentry-sdk",
 ]
