@@ -6,8 +6,14 @@ from metrics.tools.dates import date_from_iso
 
 
 # Slugs (not names!) of the GitHub entities we're interested in
-_TECH_TEAMS = ["team-rap", "team-rex", "tech-shared"]
-_ORGS = ["ebmdatalab", "opensafely-core"]
+_TECH_TEAMS_BY_ORG = {
+    "ebmdatalab": ["team-rap", "team-rex", "tech-shared"],
+    "opensafely-core": ["team-rap", "team-rex"],
+}
+
+_TECH_TEAMS = {team for teams in _TECH_TEAMS_BY_ORG.values() for team in teams}
+
+_ORGS = list(_TECH_TEAMS_BY_ORG)
 # Some repos (for example the websites) frequently have PRs created by people
 # outside the tech teams. We don't want our delivery metrics to be skewed by these
 # and we don't necessarily want to hold people in other teams to the same hygiene
@@ -170,7 +176,11 @@ def _get_repos():
 
 
 def _repo_owners(org):
-    return {repo: team for team in _TECH_TEAMS for repo in query.team_repos(org, team)}
+    return {
+        repo: team
+        for team in _TECH_TEAMS_BY_ORG[org]
+        for repo in query.team_repos(org, team)
+    }
 
 
 def _tech_team_members():
@@ -179,8 +189,8 @@ def _tech_team_members():
         | _EX_DEVELOPERS
         | {
             person
-            for org in _ORGS
-            for team in _TECH_TEAMS
+            for org, teams in _TECH_TEAMS_BY_ORG.items()
+            for team in teams
             for person in query.team_members(org, team)
         }
     )

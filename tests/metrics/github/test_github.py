@@ -59,7 +59,6 @@ def test_includes_tech_owned_repos(patch):
             "opensafely-core": {
                 "team-rap": ["ehrql", "cohort-extractor"],
                 "team-rex": ["job-server"],
-                "tech-shared": [".github"],
             },
         },
     )
@@ -70,11 +69,10 @@ def test_includes_tech_owned_repos(patch):
                 repo_data("ehrql"),
                 repo_data("cohort-extractor"),
                 repo_data("job-server"),
-                repo_data(".github"),
             ],
         },
     )
-    assert len(github.tech_repos()) == 4
+    assert len(github.tech_repos()) == 3
 
 
 def test_excludes_non_tech_owned_repos(patch):
