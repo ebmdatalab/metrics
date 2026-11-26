@@ -1,5 +1,142 @@
 # Notes for developers
 
+## Architecture diagrams
+
+### Production
+
+Everything is hosted on Digital Ocean.
+
+```mermaid
+---
+config:
+  layout: elk
+  theme: base
+  themeVariables:
+    background: "#FFFFFF"
+    fontFamily: "Inter, Arial, sans-serif"
+    fontSize: 16px
+    primaryTextColor: "#172554"
+    lineColor: "#64748B"
+    edgeLabelBackground: "#FFFFFF"
+  flowchart:
+    curve: linear
+    nodeSpacing: 100
+    rankSpacing: 120
+    diagramPadding: 30
+---
+flowchart LR
+
+    subgraph BACKGROUND[" "]
+        direction LR
+
+        subgraph SERVER["Linux server"]
+            direction TB
+            subgraph DOCKER["Docker"]
+                direction TB
+                METRICS["<b>⚙ metrics</b>"]
+                GRAFANA["<br/><b>◉ Grafana</b><br/><br/>"]
+            end
+        end
+
+        subgraph STORAGE["Managed PostgreSQL"]
+            direction TB
+            METRICS_DB[("<b>metrics</b><br/><span style='font-size:12px;color:#64748B'>TimescaleDB</span>")]
+            GRAFANA_DB[("<b>grafana</b>")]
+        end
+
+        subgraph JOB["Managed PostgreSQL"]
+            JOB_DB[("<b>job-server</b>")]
+        end
+
+        METRICS -->|Write| METRICS_DB
+        METRICS_DB -->|Read| GRAFANA
+        GRAFANA <-->|Read/write| GRAFANA_DB
+        JOB_DB -->|Read-only| GRAFANA
+    end
+
+    classDef app fill:#FFFFFF,stroke:#2563EB,stroke-width:2px,color:#1E3A8A
+    classDef grafana fill:#FFF7ED,stroke:#F97316,stroke-width:2px,color:#9A3412
+    classDef database fill:#EFF6FF,stroke:#3B82F6,stroke-width:1.5px,color:#1E40AF
+    classDef external fill:#F5F3FF,stroke:#8B5CF6,stroke-width:1.5px,color:#5B21B6
+
+    class METRICS app
+    class GRAFANA grafana
+    class METRICS_DB,GRAFANA_DB database
+    class JOB_DB external
+
+    style BACKGROUND fill:#FFFFFF,stroke:#FFFFFF,stroke-width:0px
+    style SERVER fill:#F8FAFC,stroke:#94A3B8,stroke-width:1.5px
+    style DOCKER fill:#DBEAFE,stroke:#60A5FA,stroke-width:1.5px
+    style STORAGE fill:#FFFFFF,stroke:#CBD5E1,stroke-width:1.5px
+    style JOB fill:#FFFFFF,stroke:#CBD5E1,stroke-width:1.5px
+
+    linkStyle default stroke:#64748B,stroke-width:2px
+```
+
+### Local development
+
+Typically, developers run the Grafana and database servers with Docker,
+and the Python metrics application outside of Docker.
+
+No job-server database is currently configured.
+
+```mermaid
+---
+config:
+  layout: elk
+  theme: base
+  themeVariables:
+    background: "#FFFFFF"
+    fontFamily: "Inter, Arial, sans-serif"
+    fontSize: 16px
+    primaryTextColor: "#172554"
+    lineColor: "#64748B"
+    edgeLabelBackground: "#FFFFFF"
+  flowchart:
+    curve: linear
+    nodeSpacing: 100
+    rankSpacing: 120
+    diagramPadding: 30
+---
+flowchart LR
+
+    subgraph BACKGROUND[" "]
+        direction LR
+
+        METRICS["<b>⚙ metrics</b>"]
+
+        subgraph DOCKER["Docker"]
+            direction LR
+
+            GRAFANA["<br/><b>◉ Grafana</b><br/><br/>"]
+
+            subgraph POSTGRES["PostgreSQL"]
+                direction TB
+                METRICS_DB[("<b>metrics</b><br/><span style='font-size:12px;color:#64748B'>TimescaleDB</span>")]
+                GRAFANA_DB[("<b>grafana</b>")]
+            end
+        end
+
+        METRICS -->|Write| METRICS_DB
+        METRICS_DB -->|Read| GRAFANA
+        GRAFANA <-->|Read/write| GRAFANA_DB
+    end
+
+    classDef app fill:#FFFFFF,stroke:#2563EB,stroke-width:2px,color:#1E3A8A
+    classDef grafana fill:#FFF7ED,stroke:#F97316,stroke-width:2px,color:#9A3412
+    classDef database fill:#EFF6FF,stroke:#3B82F6,stroke-width:1.5px,color:#1E40AF
+
+    class METRICS app
+    class GRAFANA grafana
+    class METRICS_DB,GRAFANA_DB database
+
+    style BACKGROUND fill:#FFFFFF,stroke:#FFFFFF,stroke-width:0px
+    style DOCKER fill:#DBEAFE,stroke:#60A5FA,stroke-width:1.5px
+    style POSTGRES fill:#FFFFFF,stroke:#94A3B8,stroke-width:1.5px
+
+    linkStyle default stroke:#64748B,stroke-width:2px
+```
+
 ## System requirements
 
 ### just
