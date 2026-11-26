@@ -1,3 +1,7 @@
+# Allow developers to configure a database port to not collide with other services
+# Default is 5433.
+DB_PORT=
+
 # The DSN for access the timescaledb database
 TIMESCALEDB_URL=postgresql://user:pass@localhost:5433/metrics
 
