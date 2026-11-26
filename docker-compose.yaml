@@ -12,9 +12,11 @@ services:
     volumes:
       - db:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U user -d metrics"]
+      test: ["CMD", "pg_isready", "--host=127.0.0.1", "--username=user"]
       interval: 10s
-      timeout: 5s
+      start_period: 30s
+      start_interval: 1s
+      timeout: 2s
       retries: 5
 
   grafana:
