@@ -1,13 +1,12 @@
 import atexit
 import functools
 import os
+from itertools import batched
 
 import structlog
 from sqlalchemy import create_engine, inspect, schema, text
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.engine import make_url
-
-from ..tools.iter import batched
 
 
 log = structlog.get_logger()
