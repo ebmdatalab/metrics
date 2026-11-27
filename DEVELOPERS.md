@@ -29,7 +29,7 @@ flowchart LR
     subgraph BACKGROUND[" "]
         direction LR
 
-        subgraph SERVER["Linux server"]
+        subgraph SERVER["Linux server (dokku3)"]
             direction TB
             subgraph DOCKER["Docker"]
                 direction TB
